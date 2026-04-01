@@ -21,11 +21,12 @@ jobs:
           cache: maven
 
       - name: Build backend with Maven
-        working-directory: backend
         run: mvn -B clean verify
+        working-directory: backend
 
   frontend-check:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
