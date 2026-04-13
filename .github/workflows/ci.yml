@@ -19,4 +19,4 @@ jobs:
           test -d frontend
           test -d database
           test -d docs
-          test -d scripts
+test -d scripts
