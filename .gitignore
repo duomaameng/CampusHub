@@ -1,70 +1,56 @@
-# =========================
-# Java backend
-# =========================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.bak
+
+.idea/
+.vscode/
+*.iml
+
+.env
+.env.*
+!.env.example
+
+frontend/node_modules/
+node_modules/
+
+frontend/dist/
+frontend/build/
+dist/
+build/
+
+frontend/.cache/
+.cache/
+.next/
+.nuxt/
+.svelte-kit/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+backend/target/
+target/
+
 *.class
 *.jar
 *.war
 *.ear
 
-# Maven
-target/
+hs_err_pid*
+replay_pid*
 
-# Gradle
-.gradle/
-build/
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
 
-# =========================
-# Frontend
-# =========================
-# 如果以后前端加了打包工具，可忽略这些
-dist/
 coverage/
+*.lcov
+*.gcov
 
-# =========================
-# SQLite
-# =========================
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3
+docker-compose.override.yml
+*.env.docker
 
-# 如果你们数据库文件需要提交，就把上面几行删掉，
-# 或者改成只忽略运行时文件，例如：
-# *.db-journal
-
-# =========================
-# Logs
-# =========================
+logs/
 *.log
-
-# =========================
-# Environment / secrets
-# =========================
-.env
-.env.*
-*.local
-
-# =========================
-# IDE / Editor
-# =========================
-.idea/
-*.iml
-.vscode/
-
-# Eclipse
-.project
-.classpath
-.settings/
-
-# =========================
-# OS files
-# =========================
-.DS_Store
-Thumbs.db
-
-# =========================
-# Temporary files
-# =========================
-*.tmp
-*.swp
-*~
