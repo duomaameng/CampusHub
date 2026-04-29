@@ -10,7 +10,7 @@
 
 ### 背景
 
-CampusHub 是 3 人学生团队在 10 周内完成的校园互助 MVP。系统需要覆盖注册登录、需求发布、接单订单、站内留言、评价信用、举报审核和后台管理。P1 已明确不追求商业级复杂功能，也不引入在线支付、推荐算法、完整即时通讯等高复杂度功能。
+CampusHub 是 3 人学生团队在 10 周内完成的校园互助 MVP。系统需要覆盖注册登录、需求发布、接单订单、订单内文字和图片聊天、评价信用、举报审核和后台管理。P1 已明确不追求商业级复杂功能；P2 阶段将聊天范围限定为订单双方的文字和图片消息，不实现语音/视频通话、群聊、位置共享等高复杂度功能。
 
 ### 决策
 
@@ -92,11 +92,11 @@ P1 需求要求系统支持主流浏览器访问、前后端分离、RESTful API
 
 ### 背景
 
-CampusHub 的数据主要是结构化业务数据，包括用户、需求、订单、留言、评价、举报、公告和操作日志。P1 非功能需求提出支持约 200 名同时在线用户，核心查询分页展示，每页最多 20 条记录。用户明确要求数据库选择 MySQL，学生项目不需要中间件。
+CampusHub 的数据主要是结构化业务数据，包括用户、需求、订单、聊天消息、评价、举报、公告和操作日志。P1 非功能需求提出支持约 200 名同时在线用户，核心查询分页展示，每页最多 20 条记录。用户明确要求数据库选择 MySQL，学生项目不需要中间件。
 
 ### 决策
 
-数据库采用 **MySQL 8.0 单库**。MVP 阶段不引入 Redis、RabbitMQ、Kafka、Elasticsearch 等中间件。通知通过 MySQL 通知表实现，前端轮询未读数；搜索通过 MySQL 索引和 LIKE/FULLTEXT 逐步实现；定时任务使用 Spring Task。
+数据库采用 **MySQL 8.0 单库**。MVP 阶段不引入 Redis、RabbitMQ、Kafka、Elasticsearch 等中间件。订单内文字和图片消息持久化到 MySQL，并由 Spring WebSocket 在单体应用内实时推送；系统通知通过 MySQL 通知表实现，前端轮询未读数；搜索通过 MySQL 索引和 LIKE/FULLTEXT 逐步实现；定时任务使用 Spring Task。
 
 ### 理由
 
@@ -114,7 +114,7 @@ CampusHub 的数据主要是结构化业务数据，包括用户、需求、订�
 ### AI 辅助记录
 
 - AI 初稿内容摘要：AI 建议 MySQL + Redis + RabbitMQ + Elasticsearch，以支持缓存、异步通知和搜索。
-- 人工修订内容：保留 MySQL，删除 Redis、RabbitMQ、Elasticsearch，改为数据库通知表、轮询、MySQL 索引和 Spring Task。
+- 人工修订内容：保留 MySQL，删除 Redis、RabbitMQ、Elasticsearch；订单内聊天使用 Spring WebSocket + MySQL 消息表，系统通知使用数据库通知表和轮询，搜索使用 MySQL 索引和 Spring Task。
 - 修订理由：AI 初稿没有区分“未来可能需要”和“MVP 必须需要”，引入过多中间件会使学生项目偏离核心业务。
 
 **AI 初稿与人工修订 diff：**
@@ -123,7 +123,7 @@ CampusHub 的数据主要是结构化业务数据，包括用户、需求、订�
 - 使用 MySQL 存储业务数据，Redis 缓存热门需求列表，RabbitMQ 异步发送通知，Elasticsearch 支持任务搜索。
 + 使用 MySQL 8.0 单库存储业务数据。
 + 不采用 Redis、RabbitMQ/Kafka、Elasticsearch。
-+ 通知写入 notification 表并由前端轮询；搜索先使用 MySQL 索引和 LIKE/FULLTEXT；过期任务使用 Spring Task。
++ 订单内文字和图片聊天写入 order_message 表并通过 Spring WebSocket 推送；系统通知写入 notification 表并由前端轮询；搜索先使用 MySQL 索引和 LIKE/FULLTEXT；过期任务使用 Spring Task。
 ```
 
 ## ADR-004：前端采用 Vue3 技术栈并复用同一工程承载前台和后台
@@ -166,4 +166,3 @@ CampusHub 需要学生前台和管理员后台。前台包括任务大厅、发�
 + 前台和后台共用一个 Vue3 工程。
 + 使用 Vue Router 路由前缀、Pinia 登录态和后端角色权限控制区分普通学生与管理员。
 ```
-
