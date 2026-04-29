@@ -43,7 +43,7 @@ CampusHub 是 3 人学生团队在 10 周内完成的校园互助 MVP。系统�
 + MVP 阶段不引入 Redis、消息队列、网关等中间件，通过 MySQL 事务保障核心流程一致性。
 ```
 
-## ADR-002：后端采用 Spring Boot 3.x + RESTful API
+## ADR-002：后端采用 Spring Boot + RESTful API
 
 ### 状态
 
@@ -55,7 +55,7 @@ P1 需求要求系统支持主流浏览器访问、前后端分离、RESTful API
 
 ### 决策
 
-后端采用 **Java 17 + Spring Boot 3.x + Spring MVC** 构建 RESTful API，使用 Spring Security + JWT 完成认证授权，使用 Bean Validation 做参数校验。
+后端采用 **Java 17 + Spring Boot + Spring MVC** 构建 RESTful API，使用 Spring Security + JWT 完成认证授权，使用 Bean Validation 做参数校验。
 
 ### 理由
 
@@ -73,14 +73,14 @@ P1 需求要求系统支持主流浏览器访问、前后端分离、RESTful API
 ### AI 辅助记录
 
 - AI 初稿内容摘要：AI 建议后端可以选择 Spring Boot、Django、Express 等任一主流框架。
-- 人工修订内容：固定为 Java 17 + Spring Boot 3.x，并补充 Spring Security + JWT、Bean Validation。
+- 人工修订内容：固定为 Java 17 + Spring Boot，并补充 Spring Security + JWT、Bean Validation。
 - 修订理由：用户已指定后端 Java 和 Spring Boot；架构文档应给出明确选择，而不是开放多个候选。
 
 **AI 初稿与人工修订 diff：**
 
 ```diff
 - 后端可以选择 Spring Boot、Django、Express 等主流框架，接口形式可根据团队熟悉程度决定。
-+ 后端固定采用 Java 17 + Spring Boot 3.x + Spring MVC，接口统一采用 RESTful JSON。
++ 后端固定采用 Java 17 + Spring Boot + Spring MVC，接口统一采用 RESTful JSON。
 + 认证授权统一使用 Spring Security + JWT，参数校验使用 Bean Validation。
 ```
 
