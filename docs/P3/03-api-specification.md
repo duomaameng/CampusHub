@@ -456,7 +456,7 @@
 
 ### 3.1 任务大厅列表
 
-**GET** `/api/tasks` | 认证：登录（未认证仅可浏览）
+**GET** `/api/tasks` | 认证：公开（游客/未认证用户可浏览公开需求）
 
 **查询参数：**
 
@@ -509,7 +509,7 @@
 
 ### 3.2 获取需求详情
 
-**GET** `/api/tasks/{taskId}` | 认证：登录
+**GET** `/api/tasks/{taskId}` | 认证：公开（游客/未认证用户可查看公开需求详情）
 
 **成功响应：**
 
@@ -1847,7 +1847,7 @@
 
 ### 9.12 公告列表
 
-**GET** `/api/admin/announcements` | 认证：登录（管理端）/ 公开（前台）
+**GET** `/api/admin/announcements` | 认证：管理员
 
 **查询参数：** `page`、`size`
 
@@ -1996,8 +1996,8 @@
 | 9 | GET | `/api/users/{userId}/profile` | 登录 | 获取用户公开资料 |
 | 10 | GET | `/api/users/{userId}/reviews` | 登录 | 获取用户评价记录 |
 | 11 | DELETE | `/api/users/me` | 认证 | 注销账号 |
-| 12 | GET | `/api/tasks` | 登录 | 任务大厅列表 |
-| 13 | GET | `/api/tasks/{taskId}` | 登录 | 需求详情 |
+| 12 | GET | `/api/tasks` | 公开 | 任务大厅列表 |
+| 13 | GET | `/api/tasks/{taskId}` | 公开 | 需求详情 |
 | 14 | POST | `/api/tasks` | 认证 | 发布需求 |
 | 15 | PATCH | `/api/tasks/{taskId}` | 认证 | 编辑需求 |
 | 16 | DELETE | `/api/tasks/{taskId}` | 认证 | 删除需求 |
@@ -2016,7 +2016,7 @@
 | 29 | GET | `/api/orders/{orderId}/status-logs` | 认证 | 订单状态日志 |
 | 30 | GET | `/api/notifications` | 登录 | 通知列表 |
 | 31 | GET | `/api/notifications/unread-count` | 登录 | 未读通知数 |
-| 32 | PATCH | `/api/notifications/{id}/read` | 登录 | 标记已读 |
+| 32 | PATCH | `/api/notifications/{notificationId}/read` | 登录 | 标记已读 |
 | 33 | PATCH | `/api/notifications/read-all` | 登录 | 全部已读 |
 | 34 | DELETE | `/api/notifications/{id}` | 登录 | 删除通知 |
 | 35 | GET | `/api/orders/{orderId}/messages` | 认证 | 订单聊天记录 |
@@ -2042,6 +2042,6 @@
 | 55 | POST | `/api/admin/reports/{reportId}/handle` | 管理员 | 处理举报 |
 | 56 | POST | `/api/admin/announcements` | 管理员 | 发布公告 |
 | 57 | GET | `/api/admin/announcements` | 管理员 | 公告列表 |
-| 58 | PATCH | `/api/admin/announcements/{id}` | 管理员 | 编辑公告 |
-| 59 | DELETE | `/api/admin/announcements/{id}` | 管理员 | 删除公告 |
+| 58 | PATCH | `/api/admin/announcements/{announcementId}` | 管理员 | 编辑公告 |
+| 59 | DELETE | `/api/admin/announcements/{announcementId}` | 管理员 | 删除公告 |
 | 60 | GET | `/api/announcements` | 公开 | 前台公告列表 |

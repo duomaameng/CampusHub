@@ -21,7 +21,6 @@
 ```mermaid
 erDiagram
     User ||--|| UserProfile : has
-    User ||--o{ VerificationCode : receives
     User ||--o{ Task : publishes
     User ||--o{ Application : submits
     User ||--o{ Favorite : bookmarks
@@ -73,7 +72,6 @@ erDiagram
     Favorite }o--|| User : user
     Favorite }o--|| Task : task
     FileRecord }o--|| User : uploader
-    VerificationCode }o--|| User : belongs
 ```
 
 ## 3. 表结构说明
@@ -84,9 +82,10 @@ erDiagram
 |------|--------|------|
 | `user` | User | 用户认证与状态核心表 |
 | `user_profile` | UserProfile | 用户资料表，1:1 关联 user |
-| `verification_code` | —（扩展） | 邮箱验证码，注册/密码重置使用 |
+| `verification_code` | —（扩展） | 邮箱验证码，注册/密码重置使用；按邮箱校验，不直接外键关联 `user` |
 
-**设计选择：** `user` 与 `user_profile` 保持分离，与类图 1:1 关系一致。实际查询中多数场景需要 JOIN，但分离有利于敏感字段（password_hash）与展示字段隔离。
+**设计选择：** `user` 与 `user_profile` 保持分离，与类图 1:1 关系一致。实际查询中多数场景需要 JOIN，但分离有利于敏感字段（password_hash）与展示字段隔离。  
+`verification_code` 不直接外键关联 `user`，因为注册前发送验证码时用户记录可能尚未创建，按邮箱存储更符合实际业务流程。
 
 ### 3.2 需求相关
 
