@@ -18,145 +18,145 @@ classDiagram
 direction LR
 
 class User {
-  +Long id
-  +String email
-  +String passwordHash
-  +UserRole role
-  +UserStatus status
-  +Boolean verified
-  +canLogin() boolean
-  +isAdmin() boolean
-  +markVerified() void
-  +disable() void
+  - id: Long
+  - email: String
+  - passwordHash: String
+  - role: UserRole
+  - status: UserStatus
+  - verified: Boolean
+  + canLogin(): boolean
+  + isAdmin(): boolean
+  + markVerified(): void
+  + disable(): void
 }
 
 class UserProfile {
-  +Long userId
-  +String nickname
-  +String avatarUrl
-  +String campus
-  +String contact
-  +Boolean contactVisible
-  +updateProfile() void
-  +hideContact() void
-  +showContact() void
+  - userId: Long
+  - nickname: String
+  - avatarUrl: String
+  - campus: String
+  - contact: String
+  - contactVisible: Boolean
+  + updateProfile(): void
+  + hideContact(): void
+  + showContact(): void
 }
 
 class Task {
-  +Long id
-  +Long publisherId
-  +TaskCategory category
-  +String title
-  +String description
-  +String campus
-  +LocalDateTime deadline
-  +TaskStatus status
-  +Boolean anonymous
-  +publish() void
-  +edit() void
-  +cancel() void
-  +expire() void
-  +canAcceptApplication() boolean
+  - id: Long
+  - publisherId: Long
+  - category: TaskCategory
+  - title: String
+  - description: String
+  - campus: String
+  - deadline: LocalDateTime
+  - status: TaskStatus
+  - anonymous: Boolean
+  + publish(): void
+  + edit(): void
+  + cancel(): void
+  + expire(): void
+  + canAcceptApplication(): boolean
 }
 
 class TaskImage {
-  +Long id
-  +Long taskId
-  +String imageUrl
-  +Integer sortOrder
-  +bindToTask(taskId) void
+  - id: Long
+  - taskId: Long
+  - imageUrl: String
+  - sortOrder: Integer
+  + bindToTask(taskId): void
 }
 
 class Application {
-  +Long id
-  +Long taskId
-  +Long applicantId
-  +String message
-  +ApplicationStatus status
-  +LocalDateTime createdAt
-  +submit() void
-  +approve() void
-  +reject() void
-  +cancel() void
+  - id: Long
+  - taskId: Long
+  - applicantId: Long
+  - message: String
+  - status: ApplicationStatus
+  - createdAt: LocalDateTime
+  + submit(): void
+  + approve(): void
+  + reject(): void
+  + cancel(): void
 }
 
 class Order {
-  +Long id
-  +Long taskId
-  +Long publisherId
-  +Long serviceProviderId
-  +OrderStatus status
-  +String completionProofUrl
-  +LocalDateTime createdAt
-  +confirm() void
-  +submitCompletion(proofUrl) void
-  +confirmCompletion() void
-  +cancel(reason) void
-  +enterDispute() void
-  +canBeReviewed() boolean
+  - id: Long
+  - taskId: Long
+  - publisherId: Long
+  - serviceProviderId: Long
+  - status: OrderStatus
+  - completionProofUrl: String
+  - createdAt: LocalDateTime
+  + confirm(): void
+  + submitCompletion(proofUrl): void
+  + confirmCompletion(): void
+  + cancel(reason): void
+  + enterDispute(): void
+  + canBeReviewed(): boolean
 }
 
 class OrderStatusLog {
-  +Long id
-  +Long orderId
-  +OrderStatus fromStatus
-  +OrderStatus toStatus
-  +Long operatorId
-  +String reason
-  +LocalDateTime createdAt
-  +recordTransition() void
+  - id: Long
+  - orderId: Long
+  - fromStatus: OrderStatus
+  - toStatus: OrderStatus
+  - operatorId: Long
+  - reason: String
+  - createdAt: LocalDateTime
+  + recordTransition(): void
 }
 
 class OrderMessage {
-  +Long id
-  +Long orderId
-  +Long senderId
-  +MessageType messageType
-  +String content
-  +String imageUrl
-  +Boolean read
-  +LocalDateTime createdAt
-  +sendText(content) void
-  +sendImage(imageUrl) void
-  +markRead() void
+  - id: Long
+  - orderId: Long
+  - senderId: Long
+  - messageType: MessageType
+  - content: String
+  - imageUrl: String
+  - read: Boolean
+  - createdAt: LocalDateTime
+  + sendText(content): void
+  + sendImage(imageUrl): void
+  + markRead(): void
 }
 
 class Notification {
-  +Long id
-  +Long receiverId
-  +NotificationType type
-  +String title
-  +String content
-  +Boolean read
-  +LocalDateTime createdAt
-  +markRead() void
-  +markDeleted() void
+  - id: Long
+  - receiverId: Long
+  - type: NotificationType
+  - title: String
+  - content: String
+  - read: Boolean
+  - createdAt: LocalDateTime
+  + markRead(): void
+  + markDeleted(): void
 }
 
 class Review {
-  +Long id
-  +Long orderId
-  +Long reviewerId
-  +Long revieweeId
-  +Integer rating
-  +String content
-  +LocalDateTime createdAt
-  +submit() void
-  +isValidRating() boolean
+  - id: Long
+  - orderId: Long
+  - reviewerId: Long
+  - revieweeId: Long
+  - rating: Integer
+  - content: String
+  - createdAt: LocalDateTime
+  + submit(): void
+  + isValidRating(): boolean
 }
 
 class Report {
-  +Long id
-  +Long reporterId
-  +ReportTargetType targetType
-  +Long targetId
-  +ReportReasonType reasonType
-  +String description
-  +ReportStatus status
-  +LocalDateTime createdAt
-  +submit() void
-  +process() void
-  +reject() void
+  - id: Long
+  - reporterId: Long
+  - targetType: ReportTargetType
+  - targetId: Long
+  - reasonType: ReportReasonType
+  - description: String
+  - status: ReportStatus
+  - createdAt: LocalDateTime
+  + submit(): void
+  + process(): void
+  + reject(): void
 }
 
 User "1" -- "1" UserProfile : has
@@ -288,4 +288,3 @@ CampusHub 的 `Task` 采用统一实体建模，但不同类别需求的校验�
 
 - 策略模式：解决任务类别差异化处理问题
 - 工厂模式：解决通知对象创建分散问题
-
