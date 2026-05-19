@@ -22,6 +22,38 @@ export type OrderStatus =
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
 export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
 export type MessageType = 'TEXT' | 'IMAGE'
+export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE'
+
+export const taskStatusText: Record<TaskStatus, string> = {
+  OPEN: '待接单',
+  IN_PROGRESS: '进行中',
+  COMPLETED: '已完成',
+  CANCELLED: '已取消',
+  EXPIRED: '已过期'
+}
+
+export const applicationStatusText: Record<ApplicationStatus, string> = {
+  PENDING: '待处理',
+  APPROVED: '已通过',
+  REJECTED: '已拒绝',
+  CANCELLED: '已取消'
+}
+
+export const orderStatusText: Record<OrderStatus, string> = {
+  PENDING_CONFIRM: '待确认',
+  IN_PROGRESS: '进行中',
+  PENDING_COMPLETION: '待确认完成',
+  COMPLETED: '已完成',
+  CANCELLED: '已取消',
+  DISPUTE: '争议处理中',
+  REVIEWED: '已评价'
+}
+
+export const userStatusText: Record<UserStatus, string> = {
+  ACTIVE: '正常',
+  DISABLED: '已禁用',
+  ANONYMIZED: '已注销'
+}
 
 export interface PageData<T> {
   total: number
@@ -172,6 +204,16 @@ export interface NotificationItem {
   createdAt: string
 }
 
+export interface UploadedFileItem {
+  id: number
+  businessType: UploadBusinessType
+  fileName: string
+  contentType: string
+  size: number
+  url: string
+  createdAt: string
+}
+
 export interface ReviewItem {
   id: number
   orderId: number
@@ -192,5 +234,13 @@ export interface AdminUserItem {
   status: UserStatus
   verified: boolean
   creditScore: number
+  createdAt: string
+}
+
+export interface ReportSubmission {
+  reportId: number
+  taskId: number
+  reason: string
+  evidenceImageIds: number[]
   createdAt: string
 }

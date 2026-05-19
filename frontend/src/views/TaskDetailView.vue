@@ -2,9 +2,10 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { taskApi } from '@/services/api'
+import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import type { ApplicationItem, TaskItem } from '@/types'
+import { applicationStatusText } from '@/types'
+import type { ApplicationItem, TaskItem, UploadedFileItem } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +17,11 @@ const applyMessage = ref('')
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
+const reportReason = ref('')
+const reportUploadError = ref('')
+const reportSubmitting = ref(false)
+const reportEvidenceUploading = ref(false)
+const reportEvidenceFiles = ref<UploadedFileItem[]>([])
 
 const taskId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => Boolean(task.value && auth.user?.id === task.value.publisherId))
@@ -70,6 +76,52 @@ async function confirmApplication(applicationId: number) {
   }
 }
 
+async function handleReportEvidenceChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+
+  reportUploadError.value = ''
+  reportEvidenceUploading.value = true
+  try {
+    for (const file of files) {
+      const uploaded = await fileApi.upload(file, 'REPORT_EVIDENCE')
+      reportEvidenceFiles.value.push(uploaded)
+    }
+  } catch (err) {
+    reportUploadError.value = err instanceof Error ? err.message : '举报证据上传失败'
+  } finally {
+    reportEvidenceUploading.value = false
+    input.value = ''
+  }
+}
+
+function removeReportEvidence(fileId: number) {
+  reportEvidenceFiles.value = reportEvidenceFiles.value.filter((item) => item.id !== fileId)
+}
+
+async function submitReport() {
+  if (!task.value || !reportReason.value.trim()) return
+
+  error.value = ''
+  success.value = ''
+  reportSubmitting.value = true
+  try {
+    await reportApi.submit(
+      task.value.id,
+      reportReason.value.trim(),
+      reportEvidenceFiles.value.map((item) => item.id)
+    )
+    reportReason.value = ''
+    reportEvidenceFiles.value = []
+    success.value = '举报已提交'
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '举报提交失败'
+  } finally {
+    reportSubmitting.value = false
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -89,6 +141,12 @@ onMounted(load)
         </div>
 
         <p>{{ task.description }}</p>
+
+        <div v-if="task.imageUrls.length" class="upload-grid">
+          <article v-for="url in task.imageUrls" :key="url" class="upload-card">
+            <img :src="url" alt="任务配图" />
+          </article>
+        </div>
 
         <div class="grid two">
           <div class="panel">
@@ -121,13 +179,38 @@ onMounted(load)
           <p v-if="success" class="success-message">{{ success }}</p>
         </section>
 
-        <section v-else class="panel grid">
+        <section v-if="auth.isAuthenticated && !isPublisher" class="panel grid">
+          <h2>举报任务</h2>
+          <div class="field">
+            <textarea v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" />
+          </div>
+          <label class="button ghost upload-trigger">
+            <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleReportEvidenceChange" />
+            <span>{{ reportEvidenceUploading ? '上传中...' : '上传举报证据' }}</span>
+          </label>
+          <p class="hint">支持截图或照片证据，每张不超过 5MB。</p>
+          <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
+          <div v-if="reportEvidenceFiles.length" class="upload-grid">
+            <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
+              <img :src="item.url" :alt="item.fileName" />
+              <div class="upload-card-meta">
+                <strong>{{ item.fileName }}</strong>
+                <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
+              </div>
+            </article>
+          </div>
+          <button class="button danger" type="button" :disabled="reportSubmitting || !reportReason" @click="submitReport">
+            {{ reportSubmitting ? '提交中...' : '提交举报' }}
+          </button>
+        </section>
+
+        <section v-if="isPublisher" class="panel grid">
           <h2>接单申请</h2>
           <div v-if="!applications.length" class="empty-state">暂无申请</div>
           <div v-for="application in applications" :key="application.id" class="item-card">
             <div class="item-title">
               <h3>{{ application.applicantNickname }}</h3>
-              <span class="tag">{{ application.status }}</span>
+              <span class="tag">{{ applicationStatusText[application.status] }}</span>
             </div>
             <p>{{ application.message }}</p>
             <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>

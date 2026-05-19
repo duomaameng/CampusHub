@@ -3,8 +3,8 @@ import { CalendarClock, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { taskApi } from '@/services/api'
-import type { TaskCategory, TaskForm } from '@/types'
+import { fileApi, taskApi } from '@/services/api'
+import type { TaskCategory, TaskForm, UploadedFileItem } from '@/types'
 
 const router = useRouter()
 
@@ -27,6 +27,9 @@ const form = reactive<TaskForm>({
 
 const loading = ref(false)
 const error = ref('')
+const uploadError = ref('')
+const imageUploading = ref(false)
+const uploadedImages = ref<UploadedFileItem[]>([])
 
 const categoryLabel: Record<TaskCategory, string> = {
   EXPRESS: '快递代取',
@@ -93,6 +96,32 @@ async function submit() {
     loading.value = false
   }
 }
+
+async function handleTaskImageChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+
+  uploadError.value = ''
+  imageUploading.value = true
+  try {
+    for (const file of files) {
+      const uploaded = await fileApi.upload(file, 'TASK_IMAGE')
+      uploadedImages.value.push(uploaded)
+      form.imageIds.push(uploaded.id)
+    }
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '任务配图上传失败'
+  } finally {
+    imageUploading.value = false
+    input.value = ''
+  }
+}
+
+function removeUploadedImage(imageId: number) {
+  uploadedImages.value = uploadedImages.value.filter((item) => item.id !== imageId)
+  form.imageIds = form.imageIds.filter((item) => item !== imageId)
+}
 </script>
 
 <template>
@@ -105,6 +134,25 @@ async function submit() {
     </div>
 
     <form class="grid" @submit.prevent="submit">
+      <section class="panel grid">
+        <h2>任务配图</h2>
+        <label class="button secondary upload-trigger">
+          <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleTaskImageChange" />
+          <span>{{ imageUploading ? '上传中...' : '上传任务配图' }}</span>
+        </label>
+        <p class="hint">支持多张图片，每张不超过 5MB。</p>
+        <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
+        <div v-if="uploadedImages.length" class="upload-grid">
+          <article v-for="item in uploadedImages" :key="item.id" class="upload-card">
+            <img :src="item.url" :alt="item.fileName" />
+            <div class="upload-card-meta">
+              <strong>{{ item.fileName }}</strong>
+              <button class="button ghost" type="button" @click="removeUploadedImage(item.id)">移除</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <div class="grid two">
         <div class="field">
           <label for="category">

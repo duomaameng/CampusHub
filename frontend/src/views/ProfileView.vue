@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
-import { userApi } from '@/services/api'
+import { fileApi, userApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { UserProfile } from '@/types'
 
@@ -9,6 +9,7 @@ const auth = useAuthStore()
 const profile = ref<UserProfile>()
 const form = reactive({
   nickname: '',
+  avatarUrl: '',
   gender: 'OTHER' as UserProfile['profile']['gender'],
   grade: '',
   college: '',
@@ -20,9 +21,12 @@ const form = reactive({
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
+const avatarUploading = ref(false)
+const avatarUploadError = ref('')
 
 function fillForm(data: UserProfile) {
   form.nickname = data.profile.nickname
+  form.avatarUrl = data.profile.avatarUrl || ''
   form.gender = data.profile.gender
   form.grade = data.profile.grade
   form.college = data.profile.college
@@ -30,6 +34,25 @@ function fillForm(data: UserProfile) {
   form.campus = data.profile.campus
   form.contact = data.profile.contact
   form.contactVisible = data.profile.contactVisible
+}
+
+async function handleAvatarChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  avatarUploadError.value = ''
+  avatarUploading.value = true
+  try {
+    const uploaded = await fileApi.upload(file, 'AVATAR')
+    form.avatarUrl = uploaded.url
+    success.value = '头像上传成功，保存资料后生效'
+  } catch (err) {
+    avatarUploadError.value = err instanceof Error ? err.message : '头像上传失败'
+  } finally {
+    avatarUploading.value = false
+    input.value = ''
+  }
 }
 
 async function load() {
@@ -75,6 +98,24 @@ onMounted(load)
 
     <div v-else class="detail-layout">
       <form class="form-panel grid" @submit.prevent="save">
+        <section class="panel grid">
+          <h2>头像</h2>
+          <div class="upload-avatar-row">
+            <div class="avatar-preview">
+              <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="头像预览" />
+              <span v-else>{{ form.nickname?.slice(0, 1) || 'U' }}</span>
+            </div>
+            <div class="grid" style="flex:1">
+              <label class="button secondary upload-trigger">
+                <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleAvatarChange" />
+                <span>{{ avatarUploading ? '上传中...' : '上传头像' }}</span>
+              </label>
+              <p class="hint">支持 JPG / PNG / WebP，头像建议小于 2MB。</p>
+              <p v-if="avatarUploadError" class="error-message">{{ avatarUploadError }}</p>
+            </div>
+          </div>
+        </section>
+
         <div class="grid two">
           <div class="field">
             <label for="nickname">昵称</label>

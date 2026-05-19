@@ -10,9 +10,12 @@ import type {
   OrderItem,
   OrderStatus,
   PageData,
+  ReportSubmission,
   ReviewItem,
   TaskForm,
   TaskItem,
+  UploadedFileItem,
+  UploadBusinessType,
   UserProfile,
   UserStatus
 } from '@/types'
@@ -139,6 +142,14 @@ export const orderApi = {
     if (useMock) return mockApi.sendMessage(orderId, content)
     return request({ method: 'POST', url: `/orders/${orderId}/messages`, data: { messageType: 'TEXT', content } })
   },
+  sendImage(orderId: number, imageId: number) {
+    if (useMock) return mockApi.sendImage(orderId, imageId)
+    return request({
+      method: 'POST',
+      url: `/orders/${orderId}/messages`,
+      data: { messageType: 'IMAGE', imageId }
+    })
+  },
   submitReview(orderId: number, rating: number, content: string) {
     if (useMock) return mockApi.submitReview(orderId, rating, content)
     return request({ method: 'POST', url: `/orders/${orderId}/reviews`, data: { rating, content } })
@@ -179,6 +190,36 @@ export const adminApi = {
       method: 'PATCH',
       url: `/admin/users/${userId}/status`,
       data: { status }
+    })
+  }
+}
+
+export const fileApi = {
+  upload(file: File, businessType: UploadBusinessType): Promise<UploadedFileItem> {
+    if (useMock) return mockApi.uploadFile(file, businessType)
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('businessType', businessType)
+
+    return request<UploadedFileItem>({
+      method: 'POST',
+      url: '/files/upload',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  }
+}
+
+export const reportApi = {
+  submit(taskId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
+    if (useMock) return mockApi.submitReport(taskId, reason, evidenceImageIds)
+    return request<ReportSubmission>({
+      method: 'POST',
+      url: `/tasks/${taskId}/reports`,
+      data: { reason, evidenceImageIds }
     })
   }
 }

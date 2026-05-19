@@ -4,6 +4,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { orderApi } from '@/services/api'
+import { orderStatusText } from '@/types'
 import type { OrderItem, OrderStatus, PageData } from '@/types'
 
 const filters = reactive({
@@ -93,7 +94,7 @@ onMounted(loadOrders)
       <RouterLink v-for="order in page.records" :key="order.id" class="item-card" :to="`/orders/${order.id}`">
         <div class="item-title">
           <h2>{{ order.taskTitle }}</h2>
-          <span :class="['tag', statusClass[order.status]]">{{ order.status }}</span>
+          <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
         </div>
         <div class="meta-line">
           <span><UserRound class="meta-icon" aria-hidden="true" />发布者 {{ order.publisherNickname }}</span>

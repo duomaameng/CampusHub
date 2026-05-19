@@ -15,6 +15,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { taskApi } from '@/services/api'
+import { taskStatusText } from '@/types'
 import type { PageData, TaskItem } from '@/types'
 
 const categories = [
@@ -165,7 +166,7 @@ onMounted(loadTasks)
         <div class="meta-line">
           <span><Users class="meta-icon" aria-hidden="true" />申请 {{ task.applicationCount }}</span>
           <span><Bookmark class="meta-icon" aria-hidden="true" />收藏 {{ task.favoriteCount }}</span>
-          <span :class="['tag', task.status === 'OPEN' ? 'success' : 'warning']">{{ task.status }}</span>
+          <span :class="['tag', task.status === 'OPEN' ? 'success' : 'warning']">{{ taskStatusText[task.status] }}</span>
         </div>
         <span class="card-action">
           查看详情

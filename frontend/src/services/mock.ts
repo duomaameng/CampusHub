@@ -9,9 +9,12 @@ import type {
   OrderMessage,
   OrderStatus,
   PageData,
+  ReportSubmission,
   ReviewItem,
   TaskForm,
   TaskItem,
+  UploadedFileItem,
+  UploadBusinessType,
   UserProfile,
   UserStatus
 } from '@/types'
@@ -44,13 +47,16 @@ interface MockDatabase {
   orders: OrderDetail[]
   notifications: NotificationItem[]
   reviews: ReviewItem[]
+  uploadedFiles: UploadedFileItem[]
+  reports: ReportSubmission[]
 }
 
 const dbKey = 'campus-hub-mock-db'
-const wait = () => new Promise((resolve) => window.setTimeout(resolve, 180))
-
-const now = new Date('2026-05-19T10:00:00').toISOString()
 const mockVerificationCode = '123456'
+const wait = () => new Promise((resolve) => window.setTimeout(resolve, 180))
+let volatileUploadedFiles: UploadedFileItem[] = []
+
+const seedNow = '2026-05-19T10:00:00.000Z'
 
 const initialDb: MockDatabase = {
   currentUserId: null,
@@ -79,7 +85,7 @@ const initialDb: MockDatabase = {
         completedOrders: 2,
         praiseRate: 0.96
       },
-      createdAt: '2026-04-20T10:00:00'
+      createdAt: '2026-04-20T10:00:00.000Z'
     },
     {
       id: 10002,
@@ -104,7 +110,7 @@ const initialDb: MockDatabase = {
         completedOrders: 8,
         praiseRate: 0.98
       },
-      createdAt: '2026-04-18T09:30:00'
+      createdAt: '2026-04-18T09:30:00.000Z'
     },
     {
       id: 20001,
@@ -129,7 +135,7 @@ const initialDb: MockDatabase = {
         completedOrders: 0,
         praiseRate: 1
       },
-      createdAt: '2026-04-01T09:00:00'
+      createdAt: '2026-04-01T09:00:00.000Z'
     }
   ],
   tasks: [
@@ -139,20 +145,20 @@ const initialDb: MockDatabase = {
       publisherNickname: '小红',
       category: 'EXPRESS',
       title: '帮忙取一下韵达快递',
-      description: '韵达快递，取件码已隐藏，送到仙林校区 12 栋楼下。',
+      description: '韵达快递，送到仙林校区 12 栋楼下。',
       campus: '仙林校区',
       rewardType: 'CASH',
-      deadline: '2026-06-08T18:00:00',
+      deadline: '2026-06-08T18:00:00.000Z',
       status: 'OPEN',
       anonymous: false,
       imageUrls: [],
       applicationCount: 1,
       favoriteCount: 3,
       isFavorited: false,
-      createdAt: '2026-05-17T10:00:00',
-      updatedAt: '2026-05-17T10:30:00',
+      createdAt: '2026-05-17T10:00:00.000Z',
+      updatedAt: '2026-05-17T10:30:00.000Z',
       categoryFields: {
-        expressCompany: '韵达快递',
+        expressCompany: '韵达',
         pickupLocation: '仙林校区快递点',
         pickupCode: 'A-3-2105',
         deliveryLocation: '仙林校区 12 栋'
@@ -163,19 +169,19 @@ const initialDb: MockDatabase = {
       publisherId: 10001,
       publisherNickname: '蔡利扬',
       category: 'TUTORING',
-      title: '帮忙讲解软件工程课程作业',
-      description: '希望找同学一起过一遍 P4 编码阶段的任务拆解和前端联调。',
+      title: '帮忙讲解软工项目任务拆解',
+      description: '希望找同学一起梳理 P4 编码阶段的任务和联调流程。',
       campus: '仙林校区',
       rewardType: 'NEGOTIABLE',
-      deadline: '2026-06-02T20:00:00',
+      deadline: '2026-06-02T20:00:00.000Z',
       status: 'OPEN',
       anonymous: false,
       imageUrls: [],
       applicationCount: 1,
       favoriteCount: 1,
       isFavorited: false,
-      createdAt: '2026-05-18T14:20:00',
-      updatedAt: '2026-05-18T14:20:00',
+      createdAt: '2026-05-18T14:20:00.000Z',
+      updatedAt: '2026-05-18T14:20:00.000Z',
       categoryFields: {}
     },
     {
@@ -184,18 +190,18 @@ const initialDb: MockDatabase = {
       publisherNickname: '蔡利扬',
       category: 'SECOND_HAND',
       title: '出一台闲置显示器',
-      description: '24 寸显示器，适合宿舍外接笔记本使用，支持当面验货。',
+      description: '24 寸显示器，支持当面验货。',
       campus: '鼓楼校区',
       rewardType: 'CASH',
-      deadline: '2026-06-10T20:00:00',
+      deadline: '2026-06-10T20:00:00.000Z',
       status: 'IN_PROGRESS',
       anonymous: false,
       imageUrls: [],
       applicationCount: 1,
       favoriteCount: 5,
       isFavorited: true,
-      createdAt: '2026-05-15T16:00:00',
-      updatedAt: '2026-05-17T12:00:00',
+      createdAt: '2026-05-15T16:00:00.000Z',
+      updatedAt: '2026-05-17T12:00:00.000Z',
       categoryFields: {
         goodsCategory: '数码',
         condition: 'LIKE_NEW',
@@ -210,9 +216,9 @@ const initialDb: MockDatabase = {
       applicantId: 10002,
       applicantNickname: '小红',
       applicantCreditScore: 95,
-      message: '我可以帮你一起梳理联调流程，下午有空。',
+      message: '我可以帮你一起梳理联调流程。',
       status: 'PENDING',
-      createdAt: '2026-05-18T15:00:00'
+      createdAt: '2026-05-18T15:00:00.000Z'
     }
   ],
   orders: [
@@ -220,7 +226,7 @@ const initialDb: MockDatabase = {
       id: 7001,
       taskId: 3003,
       taskTitle: '出一台闲置显示器',
-      taskDescription: '24 寸显示器，适合宿舍外接笔记本使用，支持当面验货。',
+      taskDescription: '24 寸显示器，支持当面验货。',
       campus: '鼓楼校区',
       rewardType: 'CASH',
       publisherId: 10001,
@@ -228,14 +234,14 @@ const initialDb: MockDatabase = {
       serviceProviderId: 10002,
       serviceProviderNickname: '小红',
       status: 'COMPLETED',
-      createdAt: '2026-05-17T12:00:00',
+      createdAt: '2026-05-17T12:00:00.000Z',
       statusLogs: [
         {
           id: 1,
           toStatus: 'IN_PROGRESS',
           operatorNickname: '蔡利扬',
           reason: '确认接单并创建订单',
-          createdAt: '2026-05-17T12:00:00'
+          createdAt: '2026-05-17T12:00:00.000Z'
         },
         {
           id: 2,
@@ -243,7 +249,7 @@ const initialDb: MockDatabase = {
           toStatus: 'PENDING_COMPLETION',
           operatorNickname: '小红',
           reason: '服务方提交完成凭证',
-          createdAt: '2026-05-18T16:00:00'
+          createdAt: '2026-05-18T16:00:00.000Z'
         },
         {
           id: 3,
@@ -251,7 +257,7 @@ const initialDb: MockDatabase = {
           toStatus: 'COMPLETED',
           operatorNickname: '蔡利扬',
           reason: '发布者确认完成',
-          createdAt: '2026-05-18T17:20:00'
+          createdAt: '2026-05-18T17:20:00.000Z'
         }
       ],
       messages: [
@@ -261,8 +267,8 @@ const initialDb: MockDatabase = {
           senderId: 10002,
           senderNickname: '小红',
           messageType: 'TEXT',
-          content: '我到了鼓楼校区，方便当面确认吗？',
-          createdAt: '2026-05-18T15:40:00'
+          content: '我已经到鼓楼校区了，可以当面确认吗？',
+          createdAt: '2026-05-18T15:40:00.000Z'
         }
       ]
     },
@@ -270,7 +276,7 @@ const initialDb: MockDatabase = {
       id: 7002,
       taskId: 3001,
       taskTitle: '帮忙取一下韵达快递',
-      taskDescription: '韵达快递，取件码已隐藏，送到仙林校区 12 栋楼下。',
+      taskDescription: '韵达快递，送到仙林校区 12 栋楼下。',
       campus: '仙林校区',
       rewardType: 'CASH',
       publisherId: 10002,
@@ -278,14 +284,14 @@ const initialDb: MockDatabase = {
       serviceProviderId: 10001,
       serviceProviderNickname: '蔡利扬',
       status: 'IN_PROGRESS',
-      createdAt: '2026-05-19T09:00:00',
+      createdAt: '2026-05-19T09:00:00.000Z',
       statusLogs: [
         {
           id: 4,
           toStatus: 'IN_PROGRESS',
           operatorNickname: '小红',
           reason: '确认接单并创建订单',
-          createdAt: '2026-05-19T09:00:00'
+          createdAt: '2026-05-19T09:00:00.000Z'
         }
       ],
       messages: []
@@ -296,11 +302,11 @@ const initialDb: MockDatabase = {
       id: 9001,
       type: 'APPLICATION',
       title: '新的接单申请',
-      content: '小红申请了你的任务：帮忙讲解软件工程课程作业。',
+      content: '小红申请了你的任务：帮忙讲解软工项目任务拆解。',
       targetType: 'TASK',
       targetId: 3002,
       read: false,
-      createdAt: '2026-05-18T15:00:00'
+      createdAt: '2026-05-18T15:00:00.000Z'
     },
     {
       id: 9002,
@@ -310,10 +316,12 @@ const initialDb: MockDatabase = {
       targetType: 'ORDER',
       targetId: 7001,
       read: false,
-      createdAt: '2026-05-18T17:20:00'
+      createdAt: '2026-05-18T17:20:00.000Z'
     }
   ],
-  reviews: []
+  reviews: [],
+  uploadedFiles: [],
+  reports: []
 }
 
 function clone<T>(value: T): T {
@@ -326,15 +334,25 @@ function loadDb(): MockDatabase {
     localStorage.setItem(dbKey, JSON.stringify(initialDb))
     return clone(initialDb)
   }
+
   const db = JSON.parse(raw) as MockDatabase
-  if (!Array.isArray(db.verificationCodes)) {
-    db.verificationCodes = []
-  }
+  db.verificationCodes ||= []
+  db.uploadedFiles ||= []
+  db.reports ||= []
   return db
 }
 
 function saveDb(db: MockDatabase) {
   localStorage.setItem(dbKey, JSON.stringify(db))
+}
+
+function getUploadedFileById(db: MockDatabase, imageId: number, businessType?: UploadBusinessType) {
+  const inMemory = volatileUploadedFiles.find((item) => item.id === imageId)
+  const persisted = db.uploadedFiles.find((item) => item.id === imageId)
+  const file = inMemory || persisted
+  if (!file) return undefined
+  if (businessType && file.businessType !== businessType) return undefined
+  return file
 }
 
 function getCurrentUser(db = loadDb()) {
@@ -351,7 +369,7 @@ function getCurrentUser(db = loadDb()) {
 function toLoginUser(user: MockUser): LoginUser {
   return {
     id: user.id,
-    email: user.email.replace(/^(.).+(@.+)$/, '$1***$2'),
+    email: user.email,
     role: user.role,
     status: user.status,
     verified: user.verified,
@@ -363,7 +381,7 @@ function toLoginUser(user: MockUser): LoginUser {
 function toProfile(user: MockUser): UserProfile {
   return {
     id: user.id,
-    email: user.email.replace(/^(.).+(@.+)$/, '$1***$2'),
+    email: user.email,
     role: user.role,
     status: user.status,
     verified: user.verified,
@@ -385,11 +403,12 @@ function paginate<T>(records: T[], page = 1, size = 20): PageData<T> {
 }
 
 function pushNotification(db: MockDatabase, item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) {
+  const nextId = Math.max(9000, ...db.notifications.map((notification) => notification.id)) + 1
   db.notifications.unshift({
     ...item,
-    id: Math.max(9000, ...db.notifications.map((notification) => notification.id)) + 1,
+    id: nextId,
     read: false,
-    createdAt: now
+    createdAt: new Date().toISOString()
   })
 }
 
@@ -403,19 +422,29 @@ function saveVerificationCode(db: MockDatabase, email: string, purpose: MockVeri
   })
 }
 
+function ensureUploadAllowed(file: File, businessType: UploadBusinessType) {
+  const maxSize = businessType === 'AVATAR' ? 2 * 1024 * 1024 : 5 * 1024 * 1024
+  const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+
+  if (!allowedImageTypes.includes(file.type)) {
+    throw new Error('仅支持 JPG、PNG、WebP 图片上传')
+  }
+  if (file.size > maxSize) {
+    throw new Error(`文件大小不能超过 ${Math.round(maxSize / 1024 / 1024)}MB`)
+  }
+}
+
 export const mockApi = {
   async login(email: string, password: string): Promise<LoginResult> {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email && item.password === password)
-    if (!user) {
-      throw new Error('邮箱或密码错误')
-    }
-    if (user.status !== 'ACTIVE') {
-      throw new Error('账号已被禁用')
-    }
+    if (!user) throw new Error('邮箱或密码错误')
+    if (user.status !== 'ACTIVE') throw new Error('账号已被禁用')
+
     db.currentUserId = user.id
     saveDb(db)
+
     return {
       token: `mock-token-${user.id}`,
       tokenType: 'Bearer',
@@ -426,16 +455,14 @@ export const mockApi = {
 
   async register(email: string, password: string, confirmPassword: string) {
     await wait()
-    if (!email.endsWith('@smail.nju.edu.cn')) {
-      throw new Error('邮箱必须使用南京大学学校邮箱')
-    }
-    if (password !== confirmPassword) {
-      throw new Error('两次输入的密码不一致')
-    }
+    if (!email.endsWith('@smail.nju.edu.cn')) throw new Error('请使用南大学校邮箱注册')
+    if (password !== confirmPassword) throw new Error('两次输入的密码不一致')
+
     const db = loadDb()
     if (db.users.some((item) => item.email === email)) {
       throw new Error('邮箱已注册')
     }
+
     const id = Math.max(...db.users.map((item) => item.id)) + 1
     db.users.push({
       id,
@@ -460,8 +487,9 @@ export const mockApi = {
         completedOrders: 0,
         praiseRate: 1
       },
-      createdAt: now
+      createdAt: new Date().toISOString()
     })
+
     saveVerificationCode(db, email, 'REGISTER')
     saveDb(db)
     return { userId: id, email }
@@ -471,12 +499,9 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) {
-      throw new Error('邮箱未注册')
-    }
-    if (purpose === 'REGISTER' && user.verified) {
-      throw new Error('邮箱已完成验证')
-    }
+    if (!user) throw new Error('邮箱未注册')
+    if (purpose === 'REGISTER' && user.verified) throw new Error('邮箱已经完成认证')
+
     saveVerificationCode(db, email, purpose)
     saveDb(db)
     return null
@@ -486,13 +511,11 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) {
-      throw new Error('邮箱未注册')
-    }
+    if (!user) throw new Error('邮箱未注册')
+
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'REGISTER')
-    if (!record || record.code !== code.trim()) {
-      throw new Error('验证码错误或已过期')
-    }
+    if (!record || record.code !== code.trim()) throw new Error('验证码错误或已过期')
+
     user.verified = true
     db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === 'REGISTER'))
     saveDb(db)
@@ -501,18 +524,15 @@ export const mockApi = {
 
   async resetPassword(email: string, code: string, newPassword: string, confirmNewPassword: string) {
     await wait()
-    if (newPassword !== confirmNewPassword) {
-      throw new Error('两次输入的新密码不一致')
-    }
+    if (newPassword !== confirmNewPassword) throw new Error('两次输入的新密码不一致')
+
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) {
-      throw new Error('邮箱未注册')
-    }
+    if (!user) throw new Error('邮箱未注册')
+
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'RESET_PASSWORD')
-    if (!record || record.code !== code.trim()) {
-      throw new Error('验证码错误或已过期')
-    }
+    if (!record || record.code !== code.trim()) throw new Error('验证码错误或已过期')
+
     user.password = newPassword
     db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === 'RESET_PASSWORD'))
     saveDb(db)
@@ -578,8 +598,14 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = getCurrentUser(db)
-    if (!user.verified) throw new Error('未完成校园身份认证，不可发布需求')
+    if (!user.verified) throw new Error('未完成校园认证，不能发布需求')
+
+    const imageUrls = payload.imageIds
+      .map((imageId) => getUploadedFileById(db, imageId, 'TASK_IMAGE')?.url)
+      .filter((url): url is string => Boolean(url))
+
     const id = Math.max(3000, ...db.tasks.map((item) => item.id)) + 1
+    const createdAt = new Date().toISOString()
     db.tasks.unshift({
       id,
       publisherId: user.id,
@@ -592,16 +618,16 @@ export const mockApi = {
       deadline: payload.deadline,
       status: 'OPEN',
       anonymous: payload.anonymous,
-      imageUrls: [],
+      imageUrls,
       applicationCount: 0,
       favoriteCount: 0,
       isFavorited: false,
-      createdAt: now,
-      updatedAt: now,
+      createdAt,
+      updatedAt: createdAt,
       categoryFields: payload.categoryFields
     })
     saveDb(db)
-    return { id, status: 'OPEN', createdAt: now }
+    return { id, status: 'OPEN', createdAt }
   },
 
   async applyTask(taskId: number, message: string) {
@@ -613,8 +639,9 @@ export const mockApi = {
     if (task.publisherId === user.id) throw new Error('不能申请自己的需求')
     if (task.status !== 'OPEN') throw new Error('需求已过期或已被接单')
     if (db.applications.some((item) => item.taskId === taskId && item.applicantId === user.id)) {
-      throw new Error('已提交过接单申请')
+      throw new Error('你已经提交过接单申请')
     }
+
     const applicationId = Math.max(6000, ...db.applications.map((item) => item.id)) + 1
     db.applications.push({
       id: applicationId,
@@ -624,18 +651,18 @@ export const mockApi = {
       applicantCreditScore: user.credit.score,
       message,
       status: 'PENDING',
-      createdAt: now
+      createdAt: new Date().toISOString()
     })
     task.applicationCount += 1
     pushNotification(db, {
       type: 'APPLICATION',
       title: '新的接单申请',
-      content: `${user.profile.nickname} 申请了你的任务：${task.title}。`,
+      content: `${user.profile.nickname} 申请了你的任务：${task.title}`,
       targetType: 'TASK',
       targetId: task.id
     })
     saveDb(db)
-    return { applicationId, taskId, status: 'PENDING', createdAt: now }
+    return { applicationId, taskId, status: 'PENDING', createdAt: new Date().toISOString() }
   },
 
   async listApplications(taskId: number): Promise<ApplicationItem[]> {
@@ -659,14 +686,17 @@ export const mockApi = {
     const task = db.tasks.find((item) => item.id === application.taskId)
     if (!task) throw new Error('需求不存在')
     if (task.publisherId !== user.id) throw new Error('无权确认该申请')
+
     application.status = 'APPROVED'
     db.applications
       .filter((item) => item.taskId === task.id && item.id !== applicationId && item.status === 'PENDING')
       .forEach((item) => {
         item.status = 'REJECTED'
       })
+
     task.status = 'IN_PROGRESS'
     const orderId = Math.max(7000, ...db.orders.map((item) => item.id)) + 1
+    const createdAt = new Date().toISOString()
     db.orders.unshift({
       id: orderId,
       taskId: task.id,
@@ -679,30 +709,31 @@ export const mockApi = {
       serviceProviderId: application.applicantId,
       serviceProviderNickname: application.applicantNickname,
       status: 'IN_PROGRESS',
-      createdAt: now,
+      createdAt,
       statusLogs: [
         {
           id: Math.max(1, ...db.orders.flatMap((order) => order.statusLogs.map((log) => log.id))) + 1,
           toStatus: 'IN_PROGRESS',
           operatorNickname: user.profile.nickname,
           reason: '确认接单并创建订单',
-          createdAt: now
+          createdAt
         }
       ],
       messages: []
     })
+
     pushNotification(db, {
       type: 'ORDER_STATUS',
       title: '接单申请已通过',
-      content: `你的接单申请已通过，订单 ${orderId} 已创建。`,
+      content: `你的接单申请已通过，订单 ${orderId} 已创建`,
       targetType: 'ORDER',
       targetId: orderId
     })
     saveDb(db)
-    return { orderId, taskId: task.id, status: 'IN_PROGRESS', createdAt: now }
+    return { orderId, taskId: task.id, status: 'IN_PROGRESS', createdAt }
   },
 
-  async listOrders(params: { page?: number; size?: number; role?: string; status?: OrderStatus; keyword?: string }) {
+  async listOrders(params: { page?: number; size?: number; role?: string; status?: OrderStatus; keyword?: string }): Promise<PageData<OrderItem>> {
     await wait()
     const db = loadDb()
     const user = getCurrentUser(db)
@@ -721,7 +752,7 @@ export const mockApi = {
     const order = db.orders.find((item) => item.id === orderId)
     if (!order) throw new Error('订单不存在')
     if (order.publisherId !== user.id && order.serviceProviderId !== user.id && user.role !== 'ADMIN') {
-      throw new Error('不是订单参与方，无权操作')
+      throw new Error('无权查看该订单')
     }
     return clone(order)
   },
@@ -732,6 +763,7 @@ export const mockApi = {
     const user = getCurrentUser(db)
     const order = db.orders.find((item) => item.id === orderId)
     if (!order) throw new Error('订单不存在')
+
     const fromStatus = order.status
     order.status = status
     order.statusLogs.push({
@@ -740,12 +772,12 @@ export const mockApi = {
       toStatus: status,
       operatorNickname: user.profile.nickname,
       reason,
-      createdAt: now
+      createdAt: new Date().toISOString()
     })
     pushNotification(db, {
       type: status === 'COMPLETED' ? 'REVIEW_REQUEST' : 'ORDER_STATUS',
       title: status === 'COMPLETED' ? '订单已完成' : '订单状态已更新',
-      content: `${order.taskTitle} 的状态变更为 ${status}。`,
+      content: `${order.taskTitle} 的状态变更为 ${status}`,
       targetType: 'ORDER',
       targetId: order.id
     })
@@ -758,6 +790,7 @@ export const mockApi = {
     const user = getCurrentUser(db)
     const order = db.orders.find((item) => item.id === orderId)
     if (!order) throw new Error('订单不存在')
+
     const message: OrderMessage = {
       id: Math.max(12000, ...db.orders.flatMap((item) => item.messages.map((msg) => msg.id))) + 1,
       orderId,
@@ -765,7 +798,31 @@ export const mockApi = {
       senderNickname: user.profile.nickname,
       messageType: 'TEXT',
       content,
-      createdAt: now
+      createdAt: new Date().toISOString()
+    }
+    order.messages.push(message)
+    saveDb(db)
+    return clone(message)
+  },
+
+  async sendImage(orderId: number, imageId: number): Promise<OrderMessage> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+
+    const uploaded = getUploadedFileById(db, imageId, 'CHAT_IMAGE')
+    if (!uploaded) throw new Error('聊天图片不存在或已失效')
+
+    const message: OrderMessage = {
+      id: Math.max(12000, ...db.orders.flatMap((item) => item.messages.map((msg) => msg.id))) + 1,
+      orderId,
+      senderId: user.id,
+      senderNickname: user.profile.nickname,
+      messageType: 'IMAGE',
+      imageUrl: uploaded.url,
+      createdAt: new Date().toISOString()
     }
     order.messages.push(message)
     saveDb(db)
@@ -778,10 +835,11 @@ export const mockApi = {
     const user = getCurrentUser(db)
     const order = db.orders.find((item) => item.id === orderId)
     if (!order) throw new Error('订单不存在')
-    if (order.status !== 'COMPLETED') throw new Error('订单未完成，不可评价')
+    if (order.status !== 'COMPLETED') throw new Error('订单未完成，不能评价')
     if (db.reviews.some((item) => item.orderId === orderId && item.reviewerId === user.id)) {
-      throw new Error('评价已存在，不可重复评价')
+      throw new Error('不能重复评价')
     }
+
     const revieweeId = order.publisherId === user.id ? order.serviceProviderId : order.publisherId
     const revieweeNickname = order.publisherId === user.id ? order.serviceProviderNickname : order.publisherNickname
     const reviewId = Math.max(13000, ...db.reviews.map((item) => item.id)) + 1
@@ -794,10 +852,10 @@ export const mockApi = {
       revieweeNickname,
       rating,
       content,
-      createdAt: now
+      createdAt: new Date().toISOString()
     })
     saveDb(db)
-    return { reviewId, orderId, rating, createdAt: now }
+    return { reviewId, orderId, rating, createdAt: new Date().toISOString() }
   },
 
   async getOrderReviews(orderId: number): Promise<ReviewItem[]> {
@@ -839,6 +897,7 @@ export const mockApi = {
     const db = loadDb()
     const user = getCurrentUser(db)
     if (user.role !== 'ADMIN') throw new Error('权限不足')
+
     let records: AdminUserItem[] = db.users.map((item) => ({
       id: item.id,
       email: item.email,
@@ -849,6 +908,7 @@ export const mockApi = {
       creditScore: item.credit.score,
       createdAt: item.createdAt
     }))
+
     if (params.keyword) {
       records = records.filter((item) => item.email.includes(params.keyword || '') || item.nickname.includes(params.keyword || ''))
     }
@@ -861,6 +921,7 @@ export const mockApi = {
     const db = loadDb()
     const admin = getCurrentUser(db)
     if (admin.role !== 'ADMIN') throw new Error('权限不足')
+
     const user = db.users.find((item) => item.id === userId)
     if (!user) throw new Error('用户不存在')
     user.status = status
@@ -868,7 +929,60 @@ export const mockApi = {
     return { userId, status }
   },
 
+  async uploadFile(file: File, businessType: UploadBusinessType): Promise<UploadedFileItem> {
+    await wait()
+    const db = loadDb()
+    getCurrentUser(db)
+    ensureUploadAllowed(file, businessType)
+
+    const url = URL.createObjectURL(file)
+    const item: UploadedFileItem = {
+      id: Math.max(15000, ...db.uploadedFiles.map((uploaded) => uploaded.id)) + 1,
+      businessType,
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+      url,
+      createdAt: new Date().toISOString()
+    }
+    volatileUploadedFiles = [item, ...volatileUploadedFiles]
+    return clone(item)
+  },
+
+  async submitReport(taskId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (!reason.trim()) throw new Error('请填写举报原因')
+
+    const validEvidence = evidenceImageIds.filter((imageId) =>
+      Boolean(getUploadedFileById(db, imageId, 'REPORT_EVIDENCE'))
+    )
+
+    const report: ReportSubmission = {
+      reportId: Math.max(16000, ...db.reports.map((item) => item.reportId)) + 1,
+      taskId,
+      reason: reason.trim(),
+      evidenceImageIds: validEvidence,
+      createdAt: new Date().toISOString()
+    }
+
+    db.reports.unshift(report)
+    pushNotification(db, {
+      type: 'REPORT_RESULT',
+      title: '举报已提交',
+      content: `${user.profile.nickname} 已提交针对任务《${task.title}》的举报`,
+      targetType: 'TASK',
+      targetId: taskId
+    })
+    saveDb(db)
+    return clone(report)
+  },
+
   reset() {
+    volatileUploadedFiles = []
     localStorage.setItem(dbKey, JSON.stringify(initialDb))
   }
 }

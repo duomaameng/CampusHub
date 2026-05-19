@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 
 import { adminApi } from '@/services/api'
+import { userStatusText } from '@/types'
 import type { AdminUserItem, PageData, UserStatus } from '@/types'
 
 const filters = reactive({
@@ -97,7 +98,7 @@ onMounted(load)
             <td>{{ user.email }}</td>
             <td>{{ user.nickname }}</td>
             <td>{{ user.role }}</td>
-            <td><span :class="['tag', user.status === 'ACTIVE' ? 'success' : 'danger']">{{ user.status }}</span></td>
+            <td><span :class="['tag', user.status === 'ACTIVE' ? 'success' : 'danger']">{{ userStatusText[user.status] }}</span></td>
             <td>{{ user.creditScore }}</td>
             <td>
               <div class="actions">

@@ -3,9 +3,10 @@ import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { orderApi } from '@/services/api'
+import { fileApi, orderApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import type { OrderDetail, ReviewItem } from '@/types'
+import { orderStatusText } from '@/types'
+import type { OrderDetail, ReviewItem, UploadedFileItem } from '@/types'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -19,6 +20,9 @@ const message = ref('')
 const cancelReason = ref('')
 const reviewRating = ref(5)
 const reviewContent = ref('')
+const chatImageUploading = ref(false)
+const chatImageError = ref('')
+const uploadedChatImage = ref<UploadedFileItem | null>(null)
 
 const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
@@ -53,6 +57,29 @@ async function sendMessage() {
   if (!message.value.trim()) return
   await runAction(() => orderApi.sendMessage(orderId.value, message.value.trim()), '消息已发送')
   message.value = ''
+}
+
+async function handleChatImageChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  chatImageError.value = ''
+  chatImageUploading.value = true
+  try {
+    uploadedChatImage.value = await fileApi.upload(file, 'CHAT_IMAGE')
+  } catch (err) {
+    chatImageError.value = err instanceof Error ? err.message : '聊天图片上传失败'
+  } finally {
+    chatImageUploading.value = false
+    input.value = ''
+  }
+}
+
+async function sendImageMessage() {
+  if (!uploadedChatImage.value) return
+  await runAction(() => orderApi.sendImage(orderId.value, uploadedChatImage.value!.id), '图片消息已发送')
+  uploadedChatImage.value = null
 }
 
 async function submitReview() {
@@ -91,7 +118,7 @@ onMounted(load)
             <h1>{{ order.taskTitle }}</h1>
             <p>订单号 {{ order.id }} · {{ order.campus }} · {{ new Date(order.createdAt).toLocaleString() }}</p>
           </div>
-          <span class="tag success">{{ order.status }}</span>
+          <span class="tag success">{{ orderStatusText[order.status] }}</span>
         </div>
 
         <p>{{ order.taskDescription }}</p>
@@ -111,7 +138,7 @@ onMounted(load)
           <h2>状态日志</h2>
           <ul class="timeline">
             <li v-for="log in order.statusLogs" :key="log.id">
-              <strong>{{ log.toStatus }}</strong>
+              <strong>{{ orderStatusText[log.toStatus] }}</strong>
               <p>{{ log.reason }} · {{ log.operatorNickname }} · {{ new Date(log.createdAt).toLocaleString() }}</p>
             </li>
           </ul>
@@ -123,7 +150,8 @@ onMounted(load)
             <div v-if="!order.messages.length" class="hint">暂无留言</div>
             <div v-for="item in order.messages" :key="item.id" class="message-bubble">
               <strong>{{ item.senderNickname }}</strong>
-              <p>{{ item.content }}</p>
+              <p v-if="item.content">{{ item.content }}</p>
+              <img v-if="item.imageUrl" class="message-image" :src="item.imageUrl" alt="聊天图片" />
               <span class="hint">{{ new Date(item.createdAt).toLocaleString() }}</span>
             </div>
           </div>
@@ -136,6 +164,23 @@ onMounted(load)
               <span>发送</span>
             </button>
           </form>
+          <div class="grid">
+            <label class="button ghost upload-trigger">
+              <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleChatImageChange" />
+              <span>{{ chatImageUploading ? '上传中...' : '上传聊天图片' }}</span>
+            </label>
+            <p v-if="chatImageError" class="error-message">{{ chatImageError }}</p>
+            <div v-if="uploadedChatImage" class="upload-card inline">
+              <img :src="uploadedChatImage.url" :alt="uploadedChatImage.fileName" />
+              <div class="upload-card-meta">
+                <strong>{{ uploadedChatImage.fileName }}</strong>
+                <div class="actions">
+                  <button class="button secondary" type="button" @click="sendImageMessage">发送图片</button>
+                  <button class="button ghost" type="button" @click="uploadedChatImage = null">取消</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </article>
 
