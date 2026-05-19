@@ -1,0 +1,874 @@
+import type {
+  AdminUserItem,
+  ApplicationItem,
+  LoginResult,
+  LoginUser,
+  NotificationItem,
+  OrderDetail,
+  OrderItem,
+  OrderMessage,
+  OrderStatus,
+  PageData,
+  ReviewItem,
+  TaskForm,
+  TaskItem,
+  UserProfile,
+  UserStatus
+} from '@/types'
+
+interface MockUser {
+  id: number
+  email: string
+  password: string
+  role: LoginUser['role']
+  status: UserStatus
+  verified: boolean
+  profile: UserProfile['profile']
+  credit: UserProfile['credit']
+  createdAt: string
+}
+
+interface MockVerificationCode {
+  email: string
+  purpose: 'REGISTER' | 'RESET_PASSWORD'
+  code: string
+  expiresAt: string
+}
+
+interface MockDatabase {
+  currentUserId: number | null
+  users: MockUser[]
+  verificationCodes: MockVerificationCode[]
+  tasks: TaskItem[]
+  applications: ApplicationItem[]
+  orders: OrderDetail[]
+  notifications: NotificationItem[]
+  reviews: ReviewItem[]
+}
+
+const dbKey = 'campus-hub-mock-db'
+const wait = () => new Promise((resolve) => window.setTimeout(resolve, 180))
+
+const now = new Date('2026-05-19T10:00:00').toISOString()
+const mockVerificationCode = '123456'
+
+const initialDb: MockDatabase = {
+  currentUserId: null,
+  verificationCodes: [],
+  users: [
+    {
+      id: 10001,
+      email: 'cailiyang@smail.nju.edu.cn',
+      password: 'Abc123456!',
+      role: 'STUDENT',
+      status: 'ACTIVE',
+      verified: true,
+      profile: {
+        nickname: '蔡利扬',
+        avatarUrl: '',
+        gender: 'MALE',
+        grade: '2024',
+        college: '软件学院',
+        bio: '负责 CampusHub 前端页面、状态管理和接口联调。',
+        campus: '仙林校区',
+        contact: 'WeChat:cailiyang',
+        contactVisible: true
+      },
+      credit: {
+        score: 100,
+        completedOrders: 2,
+        praiseRate: 0.96
+      },
+      createdAt: '2026-04-20T10:00:00'
+    },
+    {
+      id: 10002,
+      email: 'xiaohong@smail.nju.edu.cn',
+      password: 'Abc123456!',
+      role: 'STUDENT',
+      status: 'ACTIVE',
+      verified: true,
+      profile: {
+        nickname: '小红',
+        avatarUrl: '',
+        gender: 'FEMALE',
+        grade: '2023',
+        college: '计算机科学与技术系',
+        bio: '常在仙林校区帮同学代取快递。',
+        campus: '仙林校区',
+        contact: 'QQ:12345678',
+        contactVisible: true
+      },
+      credit: {
+        score: 95,
+        completedOrders: 8,
+        praiseRate: 0.98
+      },
+      createdAt: '2026-04-18T09:30:00'
+    },
+    {
+      id: 20001,
+      email: 'admin@smail.nju.edu.cn',
+      password: 'Admin123456!',
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      verified: true,
+      profile: {
+        nickname: '管理员',
+        avatarUrl: '',
+        gender: 'OTHER',
+        grade: '2024',
+        college: '平台管理组',
+        bio: '处理举报和用户状态。',
+        campus: '仙林校区',
+        contact: '',
+        contactVisible: false
+      },
+      credit: {
+        score: 100,
+        completedOrders: 0,
+        praiseRate: 1
+      },
+      createdAt: '2026-04-01T09:00:00'
+    }
+  ],
+  tasks: [
+    {
+      id: 3001,
+      publisherId: 10002,
+      publisherNickname: '小红',
+      category: 'EXPRESS',
+      title: '帮忙取一下韵达快递',
+      description: '韵达快递，取件码已隐藏，送到仙林校区 12 栋楼下。',
+      campus: '仙林校区',
+      rewardType: 'CASH',
+      deadline: '2026-06-08T18:00:00',
+      status: 'OPEN',
+      anonymous: false,
+      imageUrls: [],
+      applicationCount: 1,
+      favoriteCount: 3,
+      isFavorited: false,
+      createdAt: '2026-05-17T10:00:00',
+      updatedAt: '2026-05-17T10:30:00',
+      categoryFields: {
+        expressCompany: '韵达快递',
+        pickupLocation: '仙林校区快递点',
+        pickupCode: 'A-3-2105',
+        deliveryLocation: '仙林校区 12 栋'
+      }
+    },
+    {
+      id: 3002,
+      publisherId: 10001,
+      publisherNickname: '蔡利扬',
+      category: 'TUTORING',
+      title: '帮忙讲解软件工程课程作业',
+      description: '希望找同学一起过一遍 P4 编码阶段的任务拆解和前端联调。',
+      campus: '仙林校区',
+      rewardType: 'NEGOTIABLE',
+      deadline: '2026-06-02T20:00:00',
+      status: 'OPEN',
+      anonymous: false,
+      imageUrls: [],
+      applicationCount: 1,
+      favoriteCount: 1,
+      isFavorited: false,
+      createdAt: '2026-05-18T14:20:00',
+      updatedAt: '2026-05-18T14:20:00',
+      categoryFields: {}
+    },
+    {
+      id: 3003,
+      publisherId: 10001,
+      publisherNickname: '蔡利扬',
+      category: 'SECOND_HAND',
+      title: '出一台闲置显示器',
+      description: '24 寸显示器，适合宿舍外接笔记本使用，支持当面验货。',
+      campus: '鼓楼校区',
+      rewardType: 'CASH',
+      deadline: '2026-06-10T20:00:00',
+      status: 'IN_PROGRESS',
+      anonymous: false,
+      imageUrls: [],
+      applicationCount: 1,
+      favoriteCount: 5,
+      isFavorited: true,
+      createdAt: '2026-05-15T16:00:00',
+      updatedAt: '2026-05-17T12:00:00',
+      categoryFields: {
+        goodsCategory: '数码',
+        condition: 'LIKE_NEW',
+        price: 399
+      }
+    }
+  ],
+  applications: [
+    {
+      id: 6001,
+      taskId: 3002,
+      applicantId: 10002,
+      applicantNickname: '小红',
+      applicantCreditScore: 95,
+      message: '我可以帮你一起梳理联调流程，下午有空。',
+      status: 'PENDING',
+      createdAt: '2026-05-18T15:00:00'
+    }
+  ],
+  orders: [
+    {
+      id: 7001,
+      taskId: 3003,
+      taskTitle: '出一台闲置显示器',
+      taskDescription: '24 寸显示器，适合宿舍外接笔记本使用，支持当面验货。',
+      campus: '鼓楼校区',
+      rewardType: 'CASH',
+      publisherId: 10001,
+      publisherNickname: '蔡利扬',
+      serviceProviderId: 10002,
+      serviceProviderNickname: '小红',
+      status: 'COMPLETED',
+      createdAt: '2026-05-17T12:00:00',
+      statusLogs: [
+        {
+          id: 1,
+          toStatus: 'IN_PROGRESS',
+          operatorNickname: '蔡利扬',
+          reason: '确认接单并创建订单',
+          createdAt: '2026-05-17T12:00:00'
+        },
+        {
+          id: 2,
+          fromStatus: 'IN_PROGRESS',
+          toStatus: 'PENDING_COMPLETION',
+          operatorNickname: '小红',
+          reason: '服务方提交完成凭证',
+          createdAt: '2026-05-18T16:00:00'
+        },
+        {
+          id: 3,
+          fromStatus: 'PENDING_COMPLETION',
+          toStatus: 'COMPLETED',
+          operatorNickname: '蔡利扬',
+          reason: '发布者确认完成',
+          createdAt: '2026-05-18T17:20:00'
+        }
+      ],
+      messages: [
+        {
+          id: 12001,
+          orderId: 7001,
+          senderId: 10002,
+          senderNickname: '小红',
+          messageType: 'TEXT',
+          content: '我到了鼓楼校区，方便当面确认吗？',
+          createdAt: '2026-05-18T15:40:00'
+        }
+      ]
+    },
+    {
+      id: 7002,
+      taskId: 3001,
+      taskTitle: '帮忙取一下韵达快递',
+      taskDescription: '韵达快递，取件码已隐藏，送到仙林校区 12 栋楼下。',
+      campus: '仙林校区',
+      rewardType: 'CASH',
+      publisherId: 10002,
+      publisherNickname: '小红',
+      serviceProviderId: 10001,
+      serviceProviderNickname: '蔡利扬',
+      status: 'IN_PROGRESS',
+      createdAt: '2026-05-19T09:00:00',
+      statusLogs: [
+        {
+          id: 4,
+          toStatus: 'IN_PROGRESS',
+          operatorNickname: '小红',
+          reason: '确认接单并创建订单',
+          createdAt: '2026-05-19T09:00:00'
+        }
+      ],
+      messages: []
+    }
+  ],
+  notifications: [
+    {
+      id: 9001,
+      type: 'APPLICATION',
+      title: '新的接单申请',
+      content: '小红申请了你的任务：帮忙讲解软件工程课程作业。',
+      targetType: 'TASK',
+      targetId: 3002,
+      read: false,
+      createdAt: '2026-05-18T15:00:00'
+    },
+    {
+      id: 9002,
+      type: 'REVIEW_REQUEST',
+      title: '订单已完成',
+      content: '显示器交易订单已完成，可以提交评价。',
+      targetType: 'ORDER',
+      targetId: 7001,
+      read: false,
+      createdAt: '2026-05-18T17:20:00'
+    }
+  ],
+  reviews: []
+}
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+function loadDb(): MockDatabase {
+  const raw = localStorage.getItem(dbKey)
+  if (!raw) {
+    localStorage.setItem(dbKey, JSON.stringify(initialDb))
+    return clone(initialDb)
+  }
+  const db = JSON.parse(raw) as MockDatabase
+  if (!Array.isArray(db.verificationCodes)) {
+    db.verificationCodes = []
+  }
+  return db
+}
+
+function saveDb(db: MockDatabase) {
+  localStorage.setItem(dbKey, JSON.stringify(db))
+}
+
+function getCurrentUser(db = loadDb()) {
+  const user = db.users.find((item) => item.id === db.currentUserId)
+  if (!user) {
+    throw new Error('请先登录')
+  }
+  if (user.status !== 'ACTIVE') {
+    throw new Error('账号已被禁用')
+  }
+  return user
+}
+
+function toLoginUser(user: MockUser): LoginUser {
+  return {
+    id: user.id,
+    email: user.email.replace(/^(.).+(@.+)$/, '$1***$2'),
+    role: user.role,
+    status: user.status,
+    verified: user.verified,
+    nickname: user.profile.nickname,
+    avatarUrl: user.profile.avatarUrl
+  }
+}
+
+function toProfile(user: MockUser): UserProfile {
+  return {
+    id: user.id,
+    email: user.email.replace(/^(.).+(@.+)$/, '$1***$2'),
+    role: user.role,
+    status: user.status,
+    verified: user.verified,
+    profile: clone(user.profile),
+    credit: clone(user.credit),
+    createdAt: user.createdAt
+  }
+}
+
+function paginate<T>(records: T[], page = 1, size = 20): PageData<T> {
+  const start = (page - 1) * size
+  return {
+    total: records.length,
+    page,
+    size,
+    pages: Math.max(1, Math.ceil(records.length / size)),
+    records: records.slice(start, start + size)
+  }
+}
+
+function pushNotification(db: MockDatabase, item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) {
+  db.notifications.unshift({
+    ...item,
+    id: Math.max(9000, ...db.notifications.map((notification) => notification.id)) + 1,
+    read: false,
+    createdAt: now
+  })
+}
+
+function saveVerificationCode(db: MockDatabase, email: string, purpose: MockVerificationCode['purpose']) {
+  db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === purpose))
+  db.verificationCodes.push({
+    email,
+    purpose,
+    code: mockVerificationCode,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+  })
+}
+
+export const mockApi = {
+  async login(email: string, password: string): Promise<LoginResult> {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.email === email && item.password === password)
+    if (!user) {
+      throw new Error('邮箱或密码错误')
+    }
+    if (user.status !== 'ACTIVE') {
+      throw new Error('账号已被禁用')
+    }
+    db.currentUserId = user.id
+    saveDb(db)
+    return {
+      token: `mock-token-${user.id}`,
+      tokenType: 'Bearer',
+      expiresIn: 86400,
+      user: toLoginUser(user)
+    }
+  },
+
+  async register(email: string, password: string, confirmPassword: string) {
+    await wait()
+    if (!email.endsWith('@smail.nju.edu.cn')) {
+      throw new Error('邮箱必须使用南京大学学校邮箱')
+    }
+    if (password !== confirmPassword) {
+      throw new Error('两次输入的密码不一致')
+    }
+    const db = loadDb()
+    if (db.users.some((item) => item.email === email)) {
+      throw new Error('邮箱已注册')
+    }
+    const id = Math.max(...db.users.map((item) => item.id)) + 1
+    db.users.push({
+      id,
+      email,
+      password,
+      role: 'STUDENT',
+      status: 'ACTIVE',
+      verified: false,
+      profile: {
+        nickname: email.split('@')[0],
+        avatarUrl: '',
+        gender: 'OTHER',
+        grade: '2024',
+        college: '',
+        bio: '',
+        campus: '仙林校区',
+        contact: '',
+        contactVisible: false
+      },
+      credit: {
+        score: 100,
+        completedOrders: 0,
+        praiseRate: 1
+      },
+      createdAt: now
+    })
+    saveVerificationCode(db, email, 'REGISTER')
+    saveDb(db)
+    return { userId: id, email }
+  },
+
+  async sendVerificationCode(email: string, purpose: 'REGISTER' | 'RESET_PASSWORD') {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.email === email)
+    if (!user) {
+      throw new Error('邮箱未注册')
+    }
+    if (purpose === 'REGISTER' && user.verified) {
+      throw new Error('邮箱已完成验证')
+    }
+    saveVerificationCode(db, email, purpose)
+    saveDb(db)
+    return null
+  },
+
+  async verifyEmail(email: string, code: string) {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.email === email)
+    if (!user) {
+      throw new Error('邮箱未注册')
+    }
+    const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'REGISTER')
+    if (!record || record.code !== code.trim()) {
+      throw new Error('验证码错误或已过期')
+    }
+    user.verified = true
+    db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === 'REGISTER'))
+    saveDb(db)
+    return { verified: true }
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string, confirmNewPassword: string) {
+    await wait()
+    if (newPassword !== confirmNewPassword) {
+      throw new Error('两次输入的新密码不一致')
+    }
+    const db = loadDb()
+    const user = db.users.find((item) => item.email === email)
+    if (!user) {
+      throw new Error('邮箱未注册')
+    }
+    const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'RESET_PASSWORD')
+    if (!record || record.code !== code.trim()) {
+      throw new Error('验证码错误或已过期')
+    }
+    user.password = newPassword
+    db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === 'RESET_PASSWORD'))
+    saveDb(db)
+    return null
+  },
+
+  async logout() {
+    await wait()
+    const db = loadDb()
+    db.currentUserId = null
+    saveDb(db)
+  },
+
+  async me(): Promise<UserProfile> {
+    await wait()
+    return toProfile(getCurrentUser())
+  },
+
+  async updateMe(payload: Partial<UserProfile['profile']>): Promise<UserProfile> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    user.profile = { ...user.profile, ...payload }
+    saveDb(db)
+    return toProfile(user)
+  },
+
+  async listTasks(params: {
+    page?: number
+    size?: number
+    category?: string
+    campus?: string
+    keyword?: string
+    sort?: string
+  }): Promise<PageData<TaskItem>> {
+    await wait()
+    const db = loadDb()
+    let records = [...db.tasks]
+    if (params.category) records = records.filter((item) => item.category === params.category)
+    if (params.campus) records = records.filter((item) => item.campus === params.campus)
+    if (params.keyword) {
+      const keyword = params.keyword.trim().toLowerCase()
+      records = records.filter(
+        (item) => item.title.toLowerCase().includes(keyword) || item.description.toLowerCase().includes(keyword)
+      )
+    }
+    records.sort((a, b) =>
+      params.sort === 'deadline'
+        ? new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+        : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    return paginate(records, params.page, params.size)
+  },
+
+  async getTask(taskId: number): Promise<TaskItem> {
+    await wait()
+    const task = loadDb().tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    return clone(task)
+  },
+
+  async createTask(payload: TaskForm): Promise<{ id: number; status: string; createdAt: string }> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    if (!user.verified) throw new Error('未完成校园身份认证，不可发布需求')
+    const id = Math.max(3000, ...db.tasks.map((item) => item.id)) + 1
+    db.tasks.unshift({
+      id,
+      publisherId: user.id,
+      publisherNickname: user.profile.nickname,
+      category: payload.category,
+      title: payload.title,
+      description: payload.description,
+      campus: payload.campus,
+      rewardType: payload.rewardType,
+      deadline: payload.deadline,
+      status: 'OPEN',
+      anonymous: payload.anonymous,
+      imageUrls: [],
+      applicationCount: 0,
+      favoriteCount: 0,
+      isFavorited: false,
+      createdAt: now,
+      updatedAt: now,
+      categoryFields: payload.categoryFields
+    })
+    saveDb(db)
+    return { id, status: 'OPEN', createdAt: now }
+  },
+
+  async applyTask(taskId: number, message: string) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId === user.id) throw new Error('不能申请自己的需求')
+    if (task.status !== 'OPEN') throw new Error('需求已过期或已被接单')
+    if (db.applications.some((item) => item.taskId === taskId && item.applicantId === user.id)) {
+      throw new Error('已提交过接单申请')
+    }
+    const applicationId = Math.max(6000, ...db.applications.map((item) => item.id)) + 1
+    db.applications.push({
+      id: applicationId,
+      taskId,
+      applicantId: user.id,
+      applicantNickname: user.profile.nickname,
+      applicantCreditScore: user.credit.score,
+      message,
+      status: 'PENDING',
+      createdAt: now
+    })
+    task.applicationCount += 1
+    pushNotification(db, {
+      type: 'APPLICATION',
+      title: '新的接单申请',
+      content: `${user.profile.nickname} 申请了你的任务：${task.title}。`,
+      targetType: 'TASK',
+      targetId: task.id
+    })
+    saveDb(db)
+    return { applicationId, taskId, status: 'PENDING', createdAt: now }
+  },
+
+  async listApplications(taskId: number): Promise<ApplicationItem[]> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('无权查看该需求的接单申请')
+    }
+    return clone(db.applications.filter((item) => item.taskId === taskId))
+  },
+
+  async confirmApplication(applicationId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const application = db.applications.find((item) => item.id === applicationId)
+    if (!application) throw new Error('接单申请不存在')
+    const task = db.tasks.find((item) => item.id === application.taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('无权确认该申请')
+    application.status = 'APPROVED'
+    db.applications
+      .filter((item) => item.taskId === task.id && item.id !== applicationId && item.status === 'PENDING')
+      .forEach((item) => {
+        item.status = 'REJECTED'
+      })
+    task.status = 'IN_PROGRESS'
+    const orderId = Math.max(7000, ...db.orders.map((item) => item.id)) + 1
+    db.orders.unshift({
+      id: orderId,
+      taskId: task.id,
+      taskTitle: task.title,
+      taskDescription: task.description,
+      campus: task.campus,
+      rewardType: task.rewardType,
+      publisherId: task.publisherId,
+      publisherNickname: task.publisherNickname,
+      serviceProviderId: application.applicantId,
+      serviceProviderNickname: application.applicantNickname,
+      status: 'IN_PROGRESS',
+      createdAt: now,
+      statusLogs: [
+        {
+          id: Math.max(1, ...db.orders.flatMap((order) => order.statusLogs.map((log) => log.id))) + 1,
+          toStatus: 'IN_PROGRESS',
+          operatorNickname: user.profile.nickname,
+          reason: '确认接单并创建订单',
+          createdAt: now
+        }
+      ],
+      messages: []
+    })
+    pushNotification(db, {
+      type: 'ORDER_STATUS',
+      title: '接单申请已通过',
+      content: `你的接单申请已通过，订单 ${orderId} 已创建。`,
+      targetType: 'ORDER',
+      targetId: orderId
+    })
+    saveDb(db)
+    return { orderId, taskId: task.id, status: 'IN_PROGRESS', createdAt: now }
+  },
+
+  async listOrders(params: { page?: number; size?: number; role?: string; status?: OrderStatus; keyword?: string }) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    let records = db.orders.filter((item) => item.publisherId === user.id || item.serviceProviderId === user.id)
+    if (params.role === 'PUBLISHER') records = records.filter((item) => item.publisherId === user.id)
+    if (params.role === 'PROVIDER') records = records.filter((item) => item.serviceProviderId === user.id)
+    if (params.status) records = records.filter((item) => item.status === params.status)
+    if (params.keyword) records = records.filter((item) => item.taskTitle.includes(params.keyword || ''))
+    return paginate(records.map(({ messages: _messages, statusLogs: _logs, ...item }) => item), params.page, params.size)
+  },
+
+  async getOrder(orderId: number): Promise<OrderDetail> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+    if (order.publisherId !== user.id && order.serviceProviderId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('不是订单参与方，无权操作')
+    }
+    return clone(order)
+  },
+
+  async updateOrderStatus(orderId: number, status: OrderStatus, reason: string) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+    const fromStatus = order.status
+    order.status = status
+    order.statusLogs.push({
+      id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
+      fromStatus,
+      toStatus: status,
+      operatorNickname: user.profile.nickname,
+      reason,
+      createdAt: now
+    })
+    pushNotification(db, {
+      type: status === 'COMPLETED' ? 'REVIEW_REQUEST' : 'ORDER_STATUS',
+      title: status === 'COMPLETED' ? '订单已完成' : '订单状态已更新',
+      content: `${order.taskTitle} 的状态变更为 ${status}。`,
+      targetType: 'ORDER',
+      targetId: order.id
+    })
+    saveDb(db)
+  },
+
+  async sendMessage(orderId: number, content: string): Promise<OrderMessage> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+    const message: OrderMessage = {
+      id: Math.max(12000, ...db.orders.flatMap((item) => item.messages.map((msg) => msg.id))) + 1,
+      orderId,
+      senderId: user.id,
+      senderNickname: user.profile.nickname,
+      messageType: 'TEXT',
+      content,
+      createdAt: now
+    }
+    order.messages.push(message)
+    saveDb(db)
+    return clone(message)
+  },
+
+  async submitReview(orderId: number, rating: number, content: string) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+    if (order.status !== 'COMPLETED') throw new Error('订单未完成，不可评价')
+    if (db.reviews.some((item) => item.orderId === orderId && item.reviewerId === user.id)) {
+      throw new Error('评价已存在，不可重复评价')
+    }
+    const revieweeId = order.publisherId === user.id ? order.serviceProviderId : order.publisherId
+    const revieweeNickname = order.publisherId === user.id ? order.serviceProviderNickname : order.publisherNickname
+    const reviewId = Math.max(13000, ...db.reviews.map((item) => item.id)) + 1
+    db.reviews.push({
+      id: reviewId,
+      orderId,
+      reviewerId: user.id,
+      reviewerNickname: user.profile.nickname,
+      revieweeId,
+      revieweeNickname,
+      rating,
+      content,
+      createdAt: now
+    })
+    saveDb(db)
+    return { reviewId, orderId, rating, createdAt: now }
+  },
+
+  async getOrderReviews(orderId: number): Promise<ReviewItem[]> {
+    await wait()
+    return clone(loadDb().reviews.filter((item) => item.orderId === orderId))
+  },
+
+  async listNotifications(params: { page?: number; size?: number; read?: boolean }) {
+    await wait()
+    let records = loadDb().notifications
+    if (typeof params.read === 'boolean') records = records.filter((item) => item.read === params.read)
+    return paginate(records, params.page, params.size)
+  },
+
+  async unreadCount() {
+    await wait()
+    return { count: loadDb().notifications.filter((item) => !item.read).length }
+  },
+
+  async markNotificationRead(notificationId: number) {
+    await wait()
+    const db = loadDb()
+    const item = db.notifications.find((notification) => notification.id === notificationId)
+    if (item) item.read = true
+    saveDb(db)
+  },
+
+  async readAllNotifications() {
+    await wait()
+    const db = loadDb()
+    db.notifications.forEach((item) => {
+      item.read = true
+    })
+    saveDb(db)
+  },
+
+  async adminUsers(params: { page?: number; size?: number; keyword?: string; status?: UserStatus }) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    if (user.role !== 'ADMIN') throw new Error('权限不足')
+    let records: AdminUserItem[] = db.users.map((item) => ({
+      id: item.id,
+      email: item.email,
+      nickname: item.profile.nickname,
+      role: item.role,
+      status: item.status,
+      verified: item.verified,
+      creditScore: item.credit.score,
+      createdAt: item.createdAt
+    }))
+    if (params.keyword) {
+      records = records.filter((item) => item.email.includes(params.keyword || '') || item.nickname.includes(params.keyword || ''))
+    }
+    if (params.status) records = records.filter((item) => item.status === params.status)
+    return paginate(records, params.page, params.size)
+  },
+
+  async updateUserStatus(userId: number, status: UserStatus) {
+    await wait()
+    const db = loadDb()
+    const admin = getCurrentUser(db)
+    if (admin.role !== 'ADMIN') throw new Error('权限不足')
+    const user = db.users.find((item) => item.id === userId)
+    if (!user) throw new Error('用户不存在')
+    user.status = status
+    saveDb(db)
+    return { userId, status }
+  },
+
+  reset() {
+    localStorage.setItem(dbKey, JSON.stringify(initialDb))
+  }
+}
