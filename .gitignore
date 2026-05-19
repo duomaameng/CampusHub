@@ -1,6 +1,7 @@
 .DS_Store
 Thumbs.db
 *.log
+frontend/.vite-dev.err
 *.tmp
 *.swp
 *.bak
@@ -54,3 +55,4 @@ docker-compose.override.yml
 
 logs/
 *.log
+.codex-logs/
