@@ -4,6 +4,7 @@ import com.campushub.common.ApiResponse;
 import com.campushub.dto.request.*;
 import com.campushub.dto.response.LoginResponse;
 import com.campushub.dto.response.RegisterResponse;
+import com.campushub.dto.response.VerifyEmailResponse;
 import com.campushub.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +34,8 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email")
-    public ApiResponse<Void> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
-        authService.verifyEmail(request);
-        return ApiResponse.success();
+    public ApiResponse<VerifyEmailResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        return ApiResponse.success(authService.verifyEmail(request));
     }
 
     @PostMapping("/reset-password")

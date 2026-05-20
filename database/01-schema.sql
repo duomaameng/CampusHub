@@ -9,6 +9,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `admin_operation_log`;
 DROP TABLE IF EXISTS `announcement`;
+DROP TABLE IF EXISTS `report_evidence`;
 DROP TABLE IF EXISTS `file_record`;
 DROP TABLE IF EXISTS `report`;
 DROP TABLE IF EXISTS `credit_log`;
@@ -264,6 +265,18 @@ CREATE TABLE `file_record` (
   KEY `idx_file_record_user_id` (`user_id`),
   CONSTRAINT `fk_file_record_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='file record table';
+
+CREATE TABLE `report_evidence` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'report evidence id',
+  `report_id` BIGINT NOT NULL COMMENT 'report id',
+  `file_record_id` BIGINT NOT NULL COMMENT 'evidence file record id',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_report_evidence_report_id` (`report_id`),
+  KEY `idx_report_evidence_file_record_id` (`file_record_id`),
+  CONSTRAINT `fk_report_evidence_report` FOREIGN KEY (`report_id`) REFERENCES `report` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_report_evidence_file_record` FOREIGN KEY (`file_record_id`) REFERENCES `file_record` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='report evidence relation table';
 
 CREATE TABLE `announcement` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'announcement id',

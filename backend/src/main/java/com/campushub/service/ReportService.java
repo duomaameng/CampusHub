@@ -2,13 +2,17 @@ package com.campushub.service;
 
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
+import com.campushub.entity.FileRecord;
 import com.campushub.dto.report.ReportCreateRequest;
 import com.campushub.dto.report.ReportProcessRequest;
 import com.campushub.entity.Report;
+import com.campushub.entity.ReportEvidence;
 import com.campushub.entity.Task;
 import com.campushub.enums.ReportReasonType;
 import com.campushub.enums.ReportStatus;
 import com.campushub.enums.ReportTargetType;
+import com.campushub.enums.UploadBusinessType;
+import com.campushub.mapper.ReportEvidenceMapper;
 import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.security.SecurityUtils;
@@ -37,8 +41,10 @@ import java.util.List;
 public class ReportService {
 
     private final ReportMapper reportMapper;
+    private final ReportEvidenceMapper reportEvidenceMapper;
     private final TaskMapper taskMapper;
     private final NotificationService notificationService;
+    private final FileService fileService;
 
     @Transactional
     public ReportSubmissionVO submitTaskReport(Long taskId, ReportCreateRequest request) {
@@ -57,11 +63,20 @@ public class ReportService {
         report.setStatus(ReportStatus.PENDING);
         reportMapper.insert(report);
 
+        List<Long> evidenceImageIds = request.getEvidenceImageIds() == null ? List.of() : request.getEvidenceImageIds();
+        for (Long imageId : evidenceImageIds) {
+            FileRecord fileRecord = fileService.requireOwnedFile(imageId, UploadBusinessType.REPORT_EVIDENCE);
+            ReportEvidence evidence = new ReportEvidence();
+            evidence.setReportId(report.getId());
+            evidence.setFileRecordId(fileRecord.getId());
+            reportEvidenceMapper.insert(evidence);
+        }
+
         return new ReportSubmissionVO(
                 report.getId(),
                 taskId,
                 request.getReason().trim(),
-                request.getEvidenceImageIds() == null ? List.of() : request.getEvidenceImageIds(),
+                evidenceImageIds,
                 report.getCreatedAt()
         );
     }

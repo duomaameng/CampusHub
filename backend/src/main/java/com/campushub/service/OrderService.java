@@ -12,6 +12,7 @@ import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
 import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
+import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.*;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.order.*;
@@ -50,11 +51,11 @@ public class OrderService {
     private final OrderMapper orderMapper;
     private final TaskMapper taskMapper;
     private final UserProfileMapper userProfileMapper;
-    private final FileRecordMapper fileRecordMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final OrderMessageMapper orderMessageMapper;
     private final ReviewMapper reviewMapper;
     private final NotificationService notificationService;
+    private final FileService fileService;
 
     public PageResult<OrderItemVO> listOrders(int page, int size, String role, OrderStatus status, String keyword) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
@@ -98,10 +99,8 @@ public class OrderService {
         }
 
         if (request.getProofImageId() != null) {
-            FileRecord proof = fileRecordMapper.selectById(request.getProofImageId());
-            if (proof != null) {
-                order.setCompletionProofUrl(proof.getFileUrl());
-            }
+            FileRecord proof = fileService.requireOwnedFile(request.getProofImageId());
+            order.setCompletionProofUrl(proof.getFileUrl());
         }
         order.setStatus(OrderStatus.PENDING_COMPLETION);
         orderMapper.updateById(order);
@@ -176,7 +175,7 @@ public class OrderService {
             }
             message.setContent(request.getContent().trim());
         } else if (MessageType.IMAGE.equals(request.getMessageType())) {
-            FileRecord image = request.getImageId() == null ? null : fileRecordMapper.selectById(request.getImageId());
+            FileRecord image = request.getImageId() == null ? null : fileService.requireOwnedFile(request.getImageId(), UploadBusinessType.CHAT_IMAGE);
             if (image == null) {
                 throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "Image file not found");
             }
@@ -231,17 +230,17 @@ public class OrderService {
 
     private OrderDetailVO toOrderDetailVO(Order order) {
         Task task = requireTask(order.getTaskId());
+        List<OrderStatusLog> statusLogs = orderStatusLogMapper.selectList(new LambdaQueryWrapper<OrderStatusLog>()
+                .eq(OrderStatusLog::getOrderId, order.getId())
+                .orderByAsc(OrderStatusLog::getCreatedAt));
         OrderDetailVO vo = new OrderDetailVO();
         copyBaseOrderFields(order, task, vo);
         vo.setTaskDescription(task.getDescription());
         vo.setCampus(task.getCampus());
         vo.setRewardType(task.getRewardType());
         vo.setProofImageUrl(order.getCompletionProofUrl());
-        vo.setCompletionNote(order.getCancelReason());
-        vo.setStatusLogs(orderStatusLogMapper.selectList(new LambdaQueryWrapper<OrderStatusLog>()
-                        .eq(OrderStatusLog::getOrderId, order.getId())
-                        .orderByAsc(OrderStatusLog::getCreatedAt))
-                .stream()
+        vo.setCompletionNote(findCompletionNote(statusLogs));
+        vo.setStatusLogs(statusLogs.stream()
                 .map(this::toStatusLogVO)
                 .toList());
         vo.setMessages(orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
@@ -313,6 +312,15 @@ public class OrderService {
         log.setOperatorId(operatorId);
         log.setReason(reason);
         orderStatusLogMapper.insert(log);
+    }
+
+    private String findCompletionNote(List<OrderStatusLog> statusLogs) {
+        return statusLogs.stream()
+                .filter(log -> OrderStatus.PENDING_COMPLETION.name().equals(log.getToStatus()))
+                .map(OrderStatusLog::getReason)
+                .filter(reason -> reason != null && !reason.isBlank())
+                .reduce((first, second) -> second)
+                .orElse(null);
     }
 
     private void ensureParticipant(Order order) {

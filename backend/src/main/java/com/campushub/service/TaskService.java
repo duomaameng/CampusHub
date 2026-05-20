@@ -12,6 +12,7 @@ import com.campushub.enums.ApplicationStatus;
 import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskCategory;
 import com.campushub.enums.TaskStatus;
+import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.*;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.task.*;
@@ -59,6 +60,7 @@ public class TaskService {
     private final CreditLogMapper creditLogMapper;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
+    private final FileService fileService;
     private final ObjectMapper objectMapper;
 
     public PageResult<TaskItemVO> listTasks(int page, int size, String category, String campus, String keyword, String sort) {
@@ -228,10 +230,7 @@ public class TaskService {
         }
         int index = 0;
         for (Long imageId : imageIds) {
-            FileRecord fileRecord = fileRecordMapper.selectById(imageId);
-            if (fileRecord == null) {
-                continue;
-            }
+            FileRecord fileRecord = fileService.requireOwnedFile(imageId, UploadBusinessType.TASK_IMAGE);
             TaskImage image = new TaskImage();
             image.setTaskId(taskId);
             image.setImageUrl(fileRecord.getFileUrl());

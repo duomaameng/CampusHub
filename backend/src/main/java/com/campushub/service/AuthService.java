@@ -3,6 +3,7 @@ package com.campushub.service;
 import com.campushub.dto.request.*;
 import com.campushub.dto.response.LoginResponse;
 import com.campushub.dto.response.RegisterResponse;
+import com.campushub.dto.response.VerifyEmailResponse;
 
 public interface AuthService {
 
@@ -12,7 +13,7 @@ public interface AuthService {
 
     void sendVerificationCode(SendVerificationCodeRequest request);
 
-    void verifyEmail(VerifyEmailRequest request);
+    VerifyEmailResponse verifyEmail(VerifyEmailRequest request);
 
     void resetPassword(ResetPasswordRequest request);
 }

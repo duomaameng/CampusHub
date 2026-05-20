@@ -6,6 +6,7 @@ import com.campushub.common.ErrorCode;
 import com.campushub.dto.request.*;
 import com.campushub.dto.response.LoginResponse;
 import com.campushub.dto.response.RegisterResponse;
+import com.campushub.dto.response.VerifyEmailResponse;
 import com.campushub.dto.response.UserProfileResponse;
 import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
@@ -149,14 +150,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void verifyEmail(VerifyEmailRequest request) {
+    public VerifyEmailResponse verifyEmail(VerifyEmailRequest request) {
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail()));
         if (user == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_FOUND);
         }
         if (user.getVerified()) {
-            return;
+            return new VerifyEmailResponse(true);
         }
 
         VerificationCode vc = verificationCodeMapper.selectOne(
@@ -180,6 +181,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.updateById(user);
 
         log.info("Email verified: {}", request.getEmail());
+        return new VerifyEmailResponse(true);
     }
 
     @Override

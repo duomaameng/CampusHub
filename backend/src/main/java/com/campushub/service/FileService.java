@@ -119,6 +119,27 @@ public class FileService {
         );
     }
 
+    public FileRecord requireOwnedFile(Long fileId) {
+        FileRecord record = fileRecordMapper.selectById(fileId);
+        if (record == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "File record not found");
+        }
+
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!currentUserId.equals(record.getUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "You can only use files uploaded by yourself");
+        }
+        return record;
+    }
+
+    public FileRecord requireOwnedFile(Long fileId, UploadBusinessType expectedPurpose) {
+        FileRecord record = requireOwnedFile(fileId);
+        if (!expectedPurpose.name().equals(record.getPurpose())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "File purpose does not match business usage");
+        }
+        return record;
+    }
+
     private void validateFile(MultipartFile file, String extension) {
         if (file.getSize() > maxFileSize) {
             throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
