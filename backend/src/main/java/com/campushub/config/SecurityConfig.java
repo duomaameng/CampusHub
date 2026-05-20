@@ -31,6 +31,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Auth endpoints - public
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Public task browsing
+                        .requestMatchers(HttpMethod.GET, "/api/tasks", "/api/tasks/*").permitAll()
                         // Announcements - public read
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                         // Swagger / API docs

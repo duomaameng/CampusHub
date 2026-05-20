@@ -2,14 +2,32 @@ package com.campushub.controller;
 
 import com.campushub.common.ApiResponse;
 import com.campushub.common.PageResult;
-import com.campushub.dto.request.CancelOrderRequest;
-import com.campushub.dto.request.CompleteOrderRequest;
-import com.campushub.dto.response.OrderDetailResponse;
-import com.campushub.dto.response.OrderItemResponse;
+import com.campushub.dto.order.*;
+import com.campushub.enums.OrderStatus;
 import com.campushub.service.OrderService;
+import com.campushub.vo.order.OrderDetailVO;
+import com.campushub.vo.order.OrderItemVO;
+import com.campushub.vo.order.ReviewItemVO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+/*
+这个类暴露了：
+
+GET /api/orders
+GET /api/orders/{orderId}
+POST /api/orders/{orderId}/complete
+POST /api/orders/{orderId}/confirm-completion
+POST /api/orders/{orderId}/cancel
+POST /api/orders/{orderId}/messages
+POST /api/orders/{orderId}/reviews
+GET /api/orders/{orderId}/reviews
+它的意义是：
+
+订单列表、订单详情、聊天、评价、状态流转这些都从这里进。
+*/
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -18,24 +36,22 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    public ApiResponse<PageResult<OrderItemResponse>> listOrders(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String keyword) {
-        return ApiResponse.success(orderService.listOrders(role, status, keyword, page, size));
+    public ApiResponse<PageResult<OrderItemVO>> list(@RequestParam(defaultValue = "1") int page,
+                                                     @RequestParam(defaultValue = "20") int size,
+                                                     @RequestParam(required = false) String role,
+                                                     @RequestParam(required = false) OrderStatus status,
+                                                     @RequestParam(required = false) String keyword) {
+        return ApiResponse.success(orderService.listOrders(page, size, role, status, keyword));
     }
 
     @GetMapping("/{orderId}")
-    public ApiResponse<OrderDetailResponse> getOrder(@PathVariable Long orderId) {
+    public ApiResponse<OrderDetailVO> get(@PathVariable Long orderId) {
         return ApiResponse.success(orderService.getOrder(orderId));
     }
 
     @PostMapping("/{orderId}/complete")
-    public ApiResponse<Void> submitCompletion(@PathVariable Long orderId,
-                                               @RequestBody CompleteOrderRequest request) {
-        orderService.submitCompletion(orderId, request.getProofImageId(), request.getNote());
+    public ApiResponse<Void> complete(@PathVariable Long orderId, @RequestBody(required = false) OrderCompleteRequest request) {
+        orderService.completeOrder(orderId, request == null ? new OrderCompleteRequest() : request);
         return ApiResponse.success();
     }
 
@@ -46,16 +62,25 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    public ApiResponse<Void> cancelOrder(@PathVariable Long orderId,
-                                          @RequestBody CancelOrderRequest request) {
-        orderService.cancelOrder(orderId, request.getReason());
+    public ApiResponse<Void> cancel(@PathVariable Long orderId, @Valid @RequestBody OrderCancelRequest request) {
+        orderService.cancelOrder(orderId, request);
         return ApiResponse.success();
     }
 
-    @PostMapping("/{orderId}/dispute")
-    public ApiResponse<Void> disputeOrder(@PathVariable Long orderId,
-                                           @RequestBody CancelOrderRequest request) {
-        orderService.disputeOrder(orderId, request.getReason());
+    @PostMapping("/{orderId}/messages")
+    public ApiResponse<Void> sendMessage(@PathVariable Long orderId, @Valid @RequestBody OrderMessageRequest request) {
+        orderService.sendMessage(orderId, request);
         return ApiResponse.success();
+    }
+
+    @PostMapping("/{orderId}/reviews")
+    public ApiResponse<Void> submitReview(@PathVariable Long orderId, @Valid @RequestBody ReviewCreateRequest request) {
+        orderService.submitReview(orderId, request);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/{orderId}/reviews")
+    public ApiResponse<List<ReviewItemVO>> reviews(@PathVariable Long orderId) {
+        return ApiResponse.success(orderService.listReviews(orderId));
     }
 }

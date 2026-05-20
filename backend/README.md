@@ -1,0 +1,12 @@
+## 后端对应文件夹
+- controller：接请求
+- service：处理业务
+- mapper：查数据库
+- entity：表示数据库中的数据
+- vo：整理给前端看的数据
+- security：做登录和权限
+- config：放全局配置
+- exception：统一处理报错
+- common：放公共类
+- enums：放固定状态和类型
+- dto: 请求数据对象
