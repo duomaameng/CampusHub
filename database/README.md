@@ -26,9 +26,9 @@ The seed script inserts 4 accounts. The current shared password is:
 Accounts:
 
 - `admin@smail.nju.edu.cn`
-- `zhangsan@smail.nju.edu.cn`
-- `lisi@smail.nju.edu.cn`
-- `wangwu@smail.nju.edu.cn`
+- `cailiyang@smail.nju.edu.cn`
+- `wangzikuan@smail.nju.edu.cn`
+- `wangshengsheng@smail.nju.edu.cn`
 
 ## Manual execution order
 
