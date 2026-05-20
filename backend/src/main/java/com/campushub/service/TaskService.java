@@ -57,6 +57,7 @@ public class TaskService {
     private final FileRecordMapper fileRecordMapper;
     private final FavoriteMapper favoriteMapper;
     private final CreditLogMapper creditLogMapper;
+    private final UserMapper userMapper;
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
@@ -93,6 +94,13 @@ public class TaskService {
     @Transactional
     public TaskCreateVO createTask(TaskCreateRequest request) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
+        User currentUser = userMapper.selectById(currentUserId);
+        if (currentUser == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        if (!Boolean.TRUE.equals(currentUser.getVerified())) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_OPERATION);
+        }
 
         Task task = new Task();
         task.setPublisherId(currentUserId);
