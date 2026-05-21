@@ -55,6 +55,20 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        VerificationCode vc = verificationCodeMapper.selectOne(
+                new LambdaQueryWrapper<VerificationCode>()
+                        .eq(VerificationCode::getEmail, request.getEmail())
+                        .eq(VerificationCode::getPurpose, "REGISTER")
+                        .eq(VerificationCode::getUsed, false)
+                        .orderByDesc(VerificationCode::getCreatedAt)
+                        .last("LIMIT 1"));
+        if (vc == null || !vc.getCode().equals(request.getCode().trim())) {
+            throw new BusinessException(ErrorCode.VERIFICATION_CODE_INVALID);
+        }
+        if (vc.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.VERIFICATION_CODE_EXPIRED);
+        }
+
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));

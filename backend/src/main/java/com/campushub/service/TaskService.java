@@ -7,44 +7,48 @@ import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
 import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.dto.task.TaskCreateRequest;
-import com.campushub.entity.*;
+import com.campushub.entity.Application;
+import com.campushub.entity.CreditLog;
+import com.campushub.entity.Favorite;
+import com.campushub.entity.FileRecord;
+import com.campushub.entity.Order;
+import com.campushub.entity.OrderStatusLog;
+import com.campushub.entity.Task;
+import com.campushub.entity.TaskImage;
+import com.campushub.entity.User;
+import com.campushub.entity.UserProfile;
 import com.campushub.enums.ApplicationStatus;
 import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskCategory;
 import com.campushub.enums.TaskStatus;
 import com.campushub.enums.UploadBusinessType;
-import com.campushub.mapper.*;
+import com.campushub.mapper.ApplicationMapper;
+import com.campushub.mapper.CreditLogMapper;
+import com.campushub.mapper.FavoriteMapper;
+import com.campushub.mapper.OrderMapper;
+import com.campushub.mapper.OrderStatusLogMapper;
+import com.campushub.mapper.TaskImageMapper;
+import com.campushub.mapper.TaskMapper;
+import com.campushub.mapper.UserMapper;
+import com.campushub.mapper.UserProfileMapper;
 import com.campushub.security.SecurityUtils;
-import com.campushub.vo.task.*;
+import com.campushub.vo.task.ApplicationConfirmVO;
+import com.campushub.vo.task.ApplicationItemVO;
+import com.campushub.vo.task.TaskApplyVO;
+import com.campushub.vo.task.TaskCreateVO;
+import com.campushub.vo.task.TaskItemVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-/*
-这个类现在负责：
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
-任务列表查询
-任务详情查询
-发布任务
-提交接单申请
-查看接单申请列表
-确认接单并生成订单
-更关键的是，它已经做了第一类通知接线：
-
-接单申请成功后
-调 notificationService.createApplicationNotification(...)
-还有确认接单后，也会：
-
-创建订单
-写状态日志
-给服务方发订单状态通知
-所以它的意义是：
-
-任务从“发布出来”到“成单”这段主链，现在由它接住。
-*/
 @Service
 @RequiredArgsConstructor
 public class TaskService {
@@ -55,7 +59,6 @@ public class TaskService {
     private final OrderMapper orderMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final UserProfileMapper userProfileMapper;
-    private final FileRecordMapper fileRecordMapper;
     private final FavoriteMapper favoriteMapper;
     private final CreditLogMapper creditLogMapper;
     private final UserMapper userMapper;
@@ -70,7 +73,7 @@ public class TaskService {
                 .orderByDesc(Task::getCreatedAt);
 
         if (category != null && !category.isBlank()) {
-            wrapper.eq(Task::getCategory, TaskCategory.valueOf(category));
+            wrapper.eq(Task::getCategory, parseTaskCategory(category));
         }
         if (campus != null && !campus.isBlank()) {
             wrapper.eq(Task::getCampus, campus);
@@ -328,6 +331,14 @@ public class TaskService {
             return objectMapper.readValue(categoryFields, new TypeReference<>() {});
         } catch (Exception e) {
             return Map.of("raw", categoryFields);
+        }
+    }
+
+    private TaskCategory parseTaskCategory(String category) {
+        try {
+            return TaskCategory.valueOf(category.trim());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Invalid task category");
         }
     }
 }

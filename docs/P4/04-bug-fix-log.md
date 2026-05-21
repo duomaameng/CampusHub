@@ -1,8 +1,8 @@
 # P4 后端 Bug 修复日志
 
 **项目：** CampusHub  
-**阶段：** P4 编码开发
-**范围：** 已修复问题汇总
+**阶段：** P4 编码开发  
+**范围：** 已确认并完成修复的后端问题汇总
 
 ---
 
@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段已修复后端 Bug 共 **8** 项，主要集中在：
+本阶段目前已修复后端 Bug 共 **11** 项，主要集中在：
 
 - 认证与验证码流程
 - 通知与接口契约一致性
@@ -27,13 +27,13 @@
 - 订单详情字段语义
 - 文件上传后的归属与用途校验
 - 静态资源访问权限
+- 参数校验与错误处理
 
 ---
 
 ## 3. 详细修复记录
 
 ### Bug 1：邮箱验证接口返回结构与前端不一致
-
 **问题现象**
 
 - 前端验证邮箱后，期望得到 `{ verified: true }`
@@ -75,7 +75,7 @@
 **修复方案**
 
 - 新增 `report_evidence` 关联关系
-- 举报提交成功后，将每个证据文件与举报记录建立映射
+- 举报提交成功后，将每一个证据文件与举报记录建立映射
 
 **涉及文件**
 
@@ -88,7 +88,6 @@
 ---
 
 ### Bug 3：订单详情中的 `completionNote` 错误返回为取消原因
-
 **问题现象**
 
 - 订单详情页展示 `completionNote`
@@ -112,7 +111,6 @@
 ---
 
 ### Bug 4：任务配图、聊天图片、举报证据使用时缺少文件用途校验
-
 **问题现象**
 
 - 业务侧原来只根据文件 ID 查 `file_record`
@@ -140,7 +138,7 @@
 
 ---
 
-### Bug 5：注册验证码流程错误地要求邮箱必须已存在
+### Bug 5：注册验证码发送逻辑错误地要求邮箱必须已存在
 
 **问题现象**
 
@@ -165,7 +163,6 @@
 ---
 
 ### Bug 6：上传成功后的图片 URL 可能被安全策略拦截
-
 **问题现象**
 
 - 后端已经把 `/uploads/**` 映射到本地上传目录
@@ -190,7 +187,6 @@
 ---
 
 ### Bug 7：头像更新未经过 `file_record` 归属与用途校验
-
 **问题现象**
 
 - 更新资料时，后端原来直接信任前端传来的 `avatarUrl`
@@ -244,3 +240,79 @@
 
 ---
 
+### Bug 9：注册接口未校验验证码，导致可绕过邮箱验证直接注册
+
+**问题现象**
+
+- 后端原注册逻辑只校验邮箱域名、密码一致性和邮箱是否已存在
+- 没有校验 `REGISTER` 验证码是否存在、是否匹配、是否过期
+- 任意人都可能绕过验证码直接创建账号
+
+**影响范围**
+
+- 用户管理
+- 注册流程
+
+**修复方案**
+
+- 在注册请求中补充验证码字段
+- 注册时查询最近一条未使用的 `REGISTER` 验证码
+- 校验验证码是否存在、是否匹配、是否过期
+- 校验通过后才允许创建用户
+- 为兼容现有“注册后再 verify-email”的流程，注册时只校验，不在这里消耗验证码
+
+**涉及文件**
+
+- [RegisterRequest.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\dto\request\RegisterRequest.java)
+- [AuthServiceImpl.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\impl\AuthServiceImpl.java)
+
+---
+
+### Bug 10：任务大厅非法分类参数会直接变成 500
+
+**问题现象**
+
+- 任务列表接口原来直接执行 `TaskCategory.valueOf(category)`
+- 当前端传入非法分类值时，会抛 `IllegalArgumentException`
+- 异常最终被兜底成 500，而不是友好的参数错误提示
+
+**影响范围**
+
+- 任务大厅
+- 需求筛选
+
+**修复方案**
+
+- 将分类解析改为安全解析
+- 非法分类值时主动抛出 `BusinessException(ErrorCode.BAD_REQUEST, ...)`
+- 返回明确的业务错误，而不是服务器内部错误
+
+**涉及文件**
+
+- [TaskService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\TaskService.java)
+
+---
+
+### Bug 11：更新资料接口缺少 `@Valid`，参数长度约束未真正生效
+
+**问题现象**
+
+- `UpdateProfileRequest` 中已经写了 `@Size`
+- 但 `UserController` 的更新资料接口没有加 `@Valid`
+- 导致昵称、简介长度等约束写了但不会被 Spring 真正校验
+
+**影响范围**
+
+- 用户管理
+- 个人资料更新
+
+**修复方案**
+
+- 在更新资料接口的 `@RequestBody` 参数前补充 `@Valid`
+- 让 `UpdateProfileRequest` 中的校验注解真正生效
+
+**涉及文件**
+
+- [UserController.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\controller\UserController.java)
+
+---

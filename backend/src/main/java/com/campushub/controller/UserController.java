@@ -5,6 +5,7 @@ import com.campushub.dto.request.UpdateProfileRequest;
 import com.campushub.dto.response.PublicProfileResponse;
 import com.campushub.dto.response.UserProfileResponse;
 import com.campushub.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +22,7 @@ public class UserController {
     }
 
     @PatchMapping("/me")
-    public ApiResponse<UserProfileResponse> updateProfile(@RequestBody UpdateProfileRequest request) {
+    public ApiResponse<UserProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return ApiResponse.success(userService.updateProfile(request));
     }
 
