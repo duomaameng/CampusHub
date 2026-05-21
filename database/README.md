@@ -19,16 +19,14 @@ This directory stores the local development database scripts for CampusHub.
 
 ## Default test accounts
 
-The seed script inserts 4 accounts. The current shared password is:
+The seed script inserts 4 accounts. The bcrypt hashes in `02-seed.sql` match the following login credentials:
 
-`Password123!`
-
-Accounts:
-
-- `admin@smail.nju.edu.cn`
-- `cailiyang@smail.nju.edu.cn`
-- `wangzikuan@smail.nju.edu.cn`
-- `wangshengsheng@smail.nju.edu.cn`
+| Email | Role | Password |
+| --- | --- | --- |
+| `admin@smail.nju.edu.cn` | `ADMIN` | `Password123!` |
+| `cailiyang@smail.nju.edu.cn` | `STUDENT` | `Password123!` |
+| `wangzikuan@smail.nju.edu.cn` | `STUDENT` | `Password123!` |
+| `wangshengsheng@smail.nju.edu.cn` | `STUDENT` | `Password123!` |
 
 ## Manual execution order
 

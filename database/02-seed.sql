@@ -3,10 +3,10 @@ USE `campus_hub`;
 SET NAMES utf8mb4;
 
 INSERT INTO `user` (`id`, `email`, `password_hash`, `role`, `status`, `verified`, `student_no_masked`) VALUES
-(1, 'admin@smail.nju.edu.cn', '$2a$10$7EqJtq98hPqEX7fNZaFWoOqWf6e8H4qzM7gc3KJ2YMBX1AHzrcW4W', 'ADMIN', 'ACTIVE', 1, 'A0001'),
-(2, 'cailiyang@smail.nju.edu.cn', '$2a$10$7EqJtq98hPqEX7fNZaFWoOqWf6e8H4qzM7gc3KJ2YMBX1AHzrcW4W', 'STUDENT', 'ACTIVE', 1, '2418****99'),
-(3, 'wangzikuan@smail.nju.edu.cn', '$2a$10$7EqJtq98hPqEX7fNZaFWoOqWf6e8H4qzM7gc3KJ2YMBX1AHzrcW4W', 'STUDENT', 'ACTIVE', 1, '2418****04'),
-(4, 'wangshengsheng@smail.nju.edu.cn', '$2a$10$7EqJtq98hPqEX7fNZaFWoOqWf6e8H4qzM7gc3KJ2YMBX1AHzrcW4W', 'STUDENT', 'ACTIVE', 0, '2418****38');
+(1, 'admin@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'ADMIN', 'ACTIVE', 1, 'A0001'),
+(2, 'cailiyang@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'STUDENT', 'ACTIVE', 1, '2418****99'),
+(3, 'wangzikuan@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'STUDENT', 'ACTIVE', 1, '2418****04'),
+(4, 'wangshengsheng@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'STUDENT', 'ACTIVE', 0, '2418****38');
 
 INSERT INTO `user_profile` (`id`, `user_id`, `nickname`, `avatar_url`, `gender`, `grade`, `college`, `bio`, `campus`, `contact`, `contact_visible`) VALUES
 (1, 1, 'Admin', NULL, 'OTHER', NULL, 'IT Center', 'System administrator account', 'Xianlin', NULL, 0),
