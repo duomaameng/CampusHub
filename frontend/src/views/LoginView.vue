@@ -3,6 +3,7 @@ import { LockKeyhole, LogIn, Mail, ShieldCheck, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import PasswordInput from '@/components/PasswordInput.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -10,7 +11,7 @@ const route = useRoute()
 const router = useRouter()
 
 const email = ref('cailiyang@smail.nju.edu.cn')
-const password = ref('Abc123456!')
+const password = ref('Password123!')
 const loading = ref(false)
 const error = ref('')
 
@@ -61,10 +62,10 @@ async function submit() {
           <LockKeyhole class="label-icon" aria-hidden="true" />
           密码
         </label>
-        <input id="password" v-model="password" type="password" autocomplete="current-password" required />
+        <PasswordInput id="password" v-model="password" autocomplete="current-password" required />
       </div>
 
-      <p class="hint">演示账号：cailiyang@smail.nju.edu.cn / Abc123456!</p>
+      <p class="hint">演示账号：cailiyang@smail.nju.edu.cn / Password123!</p>
       <p v-if="error" class="error-message">{{ error }}</p>
 
       <div class="actions">

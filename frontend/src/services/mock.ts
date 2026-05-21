@@ -65,7 +65,7 @@ const initialDb: MockDatabase = {
     {
       id: 10001,
       email: 'cailiyang@smail.nju.edu.cn',
-      password: 'Abc123456!',
+      password: 'Password123!',
       role: 'STUDENT',
       status: 'ACTIVE',
       verified: true,
@@ -90,7 +90,7 @@ const initialDb: MockDatabase = {
     {
       id: 10002,
       email: 'xiaohong@smail.nju.edu.cn',
-      password: 'Abc123456!',
+      password: 'Password123!',
       role: 'STUDENT',
       status: 'ACTIVE',
       verified: true,
@@ -115,7 +115,7 @@ const initialDb: MockDatabase = {
     {
       id: 20001,
       email: 'admin@smail.nju.edu.cn',
-      password: 'Admin123456!',
+      password: 'Password123!',
       role: 'ADMIN',
       status: 'ACTIVE',
       verified: true,
