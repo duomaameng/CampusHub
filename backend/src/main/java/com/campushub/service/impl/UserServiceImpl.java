@@ -6,11 +6,14 @@ import com.campushub.common.ErrorCode;
 import com.campushub.dto.request.UpdateProfileRequest;
 import com.campushub.dto.response.PublicProfileResponse;
 import com.campushub.dto.response.UserProfileResponse;
+import com.campushub.entity.FileRecord;
 import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
+import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
 import com.campushub.security.SecurityUtils;
+import com.campushub.service.FileService;
 import com.campushub.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserProfileMapper userProfileMapper;
+    private final FileService fileService;
 
     @Override
     public UserProfileResponse getCurrentUser() {
@@ -50,7 +54,12 @@ public class UserServiceImpl implements UserService {
             profile.setNickname(request.getNickname());
         }
         if (request.getAvatarUrl() != null) {
-            profile.setAvatarUrl(request.getAvatarUrl());
+            if (request.getAvatarUrl().isBlank()) {
+                profile.setAvatarUrl(null);
+            } else {
+                FileRecord avatar = fileService.requireOwnedFile(request.getAvatarUrl(), UploadBusinessType.AVATAR);
+                profile.setAvatarUrl(avatar.getFileUrl());
+            }
         }
         if (request.getGender() != null) {
             profile.setGender(request.getGender());

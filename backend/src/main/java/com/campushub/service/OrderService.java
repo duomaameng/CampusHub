@@ -99,7 +99,7 @@ public class OrderService {
         }
 
         if (request.getProofImageId() != null) {
-            FileRecord proof = fileService.requireOwnedFile(request.getProofImageId());
+            FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
             order.setCompletionProofUrl(proof.getFileUrl());
         }
         order.setStatus(OrderStatus.PENDING_COMPLETION);

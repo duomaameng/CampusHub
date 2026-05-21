@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 /*
@@ -140,6 +141,28 @@ public class FileService {
         return record;
     }
 
+    public FileRecord requireOwnedFile(String fileUrl, UploadBusinessType expectedPurpose) {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "File url cannot be blank");
+        }
+
+        FileRecord record = fileRecordMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FileRecord>()
+                .eq(FileRecord::getFileUrl, fileUrl)
+                .last("LIMIT 1"));
+        if (record == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "File record not found");
+        }
+
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!currentUserId.equals(record.getUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "You can only use files uploaded by yourself");
+        }
+        if (!expectedPurpose.name().equals(record.getPurpose())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "File purpose does not match business usage");
+        }
+        return record;
+    }
+
     private void validateFile(MultipartFile file, String extension) {
         if (file.getSize() > maxFileSize) {
             throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
@@ -164,6 +187,10 @@ public class FileService {
     }
 
     private Set<String> allowedExtensionSet() {
-        return Set.of(allowedExtensions.split(","));
+        return Arrays.stream(allowedExtensions.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isBlank())
+                .map(String::toLowerCase)
+                .collect(java.util.stream.Collectors.toSet());
     }
 }

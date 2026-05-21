@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/tasks", "/api/tasks/*").permitAll()
                         // Announcements - public read
                         .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
+                        // Public uploaded files
+                        .requestMatchers("/uploads/**").permitAll()
                         // Swagger / API docs
                         .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Admin endpoints

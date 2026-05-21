@@ -22,5 +22,6 @@ public enum UploadBusinessType {
     AVATAR,
     TASK_IMAGE,
     CHAT_IMAGE,
-    REPORT_EVIDENCE
+    REPORT_EVIDENCE,
+    ORDER_PROOF
 }

@@ -132,7 +132,10 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail()));
-        if (user == null) {
+        if ("REGISTER".equals(purpose) && user != null) {
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+        if ("RESET_PASSWORD".equals(purpose) && user == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_FOUND);
         }
 
