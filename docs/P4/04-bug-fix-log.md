@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-当前已完成记录的后端问题共 **12** 项，主要集中在：
+当前已完成记录的后端问题共 **13** 项，主要集中在：
 
 - 认证与验证码流程
 - 任务、订单、举报主链
@@ -330,20 +330,45 @@
 
 ---
 
-## 4. 当前结论
+### Bug 13：管理员用户列表接口未实现，真实后端查询返回错误
 
-截至目前，P4 阶段后端已完成 12 项明确问题修复。  
-当前主链能力已经覆盖：
+**问题现象**
 
-- 用户注册、登录、验证码、忘记密码
-- 需求列表、详情、发布、申请、确认接单
-- 订单详情、状态流转、评价邀请
-- 通知查询与已读
-- 文件上传与文件归属校验
-- 举报提交与结果通知
+- 前端管理员后台页面在加载时会请求 `GET /api/admin/users?page=1&size=20`
+- Mock 环境中该接口存在，但真实后端没有实现 `/api/admin/users`
+- 管理员登录后进入用户管理页时，请求会落到不存在的路径，联调时表现为查询失败
+- 部分未匹配路径、非法枚举或错误请求体也可能被全局兜底成 500，不符合文档中 404/400 的错误语义
 
-后续仍建议继续补充：
+**影响范围**
 
-- 订单确认接单的并发保护
-- 后端单元测试与集成测试
-- 更多联调与异常路径验证
+- 后台管理
+- 用户管理
+- 前后端接口联调
+- 统一异常处理
+
+**修复方案**
+
+- 新增 `AdminController`，补齐：
+  - `GET /api/admin/users`
+  - `PATCH /api/admin/users/{userId}/status`
+- 新增 `AdminService`，保持 Controller 不直接访问数据库，符合分层约束
+- 用户列表支持分页、关键字搜索、状态筛选和认证状态筛选
+- 分页默认由前端传入 `page=1&size=20`，后端限制 `size` 最大为 50
+- 管理员更新用户状态时只允许 `ACTIVE` / `DISABLED`
+- 状态更新后写入 `admin_operation_log`，满足管理员操作审计要求
+- 补充异常处理：
+  - 未匹配路径返回 HTTP 404 和统一 `NOT_FOUND` 响应
+  - 非法枚举、错误 JSON、缺少必要参数返回 HTTP 400 和统一 `BAD_REQUEST` 响应
+- 新增 `AdminServiceTest` 覆盖用户列表、状态更新、审计日志和非法状态拒绝
+
+**涉及文件**
+
+- [AdminController.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\controller\AdminController.java)
+- [AdminService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\AdminService.java)
+- [AdminUserStatusRequest.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\dto\admin\AdminUserStatusRequest.java)
+- [AdminUserItemVO.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\vo\admin\AdminUserItemVO.java)
+- [AdminUserStatusVO.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\vo\admin\AdminUserStatusVO.java)
+- [GlobalExceptionHandler.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\exception\GlobalExceptionHandler.java)
+- [AdminServiceTest.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\test\java\com\campushub\service\AdminServiceTest.java)
+
+---
