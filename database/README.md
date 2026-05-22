@@ -81,12 +81,6 @@ spring:
 DB_PASSWORD=你的 MySQL 密码
 ```
 
-例如：
-
-```text
-DB_PASSWORD=147359Wss@&
-```
-
 6. 点击 `确定`
 7. 回到运行配置窗口后再次点击 `确定`
 8. 重启 `CampusHubApplication`
