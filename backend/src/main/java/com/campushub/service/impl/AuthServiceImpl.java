@@ -18,6 +18,7 @@ import com.campushub.mapper.UserProfileMapper;
 import com.campushub.mapper.VerificationCodeMapper;
 import com.campushub.security.JwtTokenProvider;
 import com.campushub.service.AuthService;
+import com.campushub.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationCodeMapper verificationCodeMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -138,6 +140,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void sendVerificationCode(SendVerificationCodeRequest request) {
         String purpose = request.getPurpose();
         if (!"REGISTER".equals(purpose) && !"RESET_PASSWORD".equals(purpose)) {
@@ -163,7 +166,7 @@ public class AuthServiceImpl implements AuthService {
         vc.setUsed(false);
         verificationCodeMapper.insert(vc);
 
-        log.info("Verification code sent to {}: {}", request.getEmail(), code);
+        emailService.sendVerificationCode(request.getEmail(), code, purpose);
     }
 
     @Override

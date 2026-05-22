@@ -24,8 +24,8 @@ export const useAuthStore = defineStore('auth', {
       await this.loadMe()
       await this.refreshUnread()
     },
-    async register(email: string, password: string, confirmPassword: string) {
-      return authApi.register(email, password, confirmPassword)
+    async register(email: string, password: string, confirmPassword: string, code: string) {
+      return authApi.register(email, password, confirmPassword, code)
     },
     async sendVerificationCode(email: string, purpose: 'REGISTER' | 'RESET_PASSWORD') {
       return authApi.sendVerificationCode(email, purpose)

@@ -80,9 +80,24 @@ mvn spring-boot:run
 |------|--------|------|
 | `DB_PASSWORD` | `root` | MySQL 密码 |
 | `JWT_SECRET` | 内置默认值 | JWT 签名密钥 |
+| `MAIL_DELIVERY_MODE` | `smtp` | 验证码发送方式，`smtp` 真发邮件，`log` 仅打印验证码 |
 | `MAIL_HOST` | `smtp.qq.com` | 邮件服务地址 |
+| `MAIL_PORT` | `587` | 邮件服务端口 |
 | `MAIL_USERNAME` | - | 邮箱账号 |
 | `MAIL_PASSWORD` | - | 邮箱授权码 |
+| `MAIL_FROM` | `MAIL_USERNAME` | 邮件发件人地址 |
+
+本地联调真实后端时，如需真的发送验证码邮件，可临时使用个人邮箱的 SMTP 配置：
+
+```powershell
+$env:MAIL_DELIVERY_MODE="smtp"
+$env:MAIL_USERNAME="your-mail@qq.com"
+$env:MAIL_PASSWORD="你的 SMTP 授权码"
+$env:MAIL_FROM="your-mail@qq.com"
+mvn spring-boot:run
+```
+
+部署到服务器时不需要改代码，只需把上述环境变量换成服务器或团队邮箱配置。若暂时没有 SMTP 服务，可设置 `MAIL_DELIVERY_MODE=log`，验证码会打印在后端日志中。若使用 QQ 邮箱等服务，请填写邮箱服务商提供的 SMTP 授权码，而不是邮箱登录密码。
 
 ---
 

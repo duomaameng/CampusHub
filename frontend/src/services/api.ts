@@ -27,12 +27,12 @@ export const authApi = {
     if (useMock) return mockApi.login(email, password)
     return request<LoginResult>({ method: 'POST', url: '/auth/login', data: { email, password } })
   },
-  register(email: string, password: string, confirmPassword: string) {
-    if (useMock) return mockApi.register(email, password, confirmPassword)
+  register(email: string, password: string, confirmPassword: string, code: string) {
+    if (useMock) return mockApi.register(email, password, confirmPassword, code)
     return request<{ userId: number; email: string }>({
       method: 'POST',
       url: '/auth/register',
-      data: { email, password, confirmPassword }
+      data: { email, password, confirmPassword, code }
     })
   },
   sendVerificationCode(email: string, purpose: 'REGISTER' | 'RESET_PASSWORD') {

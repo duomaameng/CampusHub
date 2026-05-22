@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
 
 const email = ref('')
 const code = ref('')
@@ -24,7 +25,7 @@ async function sendCode() {
   sending.value = true
   try {
     await auth.sendVerificationCode(email.value, 'RESET_PASSWORD')
-    success.value = '重置验证码已发送。mock 环境验证码为 123456。'
+    success.value = useMock ? '重置验证码已发送。mock 环境验证码为 123456。' : '重置验证码已发送，请查看学校邮箱。'
   } catch (err) {
     error.value = err instanceof Error ? err.message : '验证码发送失败'
   } finally {
@@ -53,7 +54,7 @@ async function resetPassword() {
     <div class="page-title">
       <div>
         <h1>重置密码</h1>
-        <p>通过学校邮箱验证码重置密码。mock 环境验证码固定为 123456。</p>
+        <p>通过学校邮箱验证码重置密码。</p>
       </div>
     </div>
 

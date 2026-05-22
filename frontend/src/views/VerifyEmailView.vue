@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
 
 const email = ref((route.query.email as string) || auth.user?.email || '')
 const code = ref('')
@@ -37,7 +38,7 @@ async function resend() {
   resending.value = true
   try {
     await auth.sendVerificationCode(email.value, 'REGISTER')
-    success.value = '验证码已重新发送。mock 环境验证码为 123456。'
+    success.value = useMock ? '验证码已重新发送。mock 环境验证码为 123456。' : '验证码已重新发送，请查看学校邮箱。'
   } catch (err) {
     error.value = err instanceof Error ? err.message : '验证码发送失败'
   } finally {
@@ -61,7 +62,7 @@ async function resend() {
     <div class="page-title">
       <div>
         <h1>验证学校邮箱</h1>
-        <p>请输入邮箱中收到的 6 位验证码。mock 环境验证码固定为 123456。</p>
+        <p>请输入邮箱中收到的 6 位验证码。</p>
       </div>
     </div>
 

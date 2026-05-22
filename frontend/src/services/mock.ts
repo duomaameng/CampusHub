@@ -453,14 +453,19 @@ export const mockApi = {
     }
   },
 
-  async register(email: string, password: string, confirmPassword: string) {
+  async register(email: string, password: string, confirmPassword: string, code: string) {
     await wait()
-    if (!email.endsWith('@smail.nju.edu.cn')) throw new Error('请使用南大学校邮箱注册')
+    if (!email.endsWith('@smail.nju.edu.cn') && !email.endsWith('@nju.edu.cn')) throw new Error('请使用学校邮箱注册')
     if (password !== confirmPassword) throw new Error('两次输入的密码不一致')
 
     const db = loadDb()
     if (db.users.some((item) => item.email === email)) {
       throw new Error('邮箱已注册')
+    }
+
+    const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'REGISTER')
+    if (!record || record.code !== code.trim() || new Date(record.expiresAt).getTime() < Date.now()) {
+      throw new Error('验证码错误或已过期')
     }
 
     const id = Math.max(...db.users.map((item) => item.id)) + 1
@@ -490,7 +495,6 @@ export const mockApi = {
       createdAt: new Date().toISOString()
     })
 
-    saveVerificationCode(db, email, 'REGISTER')
     saveDb(db)
     return { userId: id, email }
   },
@@ -499,8 +503,9 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) throw new Error('邮箱未注册')
-    if (purpose === 'REGISTER' && user.verified) throw new Error('邮箱已经完成认证')
+    if (!email.endsWith('@smail.nju.edu.cn') && !email.endsWith('@nju.edu.cn')) throw new Error('请使用学校邮箱')
+    if (purpose === 'REGISTER' && user) throw new Error('邮箱已注册')
+    if (purpose === 'RESET_PASSWORD' && !user) throw new Error('邮箱未注册')
 
     saveVerificationCode(db, email, purpose)
     saveDb(db)
@@ -514,7 +519,9 @@ export const mockApi = {
     if (!user) throw new Error('邮箱未注册')
 
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'REGISTER')
-    if (!record || record.code !== code.trim()) throw new Error('验证码错误或已过期')
+    if (!record || record.code !== code.trim() || new Date(record.expiresAt).getTime() < Date.now()) {
+      throw new Error('验证码错误或已过期')
+    }
 
     user.verified = true
     db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === 'REGISTER'))

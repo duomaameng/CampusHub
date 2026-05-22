@@ -25,6 +25,7 @@ public enum ErrorCode {
     VERIFICATION_CODE_EXPIRED(40017, "验证码已过期"),
     PASSWORD_SAME_AS_OLD(40018, "新密码不能与旧密码相同"),
     UNAUTHORIZED_OPERATION(40019, "未完成校园身份认证，无法执行此操作"),
+    EMAIL_SEND_FAILED(40020, "验证码邮件发送失败"),
 
     // 需求模块 40100-40119
     TASK_NOT_FOUND(40100, "需求不存在"),

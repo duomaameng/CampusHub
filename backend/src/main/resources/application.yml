@@ -41,6 +41,9 @@ campus-hub:
   jwt:
     secret: ${JWT_SECRET:campus-hub-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256}
     expiration: 86400000
+  mail:
+    delivery-mode: ${MAIL_DELIVERY_MODE:smtp}
+    from: ${MAIL_FROM:}
   file:
     upload-path: ${FILE_UPLOAD_PATH:./uploads}
     allowed-extensions: jpg,jpeg,png,gif,webp

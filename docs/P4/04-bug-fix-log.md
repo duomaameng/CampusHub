@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复后端 Bug 共 **13** 项，主要集中在：
+本阶段目前已修复 Bug 共 **15** 项，主要集中在：
 
 - 认证与验证码流程
 - 通知与接口契约一致性
@@ -30,6 +30,8 @@
 - 参数校验与错误处理
 - 后台管理接口缺口与异常响应一致性
 - 开发种子数据与联调文档一致性
+- 前端注册页与后端验证码契约一致性
+- SMTP 验证码邮件发送能力
 
 ---
 
@@ -390,5 +392,85 @@
 
 - [02-seed.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\02-seed.sql)
 - [README.md](C:\Users\duoma\java\软工2项目\CampusHub\database\README.md)
+
+---
+
+### Bug 14：前端注册页缺少验证码流程，导致真实后端注册失败
+
+**问题现象**
+
+- 后端 `RegisterRequest` 已要求注册请求必须携带 `code`
+- 后端注册服务会校验最近一条未使用的 `REGISTER` 验证码
+- 前端注册页原来没有发送验证码入口，也没有验证码输入框
+- 前端 `authApi.register` 只提交 `email`、`password`、`confirmPassword`，真实后端会因缺少验证码拒绝注册
+- mock 注册发码逻辑仍要求邮箱已存在，与真实后端的 `REGISTER` 场景规则不一致
+
+**影响范围**
+
+- 用户注册
+- 邮箱验证码流程
+- 前后端联调
+
+**修复方案**
+
+- 注册页新增发送 `REGISTER` 验证码按钮
+- 注册页新增 6 位验证码输入框
+- 前端注册请求补充 `code` 字段，与后端 `RegisterRequest` 保持一致
+- Pinia auth store 同步更新注册方法签名
+- mock API 同步后端规则：
+  - `REGISTER` 发码允许未注册邮箱，已注册邮箱报错
+  - `RESET_PASSWORD` 发码仍要求邮箱已注册
+  - mock 注册时校验验证码是否存在、是否匹配、是否过期
+  - mock 邮箱验证时同步校验验证码过期时间
+
+**涉及文件**
+
+- [RegisterView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\RegisterView.vue)
+- [api.ts](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\services\api.ts)
+- [auth.ts](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\stores\auth.ts)
+- [mock.ts](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\services\mock.ts)
+
+---
+
+### Bug 15：真实后端验证码只写入数据库和日志，没有实际发送邮件
+
+**问题现象**
+
+- 后端已经配置了 `spring.mail`
+- 项目也引入了 `spring-boot-starter-mail`
+- 但 `sendVerificationCode` 原实现只生成验证码、写入 `verification_code` 表，并把验证码打印到日志
+- 本地真实后端联调时，用户点击发送验证码后不会收到邮件
+- 前端真实后端模式下仍提示 mock 固定验证码，容易误导联调判断
+
+**影响范围**
+
+- 用户注册
+- 邮箱验证
+- 忘记密码与密码重置
+- 前后端真实后端联调
+
+**修复方案**
+
+- 新增 `EmailService`，统一负责验证码投递
+- 支持通过 `MAIL_DELIVERY_MODE` 切换投递方式：
+  - `smtp`：使用 `JavaMailSender` 真实发送验证码邮件
+  - `log`：仅在后端日志打印验证码，方便无 SMTP 服务的本地/临时环境
+- `sendVerificationCode` 改为验证码入库后调用邮件服务
+- 邮件发送失败时返回明确的业务错误，避免前端误显示“已发送”
+- 发送验证码接口加事务，邮件失败时回滚本次验证码记录
+- 新增 `EMAIL_SEND_FAILED` 错误码
+- 前端验证码提示根据 mock/真实后端模式区分文案
+- README 补充 `MAIL_DELIVERY_MODE`、`MAIL_PORT`、`MAIL_FROM`、本地个人邮箱和服务器邮箱配置说明
+
+**涉及文件**
+
+- [EmailService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\EmailService.java)
+- [AuthServiceImpl.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\impl\AuthServiceImpl.java)
+- [ErrorCode.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\common\ErrorCode.java)
+- [application.yml](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\resources\application.yml)
+- [RegisterView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\RegisterView.vue)
+- [ForgotPasswordView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\ForgotPasswordView.vue)
+- [VerifyEmailView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\VerifyEmailView.vue)
+- [README.md](C:\Users\duoma\java\软工2项目\CampusHub\README.md)
 
 ---
