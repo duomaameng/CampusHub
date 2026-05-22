@@ -2,13 +2,13 @@
 
 **项目：** CampusHub  
 **阶段：** P4 编码开发  
-**范围：** 已确认并完成修复的后端问题汇总
+**范围：** 已确认并完成修复的后端问题记录
 
 ---
 
 ## 1. 记录目的
 
-本日志用于记录 P4 阶段后端开发过程中已经确认并完成修复的缺陷，说明：
+本日志用于记录 P4 阶段后端开发过程中已经确认并修复的问题，主要说明：
 
 - 问题现象
 - 影响范围
@@ -22,10 +22,8 @@
 本阶段目前已修复 Bug 共 **15** 项，主要集中在：
 
 - 认证与验证码流程
-- 通知与接口契约一致性
-- 举报证据持久化
-- 订单详情字段语义
-- 文件上传后的归属与用途校验
+- 任务、订单、举报主链
+- 文件上传与文件归属校验
 - 静态资源访问权限
 - 参数校验与错误处理
 - 后台管理接口缺口与异常响应一致性
@@ -38,11 +36,11 @@
 ## 3. 详细修复记录
 
 ### Bug 1：邮箱验证接口返回结构与前端不一致
+
 **问题现象**
 
 - 前端验证邮箱后，期望得到 `{ verified: true }`
 - 后端原实现返回 `Void`
-- 联调时前端无法按预期更新验证状态
 
 **影响范围**
 
@@ -51,15 +49,15 @@
 
 **修复方案**
 
-- 新增专门的验证结果响应对象
+- 新增专用响应对象
 - 将验证邮箱接口改为返回 `verified` 状态
 
 **涉及文件**
 
-- [AuthController.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\controller\AuthController.java)
-- [AuthService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\AuthService.java)
-- [AuthServiceImpl.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\impl\AuthServiceImpl.java)
-- [VerifyEmailResponse.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\dto\response\VerifyEmailResponse.java)
+- `backend/src/main/java/com/campushub/controller/AuthController.java`
+- `backend/src/main/java/com/campushub/service/AuthService.java`
+- `backend/src/main/java/com/campushub/service/impl/AuthServiceImpl.java`
+- `backend/src/main/java/com/campushub/dto/response/VerifyEmailResponse.java`
 
 ---
 
@@ -68,8 +66,8 @@
 **问题现象**
 
 - 前端可以上传举报证据图片
-- 举报提交时也能带 `evidenceImageIds`
-- 但后端原来只把这些 ID 回显给前端，没有真正落库关联
+- 举报提交时可以携带 `evidenceImageIds`
+- 后端原实现只回显这些 ID，没有真正落库关联
 
 **影响范围**
 
@@ -78,25 +76,25 @@
 
 **修复方案**
 
-- 新增 `report_evidence` 关联关系
-- 举报提交成功后，将每一个证据文件与举报记录建立映射
+- 新增 `report_evidence` 关联表
+- 举报提交成功后，将证据文件与举报记录建立映射关系
 
 **涉及文件**
 
-- [ReportService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\ReportService.java)
-- [ReportEvidence.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\entity\ReportEvidence.java)
-- [ReportEvidenceMapper.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\mapper\ReportEvidenceMapper.java)
-- [01-schema.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\01-schema.sql)
-- [03-reset-dev-data.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\03-reset-dev-data.sql)
+- `backend/src/main/java/com/campushub/service/ReportService.java`
+- `backend/src/main/java/com/campushub/entity/ReportEvidence.java`
+- `backend/src/main/java/com/campushub/mapper/ReportEvidenceMapper.java`
+- `database/01-schema.sql`
+- `database/03-reset-dev-data.sql`
 
 ---
 
 ### Bug 3：订单详情中的 `completionNote` 错误返回为取消原因
+
 **问题现象**
 
-- 订单详情页展示 `completionNote`
-- 后端原实现误把 `cancelReason` 填入 `completionNote`
-- 导致完成备注与取消原因语义混淆
+- 订单详情页面展示 `completionNote`
+- 后端原实现错误地把 `cancelReason` 填入了该字段
 
 **影响范围**
 
@@ -106,18 +104,19 @@
 **修复方案**
 
 - 不再从订单实体的 `cancelReason` 取值
-- 改为从状态日志中提取“提交完成”对应的备注信息
+- 改为从状态日志中提取“提交完成”对应的备注
 
 **涉及文件**
 
-- [OrderService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\OrderService.java)
+- `backend/src/main/java/com/campushub/service/OrderService.java`
 
 ---
 
-### Bug 4：任务配图、聊天图片、举报证据使用时缺少文件用途校验
+### Bug 4：任务配图、聊天图片、举报证据使用时缺少用途校验
+
 **问题现象**
 
-- 业务侧原来只根据文件 ID 查 `file_record`
+- 业务侧原来只按文件 ID 查询 `file_record`
 - 没有严格校验文件用途是否匹配当前业务
 
 **影响范围**
@@ -135,14 +134,14 @@
 
 **涉及文件**
 
-- [FileService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\FileService.java)
-- [TaskService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\TaskService.java)
-- [OrderService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\OrderService.java)
-- [ReportService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\ReportService.java)
+- `backend/src/main/java/com/campushub/service/FileService.java`
+- `backend/src/main/java/com/campushub/service/TaskService.java`
+- `backend/src/main/java/com/campushub/service/OrderService.java`
+- `backend/src/main/java/com/campushub/service/ReportService.java`
 
 ---
 
-### Bug 5：注册验证码发送逻辑错误地要求邮箱必须已存在
+### Bug 5：注册验证码发送逻辑错误要求邮箱必须已存在
 
 **问题现象**
 
@@ -156,20 +155,21 @@
 
 **修复方案**
 
-- 区分 `REGISTER` 与 `RESET_PASSWORD` 两种用途
+- 区分 `REGISTER` 与 `RESET_PASSWORD`
 - `REGISTER` 场景下：邮箱已存在才报错
 - `RESET_PASSWORD` 场景下：邮箱不存在才报错
 
 **涉及文件**
 
-- [AuthServiceImpl.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\impl\AuthServiceImpl.java)
+- `backend/src/main/java/com/campushub/service/impl/AuthServiceImpl.java`
 
 ---
 
 ### Bug 6：上传成功后的图片 URL 可能被安全策略拦截
+
 **问题现象**
 
-- 后端已经把 `/uploads/**` 映射到本地上传目录
+- `/uploads/**` 已映射到本地目录
 - 但安全配置未放行该路径
 - 浏览器访问上传图片时可能得到 401/403
 
@@ -186,15 +186,16 @@
 
 **涉及文件**
 
-- [SecurityConfig.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\config\SecurityConfig.java)
+- `backend/src/main/java/com/campushub/config/SecurityConfig.java`
 
 ---
 
 ### Bug 7：头像更新未经过 `file_record` 归属与用途校验
+
 **问题现象**
 
 - 更新资料时，后端原来直接信任前端传来的 `avatarUrl`
-- 没有校验该头像文件是否属于当前用户、用途是否为头像
+- 没有验证该文件是否属于当前用户，且用途是否为头像
 
 **影响范围**
 
@@ -204,26 +205,22 @@
 **修复方案**
 
 - 保持前端仍传 `avatarUrl`
-- 后端改为根据 `fileUrl` 查询 `file_record`
-- 校验：
-  - 文件属于当前用户
-  - 文件用途为 `AVATAR`
-- 校验通过后再写入资料
+- 后端根据 `fileUrl` 反查 `file_record`
+- 校验文件归属当前用户，且用途为 `AVATAR`
 
 **涉及文件**
 
-- [UserServiceImpl.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\impl\UserServiceImpl.java)
-- [FileService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\FileService.java)
+- `backend/src/main/java/com/campushub/service/impl/UserServiceImpl.java`
+- `backend/src/main/java/com/campushub/service/FileService.java`
 
 ---
 
-### Bug 8：完成凭证可复用任意自有上传文件，业务语义不严格
+### Bug 8：完成凭证可复用任意自有上传文件，业务语义不严谨
 
 **问题现象**
 
 - 原后端只校验完成凭证是否为当前用户自己的文件
-- 没有区分这是不是“订单完成凭证专用文件”
-- 理论上可能把头像、任务图、举报证据图拿来充当完成凭证
+- 没有区分这是否是“订单完成凭证专用文件”
 
 **影响范围**
 
@@ -233,14 +230,12 @@
 **修复方案**
 
 - 新增文件用途 `ORDER_PROOF`
-- 完成订单时，完成凭证必须是：
-  - 当前用户自己上传
-  - 且用途为 `ORDER_PROOF`
+- 完成订单时，完成凭证必须属于当前用户，且用途为 `ORDER_PROOF`
 
 **涉及文件**
 
-- [UploadBusinessType.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\enums\UploadBusinessType.java)
-- [OrderService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\OrderService.java)
+- `backend/src/main/java/com/campushub/enums/UploadBusinessType.java`
+- `backend/src/main/java/com/campushub/service/OrderService.java`
 
 ---
 
@@ -248,9 +243,8 @@
 
 **问题现象**
 
-- 后端原注册逻辑只校验邮箱域名、密码一致性和邮箱是否已存在
-- 没有校验 `REGISTER` 验证码是否存在、是否匹配、是否过期
-- 任意人都可能绕过验证码直接创建账号
+- 原注册逻辑只校验邮箱后缀、密码一致性和邮箱是否已存在
+- 没有校验 `REGISTER` 验证码是否存在、匹配、过期
 
 **影响范围**
 
@@ -261,14 +255,12 @@
 
 - 在注册请求中补充验证码字段
 - 注册时查询最近一条未使用的 `REGISTER` 验证码
-- 校验验证码是否存在、是否匹配、是否过期
-- 校验通过后才允许创建用户
-- 为兼容现有“注册后再 verify-email”的流程，注册时只校验，不在这里消耗验证码
+- 校验存在性、匹配性和过期状态
 
 **涉及文件**
 
-- [RegisterRequest.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\dto\request\RegisterRequest.java)
-- [AuthServiceImpl.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\impl\AuthServiceImpl.java)
+- `backend/src/main/java/com/campushub/dto/request/RegisterRequest.java`
+- `backend/src/main/java/com/campushub/service/impl/AuthServiceImpl.java`
 
 ---
 
@@ -277,8 +269,8 @@
 **问题现象**
 
 - 任务列表接口原来直接执行 `TaskCategory.valueOf(category)`
-- 当前端传入非法分类值时，会抛 `IllegalArgumentException`
-- 异常最终被兜底成 500，而不是友好的参数错误提示
+- 非法分类值会抛 `IllegalArgumentException`
+- 最终被兜底成 500，而不是友好的参数错误
 
 **影响范围**
 
@@ -287,23 +279,21 @@
 
 **修复方案**
 
-- 将分类解析改为安全解析
-- 非法分类值时主动抛出 `BusinessException(ErrorCode.BAD_REQUEST, ...)`
-- 返回明确的业务错误，而不是服务器内部错误
+- 改为安全解析分类参数
+- 非法值时主动抛出 `BusinessException(ErrorCode.BAD_REQUEST, ...)`
 
 **涉及文件**
 
-- [TaskService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\TaskService.java)
+- `backend/src/main/java/com/campushub/service/TaskService.java`
 
 ---
 
-### Bug 11：更新资料接口缺少 `@Valid`，参数长度约束未真正生效
+### Bug 11：更新资料接口缺少 `@Valid`，参数约束未真正生效
 
 **问题现象**
 
 - `UpdateProfileRequest` 中已经写了 `@Size`
-- 但 `UserController` 的更新资料接口没有加 `@Valid`
-- 导致昵称、简介长度等约束写了但不会被 Spring 真正校验
+- 但 `UserController` 更新资料接口未加 `@Valid`
 
 **影响范围**
 
@@ -312,16 +302,38 @@
 
 **修复方案**
 
-- 在更新资料接口的 `@RequestBody` 参数前补充 `@Valid`
-- 让 `UpdateProfileRequest` 中的校验注解真正生效
+- 在更新资料接口参数上补充 `@Valid`
 
 **涉及文件**
 
-- [UserController.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\controller\UserController.java)
+- `backend/src/main/java/com/campushub/controller/UserController.java`
 
 ---
 
-### Bug 12：管理员用户列表接口未实现，真实后端查询返回错误
+### Bug 12：数据库连接编码参数错误导致真实联调登录时报 500
+
+**问题现象**
+
+- 前端切换到真实后端后，登录接口返回 500
+- 后端控制台报错：`Unsupported character encoding 'utf8mb4'`
+
+**影响范围**
+
+- 前后端联调
+- 登录接口
+- 所有依赖数据库的接口
+
+**修复方案**
+
+- 将 JDBC URL 中的 `characterEncoding=utf8mb4` 改为 `characterEncoding=UTF-8`
+
+**涉及文件**
+
+- `backend/src/main/resources/application.yml`
+
+---
+
+### Bug 13：管理员用户列表接口未实现，真实后端查询返回错误
 
 **问题现象**
 

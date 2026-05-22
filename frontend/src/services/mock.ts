@@ -64,8 +64,8 @@ const initialDb: MockDatabase = {
   users: [
     {
       id: 10001,
-      email: 'cailiyang@smail.nju.edu.cn',
-      password: 'Password123!',
+      email: 'student.demo1@smail.nju.edu.cn',
+      password: 'CampusHub123!',
       role: 'STUDENT',
       status: 'ACTIVE',
       verified: true,
@@ -77,7 +77,7 @@ const initialDb: MockDatabase = {
         college: '软件学院',
         bio: '负责 CampusHub 前端页面、状态管理和接口联调。',
         campus: '仙林校区',
-        contact: 'WeChat:cailiyang',
+        contact: 'WeChat:student_demo1',
         contactVisible: true
       },
       credit: {
@@ -89,8 +89,8 @@ const initialDb: MockDatabase = {
     },
     {
       id: 10002,
-      email: 'xiaohong@smail.nju.edu.cn',
-      password: 'Password123!',
+      email: 'student.demo2@smail.nju.edu.cn',
+      password: 'CampusHub123!',
       role: 'STUDENT',
       status: 'ACTIVE',
       verified: true,
@@ -114,8 +114,8 @@ const initialDb: MockDatabase = {
     },
     {
       id: 20001,
-      email: 'admin@smail.nju.edu.cn',
-      password: 'Password123!',
+      email: 'admin.demo@smail.nju.edu.cn',
+      password: 'CampusHub123!',
       role: 'ADMIN',
       status: 'ACTIVE',
       verified: true,

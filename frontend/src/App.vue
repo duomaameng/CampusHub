@@ -23,6 +23,8 @@ const router = useRouter()
 const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
+const useMock = import.meta.env.VITE_USE_MOCK === 'true'
+const workspaceStatus = computed(() => (useMock ? 'Vue 3 + Mock API' : 'Vue 3 + Backend API'))
 
 onMounted(async () => {
   if (auth.token) {
@@ -122,7 +124,7 @@ async function handleLogout() {
         </div>
         <span class="workspace-status">
           <PanelLeft class="meta-icon" aria-hidden="true" />
-          Vue 3 + Mock API
+          {{ workspaceStatus }}
         </span>
       </header>
 

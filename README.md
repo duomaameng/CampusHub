@@ -2,19 +2,22 @@
 
 CampusHub 是面向南京大学学生的校园互助服务平台。
 
-**技术栈：** Vue3 + TypeScript (前端) / Spring Boot 3.2 + MyBatis-Plus (后端) / MySQL 8.0 (数据库)
+技术栈：
+- 前端：Vue 3 + TypeScript
+- 后端：Spring Boot 3.2 + MyBatis-Plus
+- 数据库：MySQL 8.0
 
 ---
 
 ## 项目结构
 
-```
-campus-hub/
-├── frontend/          # Vue3 前端
-├── backend/           # Spring Boot 后端
-├── database/          # 建库建表 + 测试数据 SQL
-├── docs/              # P0-P4 阶段文档（需求、架构、设计、任务看板）
-└── scripts/           # 辅助脚本
+```text
+CampusHub/
+|- frontend/          # Vue 3 前端
+|- backend/           # Spring Boot 后端
+|- database/          # 建库建表与测试数据 SQL
+|- docs/              # P0-P4 阶段文档
+|- scripts/           # 辅助脚本
 ```
 
 ---
@@ -27,14 +30,14 @@ npm install
 npm run dev
 ```
 
-打开 `http://localhost:5173`。
+打开 [http://localhost:5173](http://localhost:5173)。
 
 默认 Mock 演示账号：
 
 | 角色 | 邮箱 | 密码 |
 |------|------|------|
-| 学生 | cailiyang@smail.nju.edu.cn | Abc123456! |
-| 管理员 | admin@smail.nju.edu.cn | Admin123456! |
+| 学生 | `student.demo1@smail.nju.edu.cn` | `CampusHub123!` |
+| 管理员 | `admin.demo@smail.nju.edu.cn` | `CampusHub123!` |
 
 ---
 
@@ -56,14 +59,14 @@ mysql -u root -p < database/01-schema.sql
 mysql -u root -p < database/02-seed.sql
 ```
 
-测试账号密码均为 `Password123!`：
+测试账号统一密码为 `CampusHub123!`：
 
 | 角色 | 邮箱 | 密码 |
 |------|------|------|
-| 管理员 | admin@smail.nju.edu.cn | Password123! |
-| 学生 | cailiyang@smail.nju.edu.cn | Password123! |
-| 学生 | wangzikuan@smail.nju.edu.cn | Password123! |
-| 学生 | wangshengsheng@smail.nju.edu.cn | Password123! |
+| 管理员 | `admin.demo@smail.nju.edu.cn` | `CampusHub123!` |
+| 学生 | `student.demo1@smail.nju.edu.cn` | `CampusHub123!` |
+| 学生 | `student.demo2@smail.nju.edu.cn` | `CampusHub123!` |
+| 学生 | `student.pending@smail.nju.edu.cn` | `CampusHub123!` |
 
 ### 启动后端
 
@@ -72,7 +75,7 @@ cd backend
 mvn spring-boot:run
 ```
 
-默认运行在 `http://localhost:8080`。
+默认运行在 [http://localhost:8080](http://localhost:8080)。
 
 可通过环境变量覆盖配置：
 
@@ -110,17 +113,7 @@ VITE_USE_MOCK=false
 VITE_API_BASE_URL=http://localhost:8080/api
 ```
 
-然后重启前端 `npm run dev`，所有请求将转发到后端 8080 端口。
-
-当前开发阶段（第一阶段已完成）：
-
-| 阶段 | 状态 |
-|------|------|
-| 工程骨架 (后端 Spring Boot) | 已完成 |
-| 工程骨架 (前端 Vue3) | 已完成 |
-| 数据库初始化 (DDL + Seed) | 已完成 |
-| 用户认证与权限 | 待开发 |
-| 后续模块 | 待开发 |
+然后重启前端 `npm run dev`。
 
 ---
 

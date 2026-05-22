@@ -3,20 +3,20 @@ USE `campus_hub`;
 SET NAMES utf8mb4;
 
 INSERT INTO `user` (`id`, `email`, `password_hash`, `role`, `status`, `verified`, `student_no_masked`) VALUES
-(1, 'admin@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'ADMIN', 'ACTIVE', 1, 'A0001'),
-(2, 'cailiyang@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'STUDENT', 'ACTIVE', 1, '2418****99'),
-(3, 'wangzikuan@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'STUDENT', 'ACTIVE', 1, '2418****04'),
-(4, 'wangshengsheng@smail.nju.edu.cn', '$2a$10$1cxA0HeCmNHkqwDeDI6CAuXtM2ryZCeOIOHL0l5FWt7AIzDuMzS9u', 'STUDENT', 'ACTIVE', 0, '2418****38');
+(1, 'admin.demo@smail.nju.edu.cn', '$2a$10$LuWuHEg376ubWf72H/GWSuBzr5YbXlIaJRDFITq0ERYX5/z9.ztLu', 'ADMIN', 'ACTIVE', 1, 'A0001'),
+(2, 'student.demo1@smail.nju.edu.cn', '$2a$10$LuWuHEg376ubWf72H/GWSuBzr5YbXlIaJRDFITq0ERYX5/z9.ztLu', 'STUDENT', 'ACTIVE', 1, '2418****01'),
+(3, 'student.demo2@smail.nju.edu.cn', '$2a$10$LuWuHEg376ubWf72H/GWSuBzr5YbXlIaJRDFITq0ERYX5/z9.ztLu', 'STUDENT', 'ACTIVE', 1, '2418****02'),
+(4, 'student.pending@smail.nju.edu.cn', '$2a$10$LuWuHEg376ubWf72H/GWSuBzr5YbXlIaJRDFITq0ERYX5/z9.ztLu', 'STUDENT', 'ACTIVE', 0, '2418****03');
 
 INSERT INTO `user_profile` (`id`, `user_id`, `nickname`, `avatar_url`, `gender`, `grade`, `college`, `bio`, `campus`, `contact`, `contact_visible`) VALUES
-(1, 1, 'Admin', NULL, 'OTHER', NULL, 'IT Center', 'System administrator account', 'Xianlin', NULL, 0),
-(2, 2, 'CaiLiyang', NULL, 'MALE', '2024', 'Software School', 'Frontend developer', 'Xianlin', 'cailiyang_wechat', 1),
-(3, 3, 'WangZikuan', NULL, 'MALE', '2024', 'Software School', 'Backend developer', 'Xianlin', 'wangzikuan_wechat', 1),
-(4, 4, 'WangShengsheng', NULL, 'MALE', '2025', 'Software School', 'New user, not verified yet', 'Xianlin', 'wangshengsheng_phone', 0);
+(1, 1, 'AdminDemo', NULL, 'OTHER', NULL, 'IT Center', 'System administrator account', 'Xianlin', NULL, 0),
+(2, 2, 'StudentDemo1', NULL, 'MALE', '2024', 'Software School', 'Verified demo student account', 'Xianlin', 'wechat:student_demo1', 1),
+(3, 3, 'StudentDemo2', NULL, 'FEMALE', '2024', 'Software School', 'Another verified demo student account', 'Xianlin', 'wechat:student_demo2', 1),
+(4, 4, 'StudentPending', NULL, 'OTHER', '2025', 'Software School', 'Pending verification demo student account', 'Xianlin', 'phone:student_pending', 0);
 
 INSERT INTO `verification_code` (`id`, `email`, `code`, `purpose`, `expires_at`, `used`) VALUES
-(1, 'wangshengsheng@smail.nju.edu.cn', '654321', 'REGISTER', DATE_ADD(NOW(), INTERVAL 1 DAY), 0),
-(2, 'cailiyang@smail.nju.edu.cn', '123456', 'RESET_PASSWORD', DATE_ADD(NOW(), INTERVAL 1 DAY), 0);
+(1, 'student.pending@smail.nju.edu.cn', '654321', 'REGISTER', DATE_ADD(NOW(), INTERVAL 1 DAY), 0),
+(2, 'student.demo1@smail.nju.edu.cn', '123456', 'RESET_PASSWORD', DATE_ADD(NOW(), INTERVAL 1 DAY), 0);
 
 INSERT INTO `task` (`id`, `publisher_id`, `category`, `title`, `description`, `campus`, `location_detail`, `reward_type`, `reward_amount`, `deadline`, `status`, `anonymous`, `category_fields`, `version`) VALUES
 (1, 3, 'EXPRESS', 'Pick up a package', 'Need help picking up a package from the station and bringing it to the dorm.', 'Xianlin', 'Station to Dorm 9', 'CASH', 5.00, DATE_ADD(NOW(), INTERVAL 1 DAY), 'OPEN', 0, JSON_OBJECT('pickupCode', 'ABCD1234', 'building', 'Dorm9'), 0),
