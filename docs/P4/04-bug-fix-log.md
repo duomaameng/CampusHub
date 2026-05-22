@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复后端 Bug 共 **11** 项，主要集中在：
+本阶段目前已修复后端 Bug 共 **13** 项，主要集中在：
 
 - 认证与验证码流程
 - 通知与接口契约一致性
@@ -28,6 +28,8 @@
 - 文件上传后的归属与用途校验
 - 静态资源访问权限
 - 参数校验与错误处理
+- 后台管理接口缺口与异常响应一致性
+- 开发种子数据与联调文档一致性
 
 ---
 
@@ -314,5 +316,79 @@
 **涉及文件**
 
 - [UserController.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\controller\UserController.java)
+
+---
+
+### Bug 12：管理员用户列表接口未实现，真实后端查询返回错误
+
+**问题现象**
+
+- 前端管理员后台页面在加载时会请求 `GET /api/admin/users?page=1&size=20`
+- Mock 环境中该接口存在，但真实后端没有实现 `/api/admin/users`
+- 管理员登录后进入用户管理页时，请求会落到不存在的路径，联调时表现为查询失败
+- 部分未匹配路径、非法枚举或错误请求体也可能被全局兜底成 500，不符合文档中 404/400 的错误语义
+
+**影响范围**
+
+- 后台管理
+- 用户管理
+- 前后端接口联调
+- 统一异常处理
+
+**修复方案**
+
+- 新增 `AdminController`，补齐：
+  - `GET /api/admin/users`
+  - `PATCH /api/admin/users/{userId}/status`
+- 新增 `AdminService`，保持 Controller 不直接访问数据库，符合分层约束
+- 用户列表支持分页、关键字搜索、状态筛选和认证状态筛选
+- 分页默认由前端传入 `page=1&size=20`，后端限制 `size` 最大为 50
+- 管理员更新用户状态时只允许 `ACTIVE` / `DISABLED`
+- 状态更新后写入 `admin_operation_log`，满足管理员操作审计要求
+- 补充异常处理：
+  - 未匹配路径返回 HTTP 404 和统一 `NOT_FOUND` 响应
+  - 非法枚举、错误 JSON、缺少必要参数返回 HTTP 400 和统一 `BAD_REQUEST` 响应
+- 新增 `AdminServiceTest` 覆盖用户列表、状态更新、审计日志和非法状态拒绝
+
+**涉及文件**
+
+- [AdminController.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\controller\AdminController.java)
+- [AdminService.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\service\AdminService.java)
+- [AdminUserStatusRequest.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\dto\admin\AdminUserStatusRequest.java)
+- [AdminUserItemVO.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\vo\admin\AdminUserItemVO.java)
+- [AdminUserStatusVO.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\vo\admin\AdminUserStatusVO.java)
+- [GlobalExceptionHandler.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\main\java\com\campushub\exception\GlobalExceptionHandler.java)
+- [AdminServiceTest.java](C:\Users\duoma\java\软工2项目\CampusHub\backend\src\test\java\com\campushub\service\AdminServiceTest.java)
+
+---
+
+### Bug 13：README 默认测试密码与种子数据中的密码哈希不匹配
+
+**问题现象**
+
+- `database/README.md` 中说明默认测试账号共享密码为 `Password123!`
+- 但 `database/02-seed.sql` 中插入的 `password_hash` 并不匹配 `Password123!`
+- 前后端联调时，按照 README 使用管理员账号 `admin@smail.nju.edu.cn / Password123!` 登录会失败
+- 该问题容易被误判为前端登录请求、后端鉴权或数据库连接错误，实际根因是文档与种子数据不一致
+
+**影响范围**
+
+- 数据库初始化
+- 登录联调
+- 管理员后台访问
+- 测试账号说明文档
+
+**修复方案**
+
+- 使用后端同款 `BCryptPasswordEncoder` 校验原种子哈希，确认其不匹配 `Password123!`
+- 重新生成匹配 `Password123!` 的 bcrypt 哈希
+- 将 `02-seed.sql` 中 4 个测试账号的 `password_hash` 统一更新为匹配 `Password123!` 的哈希
+- 将 `database/README.md` 中默认账号说明改为账号、角色、密码对应表
+- 明确提醒：如果本地数据库已经导入过旧 seed，需要重新执行 reset + seed，或手动更新数据库中的 `user.password_hash`
+
+**涉及文件**
+
+- [02-seed.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\02-seed.sql)
+- [README.md](C:\Users\duoma\java\软工2项目\CampusHub\database\README.md)
 
 ---
