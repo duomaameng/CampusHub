@@ -3,6 +3,7 @@ import { LockKeyhole, Mail, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
+import PasswordInput from '@/components/PasswordInput.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -55,11 +56,11 @@ async function submit() {
             <LockKeyhole class="label-icon" aria-hidden="true" />
             密码
           </label>
-          <input id="password" v-model="password" type="password" minlength="8" required />
+          <PasswordInput id="password" v-model="password" minlength="8" required />
         </div>
         <div class="field">
           <label for="confirm">确认密码</label>
-          <input id="confirm" v-model="confirmPassword" type="password" minlength="8" required />
+          <PasswordInput id="confirm" v-model="confirmPassword" minlength="8" required />
         </div>
       </div>
 

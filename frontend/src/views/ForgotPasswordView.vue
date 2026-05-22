@@ -3,6 +3,7 @@ import { KeyRound, Mail, RotateCcw } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
+import PasswordInput from '@/components/PasswordInput.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -83,11 +84,11 @@ async function resetPassword() {
             <KeyRound class="label-icon" aria-hidden="true" />
             新密码
           </label>
-          <input id="password" v-model="newPassword" type="password" minlength="8" required />
+          <PasswordInput id="password" v-model="newPassword" minlength="8" required />
         </div>
         <div class="field">
           <label for="confirm">确认新密码</label>
-          <input id="confirm" v-model="confirmNewPassword" type="password" minlength="8" required />
+          <PasswordInput id="confirm" v-model="confirmNewPassword" minlength="8" required />
         </div>
       </div>
 
