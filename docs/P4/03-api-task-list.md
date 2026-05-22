@@ -10,12 +10,12 @@
 
 | 序号 | 方法 | 路径 | 说明 | 认证 | 状态 |
 |------|------|------|------|------|------|
-| A-01 | POST | `/api/auth/register` | 用户注册 | 无 | 未完成 |
-| A-02 | POST | `/api/auth/login` | 登录，返回 JWT | 无 | 未完成 |
-| A-03 | POST | `/api/auth/logout` | 退出登录 | JWT | 未完成 |
-| A-04 | POST | `/api/auth/send-verification-code` | 发送邮箱验证码 | 无 | 未完成 |
-| A-05 | POST | `/api/auth/verify-email` | 校验邮箱验证码 | 无 | 未完成 |
-| A-06 | POST | `/api/auth/reset-password` | 验证码重置密码 | 无 | 未完成 |
+| A-01 | POST | `/api/auth/register` | 用户注册 | 无 | 已完成 |
+| A-02 | POST | `/api/auth/login` | 登录，返回 JWT | 无 | 已完成 |
+| A-03 | POST | `/api/auth/logout` | 退出登录 | JWT | 已完成 |
+| A-04 | POST | `/api/auth/send-verification-code` | 发送邮箱验证码 | 无 | 已完成 |
+| A-05 | POST | `/api/auth/verify-email` | 校验邮箱验证码 | 无 | 已完成 |
+| A-06 | POST | `/api/auth/reset-password` | 验证码重置密码 | 无 | 已完成 |
 
 ---
 
@@ -23,10 +23,10 @@
 
 | 序号 | 方法 | 路径 | 说明 | 认证 | 状态 |
 |------|------|------|------|------|------|
-| U-01 | GET | `/api/users/me` | 获取当前用户资料 | JWT | 未完成 |
-| U-02 | PATCH | `/api/users/me` | 修改个人资料 | JWT | 未完成 |
+| U-01 | GET | `/api/users/me` | 获取当前用户资料 | JWT | 已完成 |
+| U-02 | PATCH | `/api/users/me` | 修改个人资料 | JWT | 已完成 |
 | U-03 | DELETE | `/api/users/me` | 注销账号 | JWT | 未完成 |
-| U-04 | GET | `/api/users/{userId}/profile` | 获取用户公开资料 | JWT | 未完成 |
+| U-04 | GET | `/api/users/{userId}/profile` | 获取用户公开资料 | JWT | 已完成 |
 | U-05 | GET | `/api/users/{userId}/reviews` | 获取用户评价记录 | JWT | 未完成 |
 | U-06 | GET | `/api/users/{userId}/credit` | 获取用户信用信息 | JWT | 未完成 |
 

@@ -38,7 +38,7 @@ public class SecurityConfig {
                         // Public uploaded files
                         .requestMatchers("/uploads/**").permitAll()
                         // Swagger / API docs
-                        .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api-docs/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // All other endpoints require authentication
