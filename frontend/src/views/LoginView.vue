@@ -9,8 +9,8 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const email = ref('cailiyang@smail.nju.edu.cn')
-const password = ref('Abc123456!')
+const email = ref('student.demo1@smail.nju.edu.cn')
+const password = ref('CampusHub123!')
 const loading = ref(false)
 const error = ref('')
 
@@ -64,7 +64,7 @@ async function submit() {
         <input id="password" v-model="password" type="password" autocomplete="current-password" required />
       </div>
 
-      <p class="hint">演示账号：cailiyang@smail.nju.edu.cn / Abc123456!</p>
+      <p class="hint">演示账号：student.demo1@smail.nju.edu.cn / CampusHub123!</p>
       <p v-if="error" class="error-message">{{ error }}</p>
 
       <div class="actions">

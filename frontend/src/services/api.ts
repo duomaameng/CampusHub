@@ -20,7 +20,7 @@ import type {
   UserStatus
 } from '@/types'
 
-const useMock = import.meta.env.VITE_USE_MOCK !== 'false'
+const useMock = import.meta.env.VITE_USE_MOCK === 'true'
 
 export const authApi = {
   login(email: string, password: string): Promise<LoginResult> {
