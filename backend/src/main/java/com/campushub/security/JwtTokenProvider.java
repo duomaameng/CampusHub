@@ -53,6 +53,11 @@ public class JwtTokenProvider {
         return claims.get("role", String.class);
     }
 
+    public Date getExpirationFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims.getExpiration();
+    }
+
     public boolean validateToken(String token) {
         try {
             parseToken(token);

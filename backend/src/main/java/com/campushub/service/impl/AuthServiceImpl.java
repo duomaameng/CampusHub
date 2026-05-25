@@ -17,6 +17,7 @@ import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
 import com.campushub.mapper.VerificationCodeMapper;
 import com.campushub.security.JwtTokenProvider;
+import com.campushub.security.TokenBlacklistService;
 import com.campushub.service.AuthService;
 import com.campushub.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Random;
 
 @Slf4j
@@ -38,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationCodeMapper verificationCodeMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistService tokenBlacklistService;
     private final EmailService emailService;
 
     @Override
@@ -239,6 +242,21 @@ public class AuthServiceImpl implements AuthService {
         userMapper.updateById(user);
 
         log.info("Password reset for: {}", request.getEmail());
+    }
+
+    @Override
+    public void logout(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        if (!jwtTokenProvider.validateToken(token)) {
+            return;
+        }
+        tokenBlacklistService.blacklist(
+                token,
+                jwtTokenProvider.getExpirationFromToken(token).toInstant().atZone(ZoneId.systemDefault()).toInstant()
+        );
+        log.info("JWT token logged out and blacklisted.");
     }
 
     private UserProfileResponse buildProfileResponse(User user) {
