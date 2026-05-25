@@ -153,21 +153,21 @@
 
 ## 汇总
 
-| 模块 | 接口数 |
+| 模块 | 接口数    |
 |------|--------|
-| Auth 认证 | 6 |
-| User 用户 | 6 |
-| Task 需求 | 7 |
-| Application 接单 | 4 |
-| Order 订单 | 7 |
-| Message 聊天 | 3 |
-| Review 评价 | 2 |
-| Notification 通知 | 5 |
-| Report 举报 | 3 |
-| File 文件 | 1 |
-| Admin 后台 | 10 |
-| Announcement 公告 | 5 |
-| **合计** | **59** |
+| Auth 认证 | 6      |
+| User 用户 | 6      |
+| Task 需求 | 7      |
+| Application 接单 | 4      |
+| Order 订单 | 6      |
+| Message 聊天 | 3      |
+| Review 评价 | 2      |
+| Notification 通知 | 5      |
+| Report 举报 | 3      |
+| File 文件 | 1      |
+| Admin 后台 | 10     |
+| Announcement 公告 | 5      |
+| **合计** | **58** |
 
 ---
 
