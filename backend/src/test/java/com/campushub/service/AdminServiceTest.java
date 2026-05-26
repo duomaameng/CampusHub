@@ -12,6 +12,9 @@ import com.campushub.enums.UserStatus;
 import com.campushub.mapper.AdminOperationLogMapper;
 import com.campushub.mapper.AnnouncementMapper;
 import com.campushub.mapper.CreditLogMapper;
+import com.campushub.mapper.OrderMapper;
+import com.campushub.mapper.ReportMapper;
+import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
 import com.campushub.security.SecurityUtils;
@@ -44,6 +47,9 @@ class AdminServiceTest {
     @Mock private CreditLogMapper creditLogMapper;
     @Mock private AdminOperationLogMapper adminOperationLogMapper;
     @Mock private AnnouncementMapper announcementMapper;
+    @Mock private TaskMapper taskMapper;
+    @Mock private OrderMapper orderMapper;
+    @Mock private ReportMapper reportMapper;
 
     private AdminService adminService;
     private MockedStatic<SecurityUtils> securityUtilsMock;
@@ -55,7 +61,10 @@ class AdminServiceTest {
                 userProfileMapper,
                 creditLogMapper,
                 adminOperationLogMapper,
-                announcementMapper
+                announcementMapper,
+                taskMapper,
+                orderMapper,
+                reportMapper
         );
         securityUtilsMock = mockStatic(SecurityUtils.class);
         securityUtilsMock.when(SecurityUtils::requireCurrentUserId).thenReturn(1L);

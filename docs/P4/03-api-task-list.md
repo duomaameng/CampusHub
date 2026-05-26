@@ -126,15 +126,15 @@
 
 | 序号 | 方法 | 路径 | 说明 | 认证 | 状态  |
 |------|------|------|------|------|-----|
-| AD-01 | GET | `/api/admin/dashboard` | 后台概览数据 | ADMIN | 未完成 |
+| AD-01 | GET | `/api/admin/dashboard` | 后台概览数据 | ADMIN | 已完成 |
 | AD-02 | GET | `/api/admin/users` | 用户管理列表 | ADMIN | 已完成 |
-| AD-03 | GET | `/api/admin/users/{userId}` | 用户详情（管理员视角） | ADMIN | 未完成 |
+| AD-03 | GET | `/api/admin/users/{userId}` | 用户详情（管理员视角） | ADMIN | 已完成 |
 | AD-04 | PATCH | `/api/admin/users/{userId}/status` | 禁用 / 解禁用户 | ADMIN | 已完成 |
-| AD-05 | GET | `/api/admin/tasks` | 需求管理列表 | ADMIN | 未完成 |
-| AD-06 | PATCH | `/api/admin/tasks/{taskId}/status` | 下架需求 | ADMIN | 未完成 |
-| AD-07 | GET | `/api/admin/orders` | 订单管理列表 | ADMIN | 未完成 |
-| AD-08 | PATCH | `/api/admin/orders/{orderId}/status` | 冻结 / 恢复订单 | ADMIN | 未完成 |
-| AD-09 | GET | `/api/admin/reports` | 举报管理列表 | ADMIN | 未完成 |
+| AD-05 | GET | `/api/admin/tasks` | 需求管理列表 | ADMIN | 已完成 |
+| AD-06 | PATCH | `/api/admin/tasks/{taskId}/status` | 下架需求 | ADMIN | 已完成 |
+| AD-07 | GET | `/api/admin/orders` | 订单管理列表 | ADMIN | 已完成 |
+| AD-08 | PATCH | `/api/admin/orders/{orderId}/status` | 冻结 / 恢复订单 | ADMIN | 已完成 |
+| AD-09 | GET | `/api/admin/reports` | 举报管理列表 | ADMIN | 已完成 |
 | AD-10 | PATCH | `/api/admin/reports/{reportId}` | 处理举报 | ADMIN | 已完成 |
 
 ---
