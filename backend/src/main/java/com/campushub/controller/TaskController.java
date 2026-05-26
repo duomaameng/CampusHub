@@ -11,19 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-/*
-这个类把这些接口对外暴露出来了：
 
-GET /api/tasks
-GET /api/tasks/{taskId}
-POST /api/tasks
-POST /api/tasks/{taskId}/applications
-GET /api/tasks/{taskId}/applications
-POST /api/applications/{applicationId}/confirm
-它的意义是：
-
-前端任务大厅、任务详情、发布任务、申请接单、确认接单都从这里进来。
-*/
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor

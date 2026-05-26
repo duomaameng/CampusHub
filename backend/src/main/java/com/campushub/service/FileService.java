@@ -22,39 +22,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
-/*
-这是这次文件上传最核心的类。
 
-它负责做的事情是：
-
-接收上传文件
-检查文件是否合法
-检查大小是否超限
-检查扩展名和图片类型是否允许
-生成唯一文件名
-把文件保存到本地 uploads/
-往 file_record 表里插入一条记录
-返回 UploadedFileVO
-你可以把它理解成：
-
-真正处理上传业务的人
-
-它不是简单“把文件存一下”，而是把整个上传流程都串起来了。
-
-它里面最重要的几个点
-upload(...)
-主方法，上传流程从这里开始
-validateFile(...)
-做文件大小、扩展名、类型校验
-extractExtension(...)
-从文件名里取出扩展名
-allowedExtensionSet()
-把配置里的允许扩展名转成集合，方便校验
-它的意义
-这个类让后端第一次真正具备了：
-
-把前端上传图片，变成“磁盘文件 + 数据库记录 + 可访问 URL”的完整能力。
-*/
 @Service
 @RequiredArgsConstructor
 public class FileService {

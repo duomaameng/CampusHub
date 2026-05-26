@@ -22,28 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
-/*
-这个类负责：
 
-订单列表
-订单详情
-提交完成
-确认完成
-取消订单
-发消息
-提交评价
-查评价记录
-它是这次最关键的业务类之一，因为它承担了“订单状态流转”。
-
-它已经接上的通知有：
-
-提交完成后：发订单状态通知
-确认完成后：发订单状态通知 + 评价邀请通知
-取消订单后：发订单状态通知
-所以它的意义是：
-
-订单执行阶段的所有核心动作，现在主要都放在这里。
-*/
 @Service
 @RequiredArgsConstructor
 public class OrderService {
