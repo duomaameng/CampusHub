@@ -5,6 +5,7 @@ import {
   Home,
   LogIn,
   LogOut,
+  Megaphone,
   PanelLeft,
   PlusCircle,
   ShieldCheck,
@@ -67,6 +68,10 @@ async function handleLogout() {
         <RouterLink to="/tasks">
           <Home class="nav-icon" aria-hidden="true" />
           <span>任务大厅</span>
+        </RouterLink>
+        <RouterLink to="/announcements">
+          <Megaphone class="nav-icon" aria-hidden="true" />
+          <span>系统公告</span>
         </RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/tasks/new">
           <PlusCircle class="nav-icon" aria-hidden="true" />
