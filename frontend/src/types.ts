@@ -23,6 +23,7 @@ export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
 export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
 export type MessageType = 'TEXT' | 'IMAGE'
 export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE'
+export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'
 
 export const taskStatusText: Record<TaskStatus, string> = {
   OPEN: '待接单',
@@ -53,6 +54,11 @@ export const userStatusText: Record<UserStatus, string> = {
   ACTIVE: '正常',
   DISABLED: '已禁用',
   ANONYMIZED: '已注销'
+}
+
+export const announcementPriorityText: Record<AnnouncementPriority, string> = {
+  NORMAL: '普通',
+  IMPORTANT: '重要'
 }
 
 export interface PageData<T> {
@@ -235,6 +241,29 @@ export interface AdminUserItem {
   verified: boolean
   creditScore: number
   createdAt: string
+}
+
+export interface AnnouncementItem {
+  id: number
+  title: string
+  content: string
+  priority: AnnouncementPriority
+  isActive: boolean
+  publisherId: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AnnouncementForm {
+  title: string
+  content: string
+  priority: AnnouncementPriority
+  isActive?: boolean
+}
+
+export interface AnnouncementPublishResult {
+  announcementId: number
+  status: 'PUBLISHED' | 'ACTIVE' | 'INACTIVE' | string
 }
 
 export interface ReportSubmission {

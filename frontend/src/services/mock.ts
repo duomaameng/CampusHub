@@ -1,5 +1,9 @@
 import type {
   AdminUserItem,
+  AnnouncementForm,
+  AnnouncementItem,
+  AnnouncementPriority,
+  AnnouncementPublishResult,
   ApplicationItem,
   LoginResult,
   LoginUser,
@@ -49,6 +53,7 @@ interface MockDatabase {
   reviews: ReviewItem[]
   uploadedFiles: UploadedFileItem[]
   reports: ReportSubmission[]
+  announcements: AnnouncementItem[]
 }
 
 const dbKey = 'campus-hub-mock-db'
@@ -321,7 +326,39 @@ const initialDb: MockDatabase = {
   ],
   reviews: [],
   uploadedFiles: [],
-  reports: []
+  reports: [],
+  announcements: [
+    {
+      id: 16001,
+      title: '关于平台维护的通知',
+      content: 'CampusHub 将于 2026 年 5 月 28 日 02:00-04:00 进行例行维护，期间部分功能可能短暂不可用。',
+      priority: 'IMPORTANT',
+      isActive: true,
+      publisherId: 20001,
+      createdAt: '2026-05-19T20:00:00.000Z',
+      updatedAt: '2026-05-19T20:00:00.000Z'
+    },
+    {
+      id: 16002,
+      title: 'P4 联调阶段功能说明',
+      content: '公告模块已开放前台查看，管理员可以在后台发布、编辑、下线或删除公告。',
+      priority: 'NORMAL',
+      isActive: true,
+      publisherId: 20001,
+      createdAt: '2026-05-18T16:30:00.000Z',
+      updatedAt: '2026-05-18T16:30:00.000Z'
+    },
+    {
+      id: 16003,
+      title: '旧版公告示例',
+      content: '这是一条已下线公告，仅管理员后台可见。',
+      priority: 'NORMAL',
+      isActive: false,
+      publisherId: 20001,
+      createdAt: '2026-05-16T09:20:00.000Z',
+      updatedAt: '2026-05-17T10:00:00.000Z'
+    }
+  ]
 }
 
 function clone<T>(value: T): T {
@@ -339,6 +376,7 @@ function loadDb(): MockDatabase {
   db.verificationCodes ||= []
   db.uploadedFiles ||= []
   db.reports ||= []
+  db.announcements ||= clone(initialDb.announcements)
   return db
 }
 
@@ -432,6 +470,17 @@ function ensureUploadAllowed(file: File, businessType: UploadBusinessType) {
   if (file.size > maxSize) {
     throw new Error(`文件大小不能超过 ${Math.round(maxSize / 1024 / 1024)}MB`)
   }
+}
+
+function normalizeAnnouncementPriority(priority?: string): AnnouncementPriority {
+  return priority === 'IMPORTANT' ? 'IMPORTANT' : 'NORMAL'
+}
+
+function validateAnnouncementPayload(payload: Pick<AnnouncementForm, 'title' | 'content'>) {
+  if (!payload.title.trim()) throw new Error('请填写公告标题')
+  if (payload.title.trim().length > 100) throw new Error('公告标题不能超过 100 字')
+  if (!payload.content.trim()) throw new Error('请填写公告内容')
+  if (payload.content.trim().length > 5000) throw new Error('公告内容不能超过 5000 字')
 }
 
 export const mockApi = {
@@ -934,6 +983,83 @@ export const mockApi = {
     user.status = status
     saveDb(db)
     return { userId, status }
+  },
+
+  async listAnnouncements(params: { page?: number; size?: number } = {}): Promise<PageData<AnnouncementItem>> {
+    await wait()
+    const records = loadDb()
+      .announcements.filter((item) => item.isActive)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return paginate(clone(records), params.page, params.size)
+  },
+
+  async adminAnnouncements(params: { page?: number; size?: number } = {}): Promise<PageData<AnnouncementItem>> {
+    await wait()
+    const db = loadDb()
+    const admin = getCurrentUser(db)
+    if (admin.role !== 'ADMIN') throw new Error('权限不足')
+
+    const records = [...db.announcements].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return paginate(clone(records), params.page, params.size)
+  },
+
+  async createAnnouncement(payload: AnnouncementForm): Promise<AnnouncementPublishResult> {
+    await wait()
+    const db = loadDb()
+    const admin = getCurrentUser(db)
+    if (admin.role !== 'ADMIN') throw new Error('权限不足')
+    validateAnnouncementPayload(payload)
+
+    const now = new Date().toISOString()
+    const item: AnnouncementItem = {
+      id: Math.max(16000, ...db.announcements.map((announcement) => announcement.id)) + 1,
+      title: payload.title.trim(),
+      content: payload.content.trim(),
+      priority: normalizeAnnouncementPriority(payload.priority),
+      isActive: true,
+      publisherId: admin.id,
+      createdAt: now,
+      updatedAt: now
+    }
+
+    db.announcements.unshift(item)
+    saveDb(db)
+    return { announcementId: item.id, status: 'PUBLISHED' }
+  },
+
+  async updateAnnouncement(announcementId: number, payload: Partial<AnnouncementForm>): Promise<AnnouncementPublishResult> {
+    await wait()
+    const db = loadDb()
+    const admin = getCurrentUser(db)
+    if (admin.role !== 'ADMIN') throw new Error('权限不足')
+
+    const item = db.announcements.find((announcement) => announcement.id === announcementId)
+    if (!item) throw new Error('公告不存在')
+
+    const nextTitle = payload.title ?? item.title
+    const nextContent = payload.content ?? item.content
+    validateAnnouncementPayload({ title: nextTitle, content: nextContent })
+
+    item.title = nextTitle.trim()
+    item.content = nextContent.trim()
+    if (payload.priority) item.priority = normalizeAnnouncementPriority(payload.priority)
+    if (typeof payload.isActive === 'boolean') item.isActive = payload.isActive
+    item.updatedAt = new Date().toISOString()
+    saveDb(db)
+
+    return { announcementId: item.id, status: item.isActive ? 'ACTIVE' : 'INACTIVE' }
+  },
+
+  async deleteAnnouncement(announcementId: number) {
+    await wait()
+    const db = loadDb()
+    const admin = getCurrentUser(db)
+    if (admin.role !== 'ADMIN') throw new Error('权限不足')
+
+    const before = db.announcements.length
+    db.announcements = db.announcements.filter((announcement) => announcement.id !== announcementId)
+    if (db.announcements.length === before) throw new Error('公告不存在')
+    saveDb(db)
   },
 
   async uploadFile(file: File, businessType: UploadBusinessType): Promise<UploadedFileItem> {

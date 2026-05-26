@@ -3,6 +3,9 @@ import { request } from './http'
 
 import type {
   AdminUserItem,
+  AnnouncementForm,
+  AnnouncementItem,
+  AnnouncementPublishResult,
   ApplicationItem,
   LoginResult,
   NotificationItem,
@@ -179,6 +182,13 @@ export const notificationApi = {
   }
 }
 
+export const announcementApi = {
+  list(params: { page?: number; size?: number } = {}): Promise<PageData<AnnouncementItem>> {
+    if (useMock) return mockApi.listAnnouncements(params)
+    return request<PageData<AnnouncementItem>>({ method: 'GET', url: '/announcements', params })
+  }
+}
+
 export const adminApi = {
   users(params: { page?: number; size?: number; keyword?: string; status?: UserStatus }): Promise<PageData<AdminUserItem>> {
     if (useMock) return mockApi.adminUsers(params)
@@ -191,6 +201,34 @@ export const adminApi = {
       url: `/admin/users/${userId}/status`,
       data: { status }
     })
+  },
+  announcements(params: { page?: number; size?: number } = {}): Promise<PageData<AnnouncementItem>> {
+    if (useMock) return mockApi.adminAnnouncements(params)
+    return request<PageData<AnnouncementItem>>({ method: 'GET', url: '/admin/announcements', params })
+  },
+  createAnnouncement(payload: AnnouncementForm): Promise<AnnouncementPublishResult> {
+    if (useMock) return mockApi.createAnnouncement(payload)
+    return request<AnnouncementPublishResult>({
+      method: 'POST',
+      url: '/admin/announcements',
+      data: {
+        title: payload.title,
+        content: payload.content,
+        priority: payload.priority
+      }
+    })
+  },
+  updateAnnouncement(announcementId: number, payload: Partial<AnnouncementForm>): Promise<AnnouncementPublishResult> {
+    if (useMock) return mockApi.updateAnnouncement(announcementId, payload)
+    return request<AnnouncementPublishResult>({
+      method: 'PATCH',
+      url: `/admin/announcements/${announcementId}`,
+      data: payload
+    })
+  },
+  deleteAnnouncement(announcementId: number) {
+    if (useMock) return mockApi.deleteAnnouncement(announcementId)
+    return request<null>({ method: 'DELETE', url: `/admin/announcements/${announcementId}` })
   }
 }
 
