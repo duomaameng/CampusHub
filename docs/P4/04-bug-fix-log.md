@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复 Bug 共 **15** 项，主要集中在：
+本阶段目前已修复 Bug 共 **16** 项，主要集中在：
 
 - 认证与验证码流程
 - 任务、订单、举报主链
@@ -30,6 +30,7 @@
 - 开发种子数据与联调文档一致性
 - 前端注册页与后端验证码契约一致性
 - SMTP 验证码邮件发送能力
+- 前后端分离部署下上传图片资源地址解析
 
 ---
 
@@ -484,5 +485,45 @@
 - [ForgotPasswordView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\ForgotPasswordView.vue)
 - [VerifyEmailView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\VerifyEmailView.vue)
 - [README.md](C:\Users\duoma\java\软工2项目\CampusHub\README.md)
+
+---
+
+### Bug 16：前后端分离部署时上传图片使用相对路径导致前端无法显示
+
+**问题现象**
+
+- 后端上传接口保存图片成功，并返回 `/uploads/xxx.png`
+- 前端在任务配图、头像、聊天图片和举报证据预览中直接使用该相对路径作为 `<img src>`
+- 本地联调时前端运行在 `http://localhost:5173`，后端运行在 `http://localhost:8080`
+- 浏览器会把 `/uploads/xxx.png` 请求到前端站点，实际文件却由后端 `/uploads/**` 暴露，因此图片显示失败
+
+**影响范围**
+
+- 任务发布配图预览
+- 任务详情配图展示
+- 个人头像预览
+- 订单聊天图片预览与展示
+- 举报证据图片预览
+- 前后端分离部署后的上传图片访问
+
+**修复方案**
+
+- 前端新增统一资源地址解析函数 `resolveAssetUrl`
+- 优先读取 `VITE_ASSET_BASE_URL`，将 `/uploads/xxx.png` 补全为后端资源域名下的完整地址
+- 若未显式配置 `VITE_ASSET_BASE_URL`，则尝试从 `VITE_API_BASE_URL` 推导后端根地址
+- 对 `http://`、`https://`、`blob:`、`data:` 等已可直接访问的地址保持原样
+- 所有上传图片展示点统一调用 `resolveAssetUrl`
+- README 补充本地联调与部署时的资源地址配置说明
+
+**涉及文件**
+
+- `frontend/src/utils/assets.ts`
+- `frontend/src/env.d.ts`
+- `frontend/src/views/TaskPublishView.vue`
+- `frontend/src/views/TaskDetailView.vue`
+- `frontend/src/views/ProfileView.vue`
+- `frontend/src/views/OrderDetailView.vue`
+- `frontend/.env.local`
+- `README.md`
 
 ---

@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { fileApi, taskApi } from '@/services/api'
 import type { TaskCategory, TaskForm, UploadedFileItem } from '@/types'
+import { resolveAssetUrl } from '@/utils/assets'
 
 const router = useRouter()
 
@@ -144,7 +145,7 @@ function removeUploadedImage(imageId: number) {
         <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
         <div v-if="uploadedImages.length" class="upload-grid">
           <article v-for="item in uploadedImages" :key="item.id" class="upload-card">
-            <img :src="item.url" :alt="item.fileName" />
+            <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
             <div class="upload-card-meta">
               <strong>{{ item.fileName }}</strong>
               <button class="button ghost" type="button" @click="removeUploadedImage(item.id)">移除</button>

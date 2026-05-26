@@ -4,6 +4,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { fileApi, userApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { UserProfile } from '@/types'
+import { resolveAssetUrl } from '@/utils/assets'
 
 const auth = useAuthStore()
 const profile = ref<UserProfile>()
@@ -102,7 +103,7 @@ onMounted(load)
           <h2>头像</h2>
           <div class="upload-avatar-row">
             <div class="avatar-preview">
-              <img v-if="form.avatarUrl" :src="form.avatarUrl" alt="头像预览" />
+              <img v-if="form.avatarUrl" :src="resolveAssetUrl(form.avatarUrl)" alt="头像预览" />
               <span v-else>{{ form.nickname?.slice(0, 1) || 'U' }}</span>
             </div>
             <div class="grid" style="flex:1">
