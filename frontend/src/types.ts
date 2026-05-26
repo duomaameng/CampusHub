@@ -24,6 +24,8 @@ export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'REVIEW_REQUEST'
 export type MessageType = 'TEXT' | 'IMAGE'
 export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE'
 export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'
+export type ReportTargetType = 'TASK' | 'ORDER_MESSAGE' | 'REVIEW' | 'USER'
+export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED'
 
 export const taskStatusText: Record<TaskStatus, string> = {
   OPEN: '待接单',
@@ -59,6 +61,20 @@ export const userStatusText: Record<UserStatus, string> = {
 export const announcementPriorityText: Record<AnnouncementPriority, string> = {
   NORMAL: '普通',
   IMPORTANT: '重要'
+}
+
+export const reportStatusText: Record<ReportStatus, string> = {
+  PENDING: '待处理',
+  PROCESSING: '处理中',
+  RESOLVED: '已处理',
+  REJECTED: '已驳回'
+}
+
+export const reportTargetTypeText: Record<ReportTargetType, string> = {
+  TASK: '任务',
+  ORDER_MESSAGE: '订单消息',
+  REVIEW: '评价',
+  USER: '用户'
 }
 
 export interface PageData<T> {
@@ -272,4 +288,21 @@ export interface ReportSubmission {
   reason: string
   evidenceImageIds: number[]
   createdAt: string
+}
+
+export interface ReportItem {
+  reportId: number
+  targetType: ReportTargetType
+  targetId: number
+  reason: string
+  status: ReportStatus
+  result?: string | null
+  createdAt: string
+  processedAt?: string | null
+}
+
+export interface ReportDetail extends ReportItem {
+  reporterId: number
+  processedBy?: number | null
+  evidenceImageIds: number[]
 }
