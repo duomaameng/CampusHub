@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
@@ -136,7 +136,7 @@ onMounted(load)
         <div class="page-title">
           <div>
             <h1>{{ task.title }}</h1>
-            <p>{{ task.publisherNickname }} · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
           <span class="tag">{{ categoryText[task.category] }}</span>
         </div>
@@ -210,7 +210,7 @@ onMounted(load)
           <div v-if="!applications.length" class="empty-state">暂无申请</div>
           <div v-for="application in applications" :key="application.id" class="item-card">
             <div class="item-title">
-              <h3>{{ application.applicantNickname }}</h3>
+              <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
               <span class="tag">{{ applicationStatusText[application.status] }}</span>
             </div>
             <p>{{ application.message }}</p>

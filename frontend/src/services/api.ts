@@ -7,12 +7,14 @@ import type {
   AnnouncementItem,
   AnnouncementPublishResult,
   ApplicationItem,
+  CreditInfo,
   LoginResult,
   NotificationItem,
   OrderDetail,
   OrderItem,
   OrderStatus,
   PageData,
+  PublicProfile,
   ReportSubmission,
   ReviewItem,
   TaskForm,
@@ -76,6 +78,12 @@ export const userApi = {
   updateMe(payload: Partial<UserProfile['profile']>): Promise<UserProfile> {
     if (useMock) return mockApi.updateMe(payload)
     return request<UserProfile>({ method: 'PATCH', url: '/users/me', data: payload })
+  },
+  getPublicProfile(userId: number): Promise<PublicProfile> {
+    return request<PublicProfile>({ method: 'GET', url: `/users/${userId}/profile` })
+  },
+  getUserCredit(userId: number): Promise<CreditInfo> {
+    return request<CreditInfo>({ method: 'GET', url: `/users/${userId}/credit` })
   }
 }
 

@@ -97,8 +97,8 @@ onMounted(loadOrders)
           <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
         </div>
         <div class="meta-line">
-          <span><UserRound class="meta-icon" aria-hidden="true" />发布者 {{ order.publisherNickname }}</span>
-          <span><ClipboardList class="meta-icon" aria-hidden="true" />服务方 {{ order.serviceProviderNickname }}</span>
+          <span><UserRound class="meta-icon" aria-hidden="true" />发布者 <RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">{{ order.publisherNickname }}</RouterLink></span>
+          <span><ClipboardList class="meta-icon" aria-hidden="true" />服务方 <RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></span>
         </div>
         <p class="hint">
           <CalendarClock class="meta-icon" aria-hidden="true" />

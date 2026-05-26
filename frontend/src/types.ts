@@ -248,6 +248,30 @@ export interface ReviewItem {
   createdAt: string
 }
 
+export interface PublicProfile {
+  userId: number
+  nickname: string
+  avatarUrl?: string
+  gender: string
+  college: string
+  campus: string
+  verified: boolean
+  contact?: string
+  contactVisible: boolean
+  creditScore: number
+  completedOrders: number
+  praiseRate: number
+  memberSince: string
+}
+
+export interface CreditInfo {
+  userId: number
+  score: number
+  completedOrders: number
+  praiseRate: number
+  recentReviews: ReviewItem[]
+}
+
 export interface AdminUserItem {
   id: number
   email: string
