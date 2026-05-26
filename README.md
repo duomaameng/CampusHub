@@ -89,6 +89,7 @@ mvn spring-boot:run
 | `MAIL_USERNAME` | - | 邮箱账号 |
 | `MAIL_PASSWORD` | - | 邮箱授权码 |
 | `MAIL_FROM` | `MAIL_USERNAME` | 邮件发件人地址 |
+| `FILE_UPLOAD_PATH` | `./uploads` | 后端保存上传图片的磁盘目录 |
 
 本地联调真实后端时，如需真的发送验证码邮件，可临时使用个人邮箱的 SMTP 配置：
 
@@ -111,9 +112,34 @@ mvn spring-boot:run
 ```env
 VITE_USE_MOCK=false
 VITE_API_BASE_URL=http://localhost:8080/api
+VITE_ASSET_BASE_URL=http://localhost:8080
 ```
 
 然后重启前端 `npm run dev`。
+
+### 上传图片与静态资源地址
+
+后端上传接口会把图片保存到 `FILE_UPLOAD_PATH` 指定的目录，并在接口中返回类似 `/uploads/xxx.png` 的相对访问路径。前端会通过 `VITE_ASSET_BASE_URL` 把该路径补全为可访问地址：
+
+```text
+/uploads/xxx.png -> http://localhost:8080/uploads/xxx.png
+```
+
+本地联调时推荐：
+
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_ASSET_BASE_URL=http://localhost:8080
+```
+
+部署时按实际域名配置：
+
+```env
+VITE_API_BASE_URL=https://api.example.com/api
+VITE_ASSET_BASE_URL=https://api.example.com
+```
+
+如果前端和后端部署在同一个域名下，也可以将 `VITE_ASSET_BASE_URL` 配为空或不配置，让 `/uploads/...` 走同源路径。修改 `.env.local` 或部署环境变量后，需要重新启动前端开发服务；生产构建需要重新执行 `npm run build`。
 
 ---
 

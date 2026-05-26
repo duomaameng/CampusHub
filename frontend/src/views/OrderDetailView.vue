@@ -7,6 +7,7 @@ import { fileApi, orderApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { orderStatusText } from '@/types'
 import type { OrderDetail, ReviewItem, UploadedFileItem } from '@/types'
+import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -151,7 +152,7 @@ onMounted(load)
             <div v-for="item in order.messages" :key="item.id" class="message-bubble">
               <strong>{{ item.senderNickname }}</strong>
               <p v-if="item.content">{{ item.content }}</p>
-              <img v-if="item.imageUrl" class="message-image" :src="item.imageUrl" alt="聊天图片" />
+              <img v-if="item.imageUrl" class="message-image" :src="resolveAssetUrl(item.imageUrl)" alt="聊天图片" />
               <span class="hint">{{ new Date(item.createdAt).toLocaleString() }}</span>
             </div>
           </div>
@@ -171,7 +172,7 @@ onMounted(load)
             </label>
             <p v-if="chatImageError" class="error-message">{{ chatImageError }}</p>
             <div v-if="uploadedChatImage" class="upload-card inline">
-              <img :src="uploadedChatImage.url" :alt="uploadedChatImage.fileName" />
+              <img :src="resolveAssetUrl(uploadedChatImage.url)" :alt="uploadedChatImage.fileName" />
               <div class="upload-card-meta">
                 <strong>{{ uploadedChatImage.fileName }}</strong>
                 <div class="actions">

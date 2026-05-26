@@ -6,6 +6,7 @@ import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
 import type { ApplicationItem, TaskItem, UploadedFileItem } from '@/types'
+import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
 const router = useRouter()
@@ -144,7 +145,7 @@ onMounted(load)
 
         <div v-if="task.imageUrls.length" class="upload-grid">
           <article v-for="url in task.imageUrls" :key="url" class="upload-card">
-            <img :src="url" alt="任务配图" />
+            <img :src="resolveAssetUrl(url)" alt="任务配图" />
           </article>
         </div>
 
@@ -192,7 +193,7 @@ onMounted(load)
           <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
           <div v-if="reportEvidenceFiles.length" class="upload-grid">
             <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
-              <img :src="item.url" :alt="item.fileName" />
+              <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
               <div class="upload-card-meta">
                 <strong>{{ item.fileName }}</strong>
                 <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
