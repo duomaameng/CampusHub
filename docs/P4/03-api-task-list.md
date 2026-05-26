@@ -108,9 +108,9 @@
 
 | 序号 | 方法 | 路径 | 说明 | 认证 | 状态  |
 |------|------|------|------|------|-----|
-| RP-01 | GET | `/api/reports` | 我的举报列表 | JWT | 未完成 |
+| RP-01 | GET | `/api/reports` | 我的举报列表 | JWT | 已完成 |
 | RP-02 | POST | `/api/tasks/{taskId}/reports` | 提交举报 | JWT | 已完成 |
-| RP-03 | GET | `/api/reports/{reportId}` | 举报详情 | JWT | 未完成 |
+| RP-03 | GET | `/api/reports/{reportId}` | 举报详情 | JWT | 已完成 |
 
 ---
 
