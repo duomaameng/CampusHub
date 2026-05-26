@@ -8,23 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-/*
-这是任务列表和任务详情最核心的返回类。
-它把很多信息组合在一起：
 
-发布者昵称
-头像
-分类
-标题
-描述
-校区
-状态
-配图
-申请数
-收藏数
-分类附加字段
-它的意义是：前端任务大厅和任务详情页主要靠它渲染。
-*/
 @Data
 public class TaskItemVO {
 

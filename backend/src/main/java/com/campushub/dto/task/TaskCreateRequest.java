@@ -10,20 +10,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-/*
-这个类负责接“发布需求”时前端传来的数据，比如：
 
-分类
-标题
-描述
-校区
-报酬类型
-截止时间
-是否匿名
-图片 ID
-分类附加字段
-它的意义是：前端提交新任务时，后端先用它把参数接住。
-*/
 @Data
 public class TaskCreateRequest {
 

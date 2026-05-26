@@ -13,21 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-/*
-这个类暴露了：
 
-GET /api/orders
-GET /api/orders/{orderId}
-POST /api/orders/{orderId}/complete
-POST /api/orders/{orderId}/confirm-completion
-POST /api/orders/{orderId}/cancel
-POST /api/orders/{orderId}/messages
-POST /api/orders/{orderId}/reviews
-GET /api/orders/{orderId}/reviews
-它的意义是：
-
-订单列表、订单详情、聊天、评价、状态流转这些都从这里进。
-*/
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor

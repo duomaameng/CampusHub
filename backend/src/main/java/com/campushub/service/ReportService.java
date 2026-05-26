@@ -1,7 +1,10 @@
 package com.campushub.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
+import com.campushub.common.PageResult;
 import com.campushub.entity.FileRecord;
 import com.campushub.dto.report.ReportCreateRequest;
 import com.campushub.dto.report.ReportProcessRequest;
@@ -16,6 +19,8 @@ import com.campushub.mapper.ReportEvidenceMapper;
 import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.security.SecurityUtils;
+import com.campushub.vo.report.ReportDetailVO;
+import com.campushub.vo.report.ReportItemVO;
 import com.campushub.vo.report.ReportSubmissionVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,28 +28,48 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-/*
-这个类负责：
 
-提交举报
-管理员处理举报
-它已经接上的通知是：
-
-管理员处理举报完成后
-调 notificationService.createReportResultNotification(...)
-它的意义是：
-
-把举报流程和通知结果真正接起来。
-*/
 @Service
 @RequiredArgsConstructor
 public class ReportService {
+
+    private static final int MAX_PAGE_SIZE = 50;
 
     private final ReportMapper reportMapper;
     private final ReportEvidenceMapper reportEvidenceMapper;
     private final TaskMapper taskMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
+
+    public PageResult<ReportItemVO> listMyReports(int page, int size) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+
+        Page<Report> result = reportMapper.selectPage(
+                new Page<>(safePage, safeSize),
+                new LambdaQueryWrapper<Report>()
+                        .eq(Report::getReporterId, currentUserId)
+                        .orderByDesc(Report::getCreatedAt)
+        );
+
+        List<ReportItemVO> records = result.getRecords().stream()
+                .map(this::toReportItemVO)
+                .toList();
+        return PageResult.of(result.getTotal(), safePage, safeSize, records);
+    }
+
+    public ReportDetailVO getReportDetail(Long reportId) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Report report = reportMapper.selectById(reportId);
+        if (report == null) {
+            throw new BusinessException(ErrorCode.REPORT_NOT_FOUND);
+        }
+        if (!currentUserId.equals(report.getReporterId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "You are not allowed to view this report");
+        }
+        return toReportDetailVO(report);
+    }
 
     @Transactional
     public ReportSubmissionVO submitTaskReport(Long taskId, ReportCreateRequest request) {
@@ -90,6 +115,9 @@ public class ReportService {
         if (!ReportStatus.PENDING.equals(report.getStatus()) && !ReportStatus.PROCESSING.equals(report.getStatus())) {
             throw new BusinessException(ErrorCode.REPORT_ALREADY_HANDLED);
         }
+        if (!ReportStatus.RESOLVED.equals(request.getStatus()) && !ReportStatus.REJECTED.equals(request.getStatus())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Processed report status must be RESOLVED or REJECTED");
+        }
 
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         report.setStatus(request.getStatus());
@@ -116,5 +144,59 @@ public class ReportService {
             return ReportReasonType.ILLEGAL;
         }
         return ReportReasonType.OTHER;
+    }
+
+    private int normalizePage(int page) {
+        if (page < 1) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Page must be greater than or equal to 1");
+        }
+        return page;
+    }
+
+    private int normalizeSize(int size) {
+        if (size < 1) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Size must be greater than or equal to 1");
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private ReportItemVO toReportItemVO(Report report) {
+        return new ReportItemVO(
+                report.getId(),
+                report.getTargetType(),
+                report.getTargetId(),
+                report.getDescription(),
+                report.getStatus(),
+                report.getResult(),
+                report.getCreatedAt(),
+                report.getProcessedAt()
+        );
+    }
+
+    private ReportDetailVO toReportDetailVO(Report report) {
+        return new ReportDetailVO(
+                report.getId(),
+                report.getTargetType(),
+                report.getTargetId(),
+                report.getDescription(),
+                report.getStatus(),
+                report.getResult(),
+                report.getReporterId(),
+                report.getProcessedBy(),
+                report.getCreatedAt(),
+                report.getProcessedAt(),
+                loadEvidenceImageIds(report.getId())
+        );
+    }
+
+    private List<Long> loadEvidenceImageIds(Long reportId) {
+        return reportEvidenceMapper.selectList(
+                        new LambdaQueryWrapper<ReportEvidence>()
+                                .eq(ReportEvidence::getReportId, reportId)
+                                .orderByAsc(ReportEvidence::getId)
+                )
+                .stream()
+                .map(ReportEvidence::getFileRecordId)
+                .toList();
     }
 }
