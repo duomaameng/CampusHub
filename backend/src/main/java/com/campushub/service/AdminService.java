@@ -6,17 +6,23 @@ import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
 import com.campushub.entity.AdminOperationLog;
+import com.campushub.entity.Announcement;
 import com.campushub.entity.CreditLog;
 import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
+import com.campushub.dto.admin.AdminAnnouncementCreateRequest;
+import com.campushub.dto.admin.AdminAnnouncementUpdateRequest;
 import com.campushub.enums.UserStatus;
 import com.campushub.mapper.AdminOperationLogMapper;
+import com.campushub.mapper.AnnouncementMapper;
 import com.campushub.mapper.CreditLogMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.admin.AdminUserItemVO;
 import com.campushub.vo.admin.AdminUserStatusVO;
+import com.campushub.vo.announcement.AnnouncementItemVO;
+import com.campushub.vo.announcement.AnnouncementPublishVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +43,7 @@ public class AdminService {
     private final UserProfileMapper userProfileMapper;
     private final CreditLogMapper creditLogMapper;
     private final AdminOperationLogMapper adminOperationLogMapper;
+    private final AnnouncementMapper announcementMapper;
 
     public PageResult<AdminUserItemVO> listUsers(int page, int size, String keyword, UserStatus status, Boolean verified) {
         int safePage = normalizePage(page);
@@ -103,6 +110,81 @@ public class AdminService {
         return new AdminUserStatusVO(userId, status);
     }
 
+    public PageResult<AnnouncementItemVO> listAnnouncements(int page, int size) {
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+
+        Page<Announcement> result = announcementMapper.selectPage(
+                new Page<>(safePage, safeSize),
+                new LambdaQueryWrapper<Announcement>()
+                        .orderByDesc(Announcement::getCreatedAt)
+        );
+
+        List<AnnouncementItemVO> records = result.getRecords().stream()
+                .map(this::toAnnouncementItemVO)
+                .toList();
+        return PageResult.of(result.getTotal(), safePage, safeSize, records);
+    }
+
+    public PageResult<AnnouncementItemVO> listPublicAnnouncements(int page, int size) {
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+
+        Page<Announcement> result = announcementMapper.selectPage(
+                new Page<>(safePage, safeSize),
+                new LambdaQueryWrapper<Announcement>()
+                        .eq(Announcement::getIsActive, true)
+                        .orderByDesc(Announcement::getCreatedAt)
+        );
+
+        List<AnnouncementItemVO> records = result.getRecords().stream()
+                .map(this::toAnnouncementItemVO)
+                .toList();
+        return PageResult.of(result.getTotal(), safePage, safeSize, records);
+    }
+
+    @Transactional
+    public AnnouncementPublishVO createAnnouncement(AdminAnnouncementCreateRequest request) {
+        Announcement announcement = new Announcement();
+        announcement.setPublisherId(SecurityUtils.requireCurrentUserId());
+        announcement.setTitle(request.getTitle().trim());
+        announcement.setContent(request.getContent().trim());
+        announcement.setPriority(StringUtils.hasText(request.getPriority()) ? request.getPriority().trim() : "NORMAL");
+        announcement.setIsActive(true);
+        announcementMapper.insert(announcement);
+        return new AnnouncementPublishVO(announcement.getId(), "PUBLISHED");
+    }
+
+    @Transactional
+    public AnnouncementPublishVO updateAnnouncement(Long announcementId, AdminAnnouncementUpdateRequest request) {
+        Announcement announcement = requireAnnouncement(announcementId);
+
+        if (request.getTitle() != null) {
+            announcement.setTitle(request.getTitle().trim());
+        }
+        if (request.getContent() != null) {
+            announcement.setContent(request.getContent().trim());
+        }
+        if (request.getPriority() != null) {
+            announcement.setPriority(request.getPriority().trim());
+        }
+        if (request.getIsActive() != null) {
+            announcement.setIsActive(request.getIsActive());
+        }
+
+        announcementMapper.updateById(announcement);
+        return new AnnouncementPublishVO(
+                announcement.getId(),
+                Boolean.TRUE.equals(announcement.getIsActive()) ? "ACTIVE" : "INACTIVE"
+        );
+    }
+
+    @Transactional
+    public void deleteAnnouncement(Long announcementId) {
+        requireAnnouncement(announcementId);
+        announcementMapper.deleteById(announcementId);
+    }
+
     private int normalizePage(int page) {
         if (page < 1) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "Page must be greater than or equal to 1");
@@ -165,5 +247,26 @@ public class AdminService {
             detail += ". Reason: " + reason.trim();
         }
         return detail;
+    }
+
+    private Announcement requireAnnouncement(Long announcementId) {
+        Announcement announcement = announcementMapper.selectById(announcementId);
+        if (announcement == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "Announcement not found");
+        }
+        return announcement;
+    }
+
+    private AnnouncementItemVO toAnnouncementItemVO(Announcement announcement) {
+        return new AnnouncementItemVO(
+                announcement.getId(),
+                announcement.getTitle(),
+                announcement.getContent(),
+                announcement.getPriority(),
+                announcement.getIsActive(),
+                announcement.getPublisherId(),
+                announcement.getCreatedAt(),
+                announcement.getUpdatedAt()
+        );
     }
 }

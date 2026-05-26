@@ -141,13 +141,13 @@
 
 ## 12. 公告模块（Announcement）
 
-| 序号 | 方法 | 路径 | 说明 | 认证 | 状态 |
-|------|------|------|------|------|------|
-| AN-01 | GET | `/api/announcements` | 前台公告列表 | 无 | 未完成 |
-| AN-02 | GET | `/api/admin/announcements` | 公告列表（管理端） | ADMIN | 未完成 |
-| AN-03 | POST | `/api/admin/announcements` | 发布公告 | ADMIN | 未完成 |
-| AN-04 | PATCH | `/api/admin/announcements/{announcementId}` | 编辑公告 | ADMIN | 未完成 |
-| AN-05 | DELETE | `/api/admin/announcements/{announcementId}` | 删除公告 | ADMIN | 未完成 |
+| 序号 | 方法 | 路径 | 说明 | 认证 | 状态  |
+|------|------|------|------|------|-----|
+| AN-01 | GET | `/api/announcements` | 前台公告列表 | 无 | 已完成 |
+| AN-02 | GET | `/api/admin/announcements` | 公告列表（管理端） | ADMIN | 已完成 |
+| AN-03 | POST | `/api/admin/announcements` | 发布公告 | ADMIN | 已完成 |
+| AN-04 | PATCH | `/api/admin/announcements/{announcementId}` | 编辑公告 | ADMIN | 已完成 |
+| AN-05 | DELETE | `/api/admin/announcements/{announcementId}` | 删除公告 | ADMIN | 已完成 |
 
 ---
 
