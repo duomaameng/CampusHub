@@ -55,7 +55,7 @@ onMounted(load)
       <div class="hero-copy">
         <span class="eyebrow">
           <Megaphone class="eyebrow-icon" aria-hidden="true" />
-          CampusHub Notice Board
+          Notice Board
         </span>
         <strong>平台公告集中展示，便于游客和用户快速了解当前系统动态。</strong>
         <span>后台仅发布处于上线状态的公告到这里，列表按发布时间倒序展示。</span>
@@ -81,7 +81,12 @@ onMounted(load)
     <div v-else-if="!page?.records.length" class="empty-state">暂无公告</div>
 
     <div v-else class="grid">
-      <article v-for="item in page.records" :key="item.id" class="item-card announcement-card">
+      <article
+        v-for="(item, index) in page.records"
+        :key="item.id"
+        class="item-card announcement-card"
+        :style="{ '--i': index }"
+      >
         <div class="item-title">
           <h2>{{ item.title }}</h2>
           <span :class="['tag', item.priority === 'IMPORTANT' ? 'warning' : 'info']">

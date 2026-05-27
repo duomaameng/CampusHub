@@ -91,7 +91,13 @@ onMounted(loadOrders)
     <div v-else-if="!page?.records.length" class="empty-state">暂无订单</div>
 
     <div v-else class="cards-grid">
-      <RouterLink v-for="order in page.records" :key="order.id" class="item-card" :to="`/orders/${order.id}`">
+      <RouterLink
+        v-for="(order, index) in page.records"
+        :key="order.id"
+        class="item-card"
+        :to="`/orders/${order.id}`"
+        :style="{ '--i': index }"
+      >
         <div class="item-title">
           <h2>{{ order.taskTitle }}</h2>
           <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>

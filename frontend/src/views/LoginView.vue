@@ -29,7 +29,7 @@ async function submit() {
 </script>
 
 <template>
-  <section class="form-panel auth-panel">
+  <section class="form-panel auth-panel auth-view">
     <div class="auth-visual">
       <span class="auth-icon">
         <ShieldCheck aria-hidden="true" />
@@ -81,3 +81,9 @@ async function submit() {
     </form>
   </section>
 </template>
+
+<style scoped>
+.auth-view {
+  animation-delay: 0.1s;
+}
+</style>

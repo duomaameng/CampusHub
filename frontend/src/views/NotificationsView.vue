@@ -56,7 +56,13 @@ onMounted(load)
     <div v-else-if="!page?.records.length" class="empty-state">暂无通知</div>
 
     <div v-else class="grid">
-      <article v-for="item in page.records" :key="item.id" class="item-card">
+      <article
+        v-for="(item, index) in page.records"
+        :key="item.id"
+        class="item-card notification-item"
+        :class="{ unread: !item.read }"
+        :style="{ '--i': index }"
+      >
         <div class="item-title">
           <h2>{{ item.title }}</h2>
           <span :class="['tag', item.read ? '' : 'warning']">{{ item.read ? '已读' : '未读' }}</span>
@@ -70,3 +76,9 @@ onMounted(load)
     </div>
   </section>
 </template>
+
+<style scoped>
+.notification-item.unread {
+  border-left: 2px solid var(--primary-500);
+}
+</style>

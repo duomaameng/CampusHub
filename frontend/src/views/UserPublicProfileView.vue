@@ -59,7 +59,7 @@ onMounted(load)
           <div class="profile-meta">
             <h2>{{ profile.nickname }}</h2>
             <div class="profile-tags">
-              <span v-if="profile.verified" class="tag verified">已认证</span>
+              <span v-if="profile.verified" class="tag success">已认证</span>
               <span v-else class="tag">未认证</span>
               <span v-if="profile.gender === 'MALE'" class="tag">男</span>
               <span v-else-if="profile.gender === 'FEMALE'" class="tag">女</span>
@@ -123,40 +123,27 @@ onMounted(load)
 .profile-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--space-5);
+  margin-bottom: var(--space-5);
 }
 
 .avatar-preview.large {
   width: 80px;
   height: 80px;
-  font-size: 2rem;
+  font-size: 28px;
 }
 
 .profile-meta h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .profile-tags {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.tag {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.tag.verified {
-  color: var(--success);
-  border-color: var(--success);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .review-list {
@@ -166,8 +153,8 @@ onMounted(load)
 }
 
 .review-item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .review-item:last-child {
@@ -177,19 +164,25 @@ onMounted(load)
 .review-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.25rem;
+  margin-bottom: 4px;
 }
 
 .reviewer {
   font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
 }
 
 .rating {
-  color: var(--primary);
+  color: var(--primary-500);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .review-content {
-  margin: 0.25rem 0;
-  color: var(--text);
+  margin: 4px 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 </style>

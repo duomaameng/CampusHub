@@ -246,7 +246,7 @@ onMounted(load)
           <h2>评价记录</h2>
           <div v-if="!reviews.length" class="hint">暂无评价</div>
           <div v-for="review in reviews" :key="review.id" class="item-card">
-              <strong><RouterLink :to="{ name: 'user-public-profile', params: { id: review.reviewerId } }">{{ review.reviewerNickname }}</RouterLink> -> <RouterLink :to="{ name: 'user-public-profile', params: { id: review.revieweeId } }">{{ review.revieweeNickname }}</RouterLink></strong>
+            <strong><RouterLink :to="{ name: 'user-public-profile', params: { id: review.reviewerId } }">{{ review.reviewerNickname }}</RouterLink> -> <RouterLink :to="{ name: 'user-public-profile', params: { id: review.revieweeId } }">{{ review.revieweeNickname }}</RouterLink></strong>
             <p>{{ review.rating }} 分 · {{ review.content }}</p>
           </div>
         </section>

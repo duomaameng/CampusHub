@@ -82,7 +82,7 @@ onMounted(loadTasks)
       <div class="hero-copy">
         <span class="eyebrow">
           <Handshake class="eyebrow-icon" aria-hidden="true" />
-          CampusHub Live Board
+          Live Board
         </span>
         <strong>把校园里的零散互助请求收拢到一条清晰流程里。</strong>
         <span>先筛选合适任务，再进入详情页申请接单；发布者确认后即可进入订单协作。</span>
@@ -151,7 +151,13 @@ onMounted(loadTasks)
     <div v-else-if="!page?.records.length" class="empty-state">暂无符合条件的任务</div>
 
     <div v-else class="cards-grid">
-      <RouterLink v-for="task in page.records" :key="task.id" class="item-card" :to="`/tasks/${task.id}`">
+      <RouterLink
+        v-for="(task, index) in page.records"
+        :key="task.id"
+        class="item-card"
+        :to="`/tasks/${task.id}`"
+        :style="{ '--i': index }"
+      >
         <div class="item-title">
           <h2>{{ task.title }}</h2>
           <span class="tag">{{ categoryText[task.category] }}</span>
