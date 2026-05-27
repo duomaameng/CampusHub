@@ -184,6 +184,18 @@
   color-scheme: dark;
 }
 
+[data-theme='dark'] html::before {
+  background-image: url('/bg/dark-bg.jpg');
+  opacity: 0.12;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) html::before {
+    background-image: url('/bg/dark-bg.jpg');
+    opacity: 0.12;
+  }
+}
+
 /* ===== Reset & Base ===== */
 *,
 *::before,
@@ -197,6 +209,19 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background-image: url('/bg/light-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  opacity: 0.22;
+  pointer-events: none;
 }
 
 body {
