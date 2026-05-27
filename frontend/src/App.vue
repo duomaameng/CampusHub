@@ -192,7 +192,7 @@ async function handleLogout() {
 }
 
 .page-enter-active {
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .page-leave-active {
@@ -201,11 +201,11 @@ async function handleLogout() {
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(12px) scale(0.98);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-8px) scale(0.98);
 }
 </style>
