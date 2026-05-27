@@ -221,6 +221,7 @@ body::before {
     radial-gradient(ellipse 40% 35% at 60% 40%, rgba(232, 121, 249, 0.03), transparent 50%),
     radial-gradient(ellipse 30% 25% at 30% 70%, rgba(59, 130, 246, 0.03), transparent 50%);
   pointer-events: none;
+  animation: bgShift 20s ease-in-out infinite;
 }
 
 body::after {
@@ -229,19 +230,25 @@ body::after {
   inset: 0;
   z-index: -1;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.03) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.04) 1px, transparent 0);
   background-size: 40px 40px;
   pointer-events: none;
   opacity: 0.5;
 }
 
+@keyframes bgShift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(10px, -15px) scale(1.02); }
+  66% { transform: translate(-15px, 10px) scale(0.98); }
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) body::before {
     background:
-      radial-gradient(ellipse 70% 50% at 5% 5%, rgba(99, 102, 241, 0.08), transparent 60%),
-      radial-gradient(ellipse 50% 40% at 95% 95%, rgba(139, 92, 246, 0.06), transparent 55%),
-      radial-gradient(ellipse 40% 35% at 60% 40%, rgba(232, 121, 249, 0.04), transparent 50%),
-      radial-gradient(ellipse 30% 25% at 30% 70%, rgba(59, 130, 246, 0.04), transparent 50%);
+      radial-gradient(ellipse 70% 50% at 5% 5%, rgba(99, 102, 241, 0.1), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 95% 95%, rgba(139, 92, 246, 0.08), transparent 55%),
+      radial-gradient(ellipse 40% 35% at 60% 40%, rgba(232, 121, 249, 0.06), transparent 50%),
+      radial-gradient(ellipse 30% 25% at 30% 70%, rgba(59, 130, 246, 0.06), transparent 50%);
   }
 
   :root:not([data-theme='light']) body::after {
@@ -251,10 +258,10 @@ body::after {
 
 [data-theme='dark'] body::before {
   background:
-    radial-gradient(ellipse 70% 50% at 5% 5%, rgba(99, 102, 241, 0.08), transparent 60%),
-    radial-gradient(ellipse 50% 40% at 95% 95%, rgba(139, 92, 246, 0.06), transparent 55%),
-    radial-gradient(ellipse 40% 35% at 60% 40%, rgba(232, 121, 249, 0.04), transparent 50%),
-    radial-gradient(ellipse 30% 25% at 30% 70%, rgba(59, 130, 246, 0.04), transparent 50%);
+    radial-gradient(ellipse 70% 50% at 5% 5%, rgba(99, 102, 241, 0.1), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 95% 95%, rgba(139, 92, 246, 0.08), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 60% 40%, rgba(232, 121, 249, 0.06), transparent 50%),
+    radial-gradient(ellipse 30% 25% at 30% 70%, rgba(59, 130, 246, 0.06), transparent 50%);
 }
 
 [data-theme='dark'] body::after {
@@ -686,20 +693,43 @@ select {
     radial-gradient(ellipse 40% 40% at 25% 85%, rgba(167, 139, 250, 0.03), transparent 50%),
     radial-gradient(ellipse 30% 25% at 50% 50%, rgba(232, 121, 249, 0.02), transparent 50%);
   pointer-events: none;
+  animation: bgShift 25s ease-in-out infinite;
+}
+
+.workspace-shell::after {
+  content: '';
+  position: fixed;
+  top: 10%;
+  right: 5%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.06), transparent 70%);
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: -1;
+  animation: floatOrb 15s ease-in-out infinite;
+}
+
+@keyframes floatOrb {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+  25% { transform: translate(-30px, 40px) scale(1.1); opacity: 0.7; }
+  50% { transform: translate(20px, -20px) scale(0.9); opacity: 0.4; }
+  75% { transform: translate(-15px, -30px) scale(1.05); opacity: 0.6; }
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .workspace-shell::before {
     background:
-      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(99, 102, 241, 0.04), transparent 50%),
-      radial-gradient(ellipse 50% 50% at 20% 80%, rgba(167, 139, 250, 0.03), transparent 50%);
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(99, 102, 241, 0.06), transparent 50%),
+      radial-gradient(ellipse 50% 50% at 20% 80%, rgba(167, 139, 250, 0.05), transparent 50%);
   }
 }
 
 [data-theme='dark'] .workspace-shell::before {
   background:
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(99, 102, 241, 0.04), transparent 50%),
-    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(167, 139, 250, 0.03), transparent 50%);
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(99, 102, 241, 0.06), transparent 50%),
+    radial-gradient(ellipse 50% 50% at 20% 80%, rgba(167, 139, 250, 0.05), transparent 50%);
 }
 
 .workspace-top {

@@ -174,6 +174,7 @@ function removeUploadedImage(imageId: number) {
             <option value="仙林校区">仙林校区</option>
             <option value="鼓楼校区">鼓楼校区</option>
             <option value="浦口校区">浦口校区</option>
+            <option value="苏州校区">苏州校区</option>
           </select>
         </div>
       </div>

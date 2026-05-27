@@ -1,12 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#6366f1"/>
-      <stop offset="1" stop-color="#4338ca"/>
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="0.5" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#d97706"/>
     </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <path d="M32 18L12 28L32 38L52 28L32 18Z" fill="white" opacity="0.95"/>
-  <path d="M20 32V42C20 42 25 48 32 48C39 48 44 42 44 42V32" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
-  <path d="M50 28V40" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="url(#bg)" filter="url(#shadow)"/>
+  
+  <!-- Crazy hair/spikes -->
+  <path d="M14 22 L10 8 L20 18Z" fill="#92400e"/>
+  <path d="M22 16 L24 2 L30 14Z" fill="#92400e"/>
+  <path d="M34 14 L40 2 L38 16Z" fill="#92400e"/>
+  <path d="M44 18 L54 8 L48 22Z" fill="#92400e"/>
+  
+  <!-- Face -->
+  <ellipse cx="32" cy="34" rx="16" ry="14" fill="#fef3c7"/>
+  
+  <!-- Crazy eyes - one bigger than other -->
+  <circle cx="26" cy="30" r="4" fill="white"/>
+  <circle cx="38" cy="28" r="5" fill="white"/>
+  <circle cx="27" cy="30" r="2" fill="#1f2937"/>
+  <circle cx="39" cy="28" r="2.5" fill="#1f2937"/>
+  
+  <!-- Eyebrows - one raised -->
+  <path d="M22 24 Q26 20 30 24" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M34 22 Q38 16 42 20" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Tongue out silly mouth -->
+  <path d="M24 38 Q32 44 40 38" stroke="#1f2937" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <ellipse cx="32" cy="42" rx="5" ry="4" fill="#f87171"/>
+  
+  <!-- Blush -->
+  <ellipse cx="20" cy="36" rx="4" ry="2.5" fill="#fca5a5" opacity="0.6"/>
+  <ellipse cx="44" cy="34" rx="4" ry="2.5" fill="#fca5a5" opacity="0.6"/>
+  
+  <!-- Star decoration -->
+  <path d="M50 42 L52 38 L54 42 L58 44 L54 46 L52 50 L50 46 L46 44Z" fill="#fde047" opacity="0.8"/>
+  <path d="M12 44 L13.5 41 L15 44 L18 45.5 L15 47 L13.5 50 L12 47 L9 45.5Z" fill="#fde047" opacity="0.6"/>
 </svg>

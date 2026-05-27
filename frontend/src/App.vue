@@ -26,7 +26,7 @@ const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
 const useMock = import.meta.env.VITE_USE_MOCK === 'true'
-const workspaceStatus = computed(() => (useMock ? 'Mock API' : 'Backend API'))
+const workspaceStatus = computed(() => (useMock ? '演示模式' : '已连接服务器'))
 
 const isDark = ref(false)
 
