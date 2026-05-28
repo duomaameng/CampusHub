@@ -77,7 +77,7 @@
 
 | 序号 | 方法 | 路径 | 说明                                | 认证 | 状态  |
 |------|------|------|-----------------------------------|------|-----|
-| M-01 | GET | `/api/orders/{orderId}/messages` | 获取订单聊天记录                          | JWT | 未完成 |
+| M-01 | GET | `/api/orders/{orderId}/messages` | 获取订单聊天记录                          | JWT | 已完成 |
 | M-02 | POST | `/api/orders/{orderId}/messages` | 发送文字消息                            | JWT | 已完成 |
 | M-03 | POST | `/api/orders/{orderId}/messages` | 发送图片消息（通过 `messageType=image` 区分） | JWT | 已完成 |
 
@@ -100,7 +100,7 @@
 | N-02 | GET | `/api/notifications/unread-count` | 未读通知数量 | JWT | 已完成 |
 | N-03 | PATCH | `/api/notifications/read-all` | 全部标记为已读 | JWT | 已完成 |
 | N-04 | PATCH | `/api/notifications/{notificationId}/read` | 标记通知为已读 | JWT | 已完成 |
-| N-05 | DELETE | `/api/notifications/{notificationId}` | 删除通知 | JWT | 未完成 |
+| N-05 | DELETE | `/api/notifications/{notificationId}` | 删除通知 | JWT | 已完成 |
 
 ---
 

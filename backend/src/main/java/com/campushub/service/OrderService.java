@@ -207,6 +207,17 @@ public class OrderService {
                 .toList();
     }
 
+    public List<OrderMessageVO> listMessages(Long orderId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        return orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
+                        .eq(OrderMessage::getOrderId, orderId)
+                        .orderByAsc(OrderMessage::getCreatedAt))
+                .stream()
+                .map(this::toOrderMessageVO)
+                .toList();
+    }
+
     private OrderDetailVO toOrderDetailVO(Order order) {
         Task task = requireTask(order.getTaskId());
         List<OrderStatusLog> statusLogs = orderStatusLogMapper.selectList(new LambdaQueryWrapper<OrderStatusLog>()
