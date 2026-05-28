@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复 Bug 共 **16** 项，主要集中在：
+本阶段目前已修复 Bug 共 **17** 项，主要集中在：
 
 - 认证与验证码流程
 - 任务、订单、举报主链
@@ -525,5 +525,33 @@
 - `frontend/src/views/OrderDetailView.vue`
 - `frontend/.env.local`
 - `README.md`
+
+---
+
+### Bug 17：ReportController 与 AdminController 存在重复 URL 映射导致 ApplicationContext 启动失败
+
+**问题现象**
+
+- Spring Boot 启动时抛出 `Ambiguous mapping` 异常
+- `ReportController.listAdminReports()` 映射到 `GET /api/admin/reports`
+- `AdminController.reports()` 也已映射到 `GET /api/admin/reports`（AdminController 使用 `@RequestMapping("/api/admin")`）
+- 同样 `ReportController.process()` 映射到 `PATCH /api/admin/reports/{reportId}` 冲突
+
+**影响范围**
+
+- 后端启动
+- 后台管理举报模块
+
+**修复方案**
+
+- 将 `GET /api/admin/reports` 和 `PATCH /api/admin/reports/{reportId}` 统一收归 `AdminController`
+- 从 `ReportController` 移除 `listAdminReports` 和 `process` 两个方法
+- `AdminController` 注入 `ReportService`，新增 `PATCH /reports/{reportId}` 端点以覆盖 AD-10 处理举报
+- `AdminController.reports()` 保持不变（AD-09 举报管理列表）
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/controller/AdminController.java`
+- `backend/src/main/java/com/campushub/controller/ReportController.java`
 
 ---

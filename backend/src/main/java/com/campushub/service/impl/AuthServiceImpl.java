@@ -55,7 +55,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User existing = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail()));
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getEmail, request.getEmail())
+                        .ne(User::getStatus, UserStatus.ANONYMIZED));
         if (existing != null) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -100,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
         if (user == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_FOUND);
         }
-        if (user.getStatus() == UserStatus.DISABLED) {
+        if (user.getStatus() == UserStatus.DISABLED || user.getStatus() == UserStatus.ANONYMIZED) {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED);
         }
 
@@ -151,7 +153,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail()));
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getEmail, request.getEmail())
+                        .ne(User::getStatus, UserStatus.ANONYMIZED));
         if ("REGISTER".equals(purpose) && user != null) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }

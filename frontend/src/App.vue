@@ -2,19 +2,20 @@
 import {
   Bell,
   ClipboardList,
+  GraduationCap,
   Home,
   LogIn,
   LogOut,
   Megaphone,
-  PanelLeft,
+  Moon,
   PlusCircle,
   ShieldCheck,
   Sparkles,
+  Sun,
   UserPlus,
-  UserRound,
-  Zap
+  UserRound
 } from '@lucide/vue'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
@@ -25,9 +26,32 @@ const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
 const useMock = import.meta.env.VITE_USE_MOCK === 'true'
-const workspaceStatus = computed(() => (useMock ? 'Vue 3 + Mock API' : 'Vue 3 + Backend API'))
+const workspaceStatus = computed(() => (useMock ? '演示模式' : '已连接服务器'))
+
+const isDark = ref(false)
+
+function initTheme() {
+  const stored = localStorage.getItem('campus-hub-theme')
+  if (stored === 'dark') {
+    isDark.value = true
+    document.documentElement.setAttribute('data-theme', 'dark')
+  } else if (stored === 'light') {
+    isDark.value = false
+    document.documentElement.setAttribute('data-theme', 'light')
+  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    isDark.value = true
+  }
+}
+
+function toggleTheme() {
+  isDark.value = !isDark.value
+  const theme = isDark.value ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', theme)
+  localStorage.setItem('campus-hub-theme', theme)
+}
 
 onMounted(async () => {
+  initTheme()
   if (auth.token) {
     try {
       await auth.loadMe()
@@ -45,18 +69,15 @@ async function handleLogout() {
 </script>
 
 <template>
-  <!-- Landing page: no shell at all -->
   <template v-if="isLanding">
     <RouterView />
   </template>
 
-  <!-- Normal app shell for all other pages -->
   <div v-else class="app-shell">
-    <!-- Sidebar -->
     <aside class="sidebar-shell">
       <RouterLink to="/tasks" class="brand">
         <span class="brand-mark">
-          <Zap class="brand-icon" aria-hidden="true" />
+          <GraduationCap class="brand-icon" aria-hidden="true" />
         </span>
         <span class="brand-copy">
           <strong>CampusHub</strong>
@@ -97,6 +118,10 @@ async function handleLogout() {
       </nav>
 
       <div class="account-area">
+        <button class="theme-toggle" type="button" :aria-label="isDark ? '切换到亮色模式' : '切换到暗色模式'" @click="toggleTheme">
+          <Moon v-if="isDark" class="theme-toggle-icon" aria-hidden="true" />
+          <Sun v-else class="theme-toggle-icon" aria-hidden="true" />
+        </button>
         <template v-if="auth.isAuthenticated">
           <span class="account-name">{{ auth.user?.nickname }}</span>
           <button class="button ghost" type="button" @click="handleLogout">
@@ -117,25 +142,70 @@ async function handleLogout() {
       </div>
     </aside>
 
-    <!-- Main Workspace -->
     <section class="workspace-shell">
       <header class="workspace-top">
         <div>
           <span class="eyebrow">
             <Sparkles class="eyebrow-icon" aria-hidden="true" />
-            Phase 4 前端工作区
+            CampusHub
           </span>
           <strong>校园互助主流程演示版</strong>
         </div>
         <span class="workspace-status">
-          <PanelLeft class="meta-icon" aria-hidden="true" />
           {{ workspaceStatus }}
         </span>
       </header>
 
       <main class="page-container">
-        <RouterView />
+        <RouterView v-slot="{ Component }">
+          <Transition name="page" mode="out-in">
+            <component :is="Component" />
+          </Transition>
+        </RouterView>
       </main>
     </section>
   </div>
 </template>
+
+<style scoped>
+.theme-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-on-sidebar);
+  transition: all var(--transition-fast);
+  margin-bottom: var(--space-2);
+  align-self: center;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-on-sidebar-active);
+}
+
+.theme-toggle-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.page-enter-active {
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+}
+</style>

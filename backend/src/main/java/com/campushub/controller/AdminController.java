@@ -8,8 +8,10 @@ import com.campushub.dto.admin.AdminOrderStatusUpdateRequest;
 import com.campushub.dto.admin.AdminReportQueryRequest;
 import com.campushub.dto.admin.AdminTaskStatusUpdateRequest;
 import com.campushub.dto.admin.AdminUserStatusRequest;
+import com.campushub.dto.report.ReportProcessRequest;
 import com.campushub.enums.UserStatus;
 import com.campushub.service.AdminService;
+import com.campushub.service.ReportService;
 import com.campushub.vo.admin.AdminDashboardVO;
 import com.campushub.vo.admin.AdminOrderItemVO;
 import com.campushub.vo.admin.AdminReportItemVO;
@@ -37,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
     private final AdminService adminService;
+    private final ReportService reportService;
 
     @GetMapping("/dashboard")
     public ApiResponse<AdminDashboardVO> dashboard() {
@@ -94,6 +97,13 @@ public class AdminController {
                                                               @RequestParam(defaultValue = "20") int size,
                                                               AdminReportQueryRequest request) {
         return ApiResponse.success(adminService.listReports(page, size, request));
+    }
+
+    @PatchMapping("/reports/{reportId}")
+    public ApiResponse<Void> processReport(@PathVariable Long reportId,
+                                           @Valid @RequestBody ReportProcessRequest request) {
+        reportService.processReport(reportId, request);
+        return ApiResponse.success();
     }
 
     @GetMapping("/announcements")

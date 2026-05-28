@@ -155,6 +155,7 @@ onMounted(load)
               <option value="仙林校区">仙林校区</option>
               <option value="鼓楼校区">鼓楼校区</option>
               <option value="浦口校区">浦口校区</option>
+              <option value="苏州校区">苏州校区</option>
             </select>
           </div>
           <div class="field">
@@ -192,3 +193,177 @@ onMounted(load)
     </div>
   </section>
 </template>
+
+<style scoped>
+.form-panel {
+  border: 1.5px solid var(--border-light);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.form-panel h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+  position: relative;
+  padding-left: var(--space-3);
+}
+
+.form-panel h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--primary-400), var(--secondary-500));
+  border-radius: 2px;
+}
+
+.form-panel .field input,
+.form-panel .field select,
+.form-panel .field textarea {
+  padding: 11px 14px;
+  font-size: 14px;
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-body);
+  transition: all var(--transition-fast);
+}
+
+.form-panel .field input:focus,
+.form-panel .field select:focus,
+.form-panel .field textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), var(--shadow-sm);
+  background: var(--bg-surface);
+}
+
+.form-panel .field label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.form-panel .button.primary {
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  align-self: flex-start;
+}
+
+.form-panel .button.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+.upload-trigger {
+  padding: 10px 20px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: 1.5px solid var(--border-light);
+}
+
+.upload-trigger:hover {
+  border-color: var(--primary-400);
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+.avatar-preview {
+  border: 3px solid var(--bg-surface);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.avatar-preview::after {
+  background: conic-gradient(from 0deg, var(--primary-400), var(--secondary-500), var(--accent-400), var(--primary-400));
+}
+
+aside.panel {
+  border: 1.5px solid var(--border-light);
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-body));
+}
+
+aside.panel h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding-left: var(--space-3);
+  position: relative;
+}
+
+aside.panel h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--success), var(--primary-500));
+  border-radius: 2px;
+}
+
+aside.panel strong {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--primary-600), var(--secondary-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+}
+
+aside.panel p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.error-message,
+.success-message {
+  padding: 12px 16px;
+  font-weight: 600;
+  border: 1.5px solid;
+}
+
+.error-message {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.success-message {
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.hint {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.checkbox-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+
+.empty-state {
+  padding: var(--space-10) var(--space-6);
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px dashed var(--border-medium);
+}
+
+@media (max-width: 1024px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

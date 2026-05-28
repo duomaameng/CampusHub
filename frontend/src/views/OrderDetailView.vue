@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import { fileApi, orderApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
@@ -127,11 +127,11 @@ onMounted(load)
         <div class="grid two">
           <div class="panel">
             <strong>发布者</strong>
-            <p>{{ order.publisherNickname }}</p>
+            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">{{ order.publisherNickname }}</RouterLink></p>
           </div>
           <div class="panel">
             <strong>服务方</strong>
-            <p>{{ order.serviceProviderNickname }}</p>
+            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></p>
           </div>
         </div>
 
@@ -150,7 +150,7 @@ onMounted(load)
           <div class="messages">
             <div v-if="!order.messages.length" class="hint">暂无留言</div>
             <div v-for="item in order.messages" :key="item.id" class="message-bubble">
-              <strong>{{ item.senderNickname }}</strong>
+              <strong><RouterLink :to="{ name: 'user-public-profile', params: { id: item.senderId } }">{{ item.senderNickname }}</RouterLink></strong>
               <p v-if="item.content">{{ item.content }}</p>
               <img v-if="item.imageUrl" class="message-image" :src="resolveAssetUrl(item.imageUrl)" alt="聊天图片" />
               <span class="hint">{{ new Date(item.createdAt).toLocaleString() }}</span>
@@ -246,7 +246,7 @@ onMounted(load)
           <h2>评价记录</h2>
           <div v-if="!reviews.length" class="hint">暂无评价</div>
           <div v-for="review in reviews" :key="review.id" class="item-card">
-            <strong>{{ review.reviewerNickname }} -> {{ review.revieweeNickname }}</strong>
+            <strong><RouterLink :to="{ name: 'user-public-profile', params: { id: review.reviewerId } }">{{ review.reviewerNickname }}</RouterLink> -> <RouterLink :to="{ name: 'user-public-profile', params: { id: review.revieweeId } }">{{ review.revieweeNickname }}</RouterLink></strong>
             <p>{{ review.rating }} 分 · {{ review.content }}</p>
           </div>
         </section>

@@ -59,6 +59,23 @@ public class ReportService {
         return PageResult.of(result.getTotal(), safePage, safeSize, records);
     }
 
+    public PageResult<ReportItemVO> listAdminReports(int page, int size, ReportStatus status) {
+        int safePage = normalizePage(page);
+        int safeSize = normalizeSize(size);
+
+        LambdaQueryWrapper<Report> wrapper = new LambdaQueryWrapper<Report>()
+                .orderByDesc(Report::getCreatedAt);
+        if (status != null) {
+            wrapper.eq(Report::getStatus, status);
+        }
+
+        Page<Report> result = reportMapper.selectPage(new Page<>(safePage, safeSize), wrapper);
+        List<ReportItemVO> records = result.getRecords().stream()
+                .map(this::toReportItemVO)
+                .toList();
+        return PageResult.of(result.getTotal(), safePage, safeSize, records);
+    }
+
     public ReportDetailVO getReportDetail(Long reportId) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Report report = reportMapper.selectById(reportId);

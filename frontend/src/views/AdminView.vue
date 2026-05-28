@@ -142,7 +142,7 @@ async function toggleAnnouncement(item: AnnouncementItem) {
 }
 
 async function deleteAnnouncement(item: AnnouncementItem) {
-  if (!window.confirm(`确定删除公告“${item.title}”？`)) return
+  if (!window.confirm(`确定删除公告"${item.title}"？`)) return
 
   announcementsError.value = ''
   announcementsSuccess.value = ''
@@ -397,29 +397,45 @@ onMounted(async () => {
 <style scoped>
 .admin-tabs {
   display: inline-flex;
-  gap: var(--space-2);
-  padding: var(--space-1);
+  gap: 2px;
+  padding: 3px;
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-6);
+  animation: fadeSlideUp 0.4s var(--transition-slow) both;
 }
 
 .admin-tab {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 9px 14px;
+  padding: 8px 14px;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
+  transition: all var(--transition-fast);
 }
 
-.admin-tab:hover,
+.admin-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
 .admin-tab.active {
-  color: var(--primary-700);
-  background: var(--primary-50);
+  color: var(--primary-600);
+  background: var(--accent-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .admin-tab.active {
+    color: var(--primary-400);
+  }
+}
+
+[data-theme='dark'] .admin-tab.active {
+  color: var(--primary-400);
 }
 
 .admin-announcement-layout {
@@ -434,8 +450,9 @@ onMounted(async () => {
 }
 
 .announcement-list-head h2 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .table-wrapper {
@@ -473,7 +490,7 @@ onMounted(async () => {
   gap: var(--space-2);
   color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .pagination {
@@ -486,6 +503,17 @@ onMounted(async () => {
 @media (max-width: 1024px) {
   .admin-announcement-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

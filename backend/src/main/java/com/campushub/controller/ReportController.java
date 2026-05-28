@@ -3,7 +3,6 @@ package com.campushub.controller;
 import com.campushub.common.ApiResponse;
 import com.campushub.common.PageResult;
 import com.campushub.dto.report.ReportCreateRequest;
-import com.campushub.dto.report.ReportProcessRequest;
 import com.campushub.service.ReportService;
 import com.campushub.vo.report.ReportDetailVO;
 import com.campushub.vo.report.ReportItemVO;
@@ -34,11 +33,5 @@ public class ReportController {
     @PostMapping("/api/tasks/{taskId}/reports")
     public ApiResponse<ReportSubmissionVO> submit(@PathVariable Long taskId, @Valid @RequestBody ReportCreateRequest request) {
         return ApiResponse.success(reportService.submitTaskReport(taskId, request));
-    }
-
-    @PatchMapping("/api/admin/reports/{reportId}")
-    public ApiResponse<Void> process(@PathVariable Long reportId, @Valid @RequestBody ReportProcessRequest request) {
-        reportService.processReport(reportId, request);
-        return ApiResponse.success();
     }
 }

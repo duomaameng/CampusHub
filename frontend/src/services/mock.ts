@@ -5,6 +5,7 @@ import type {
   AnnouncementPriority,
   AnnouncementPublishResult,
   ApplicationItem,
+  CreditInfo,
   LoginResult,
   LoginUser,
   NotificationItem,
@@ -13,6 +14,7 @@ import type {
   OrderMessage,
   OrderStatus,
   PageData,
+  PublicProfile,
   ReportSubmission,
   ReviewItem,
   TaskForm,
@@ -1112,6 +1114,46 @@ export const mockApi = {
     })
     saveDb(db)
     return clone(report)
+  },
+
+  async getPublicProfile(userId: number): Promise<PublicProfile> {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.id === userId)
+    if (!user) throw new Error('用户不存在')
+    return {
+      userId: user.id,
+      nickname: user.profile.nickname,
+      avatarUrl: user.profile.avatarUrl,
+      gender: user.profile.gender,
+      college: user.profile.college,
+      campus: user.profile.campus,
+      verified: user.verified,
+      contact: user.profile.contact,
+      contactVisible: user.profile.contactVisible,
+      creditScore: user.credit.score,
+      completedOrders: user.credit.completedOrders,
+      praiseRate: user.credit.praiseRate,
+      memberSince: user.createdAt
+    }
+  },
+
+  async getUserCredit(userId: number): Promise<CreditInfo> {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.id === userId)
+    if (!user) throw new Error('用户不存在')
+    const recentReviews = db.reviews
+      .filter((item) => item.revieweeId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+    return {
+      userId: user.id,
+      score: user.credit.score,
+      completedOrders: user.credit.completedOrders,
+      praiseRate: user.credit.praiseRate,
+      recentReviews: clone(recentReviews)
+    }
   },
 
   reset() {

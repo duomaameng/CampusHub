@@ -91,14 +91,20 @@ onMounted(loadOrders)
     <div v-else-if="!page?.records.length" class="empty-state">暂无订单</div>
 
     <div v-else class="cards-grid">
-      <RouterLink v-for="order in page.records" :key="order.id" class="item-card" :to="`/orders/${order.id}`">
+      <RouterLink
+        v-for="(order, index) in page.records"
+        :key="order.id"
+        class="item-card"
+        :to="`/orders/${order.id}`"
+        :style="{ '--i': index }"
+      >
         <div class="item-title">
           <h2>{{ order.taskTitle }}</h2>
           <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
         </div>
         <div class="meta-line">
-          <span><UserRound class="meta-icon" aria-hidden="true" />发布者 {{ order.publisherNickname }}</span>
-          <span><ClipboardList class="meta-icon" aria-hidden="true" />服务方 {{ order.serviceProviderNickname }}</span>
+          <span><UserRound class="meta-icon" aria-hidden="true" />发布者 <RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">{{ order.publisherNickname }}</RouterLink></span>
+          <span><ClipboardList class="meta-icon" aria-hidden="true" />服务方 <RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></span>
         </div>
         <p class="hint">
           <CalendarClock class="meta-icon" aria-hidden="true" />
@@ -108,3 +114,132 @@ onMounted(loadOrders)
     </div>
   </section>
 </template>
+
+<style scoped>
+.toolbar {
+  position: relative;
+}
+
+.toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.15), transparent);
+}
+
+.toolbar .field select,
+.toolbar .field input {
+  padding: 10px 14px;
+  font-weight: 500;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-light);
+  transition: all var(--transition-fast);
+}
+
+.toolbar .field select:focus,
+.toolbar .field input:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), var(--shadow-sm);
+}
+
+.toolbar .field label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.toolbar .button.secondary {
+  padding: 10px 24px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 11px;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.toolbar .button.secondary:hover {
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+.item-card {
+  padding: var(--space-5);
+  border: 1.5px solid var(--border-light);
+  position: relative;
+}
+
+.item-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-400), var(--secondary-400));
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.item-card:hover::after {
+  opacity: 1;
+}
+
+.item-card h2 {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.item-card .tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 4px 12px;
+}
+
+.item-card .meta-line {
+  font-size: 12.5px;
+  gap: var(--space-3);
+}
+
+.item-card .meta-line a {
+  color: var(--primary-600);
+  font-weight: 600;
+}
+
+.item-card .meta-line a:hover {
+  color: var(--primary-700);
+}
+
+.empty-state {
+  padding: var(--space-10) var(--space-6);
+  font-size: 14px;
+  font-weight: 600;
+  border: 2px dashed var(--border-medium);
+}
+
+.error-message {
+  margin-bottom: var(--space-4);
+  padding: 12px 16px;
+  font-weight: 600;
+  border: 1.5px solid rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

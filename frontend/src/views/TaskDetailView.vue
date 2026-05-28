@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
@@ -136,7 +136,7 @@ onMounted(load)
         <div class="page-title">
           <div>
             <h1>{{ task.title }}</h1>
-            <p>{{ task.publisherNickname }} · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
           <span class="tag">{{ categoryText[task.category] }}</span>
         </div>
@@ -210,7 +210,7 @@ onMounted(load)
           <div v-if="!applications.length" class="empty-state">暂无申请</div>
           <div v-for="application in applications" :key="application.id" class="item-card">
             <div class="item-title">
-              <h3>{{ application.applicantNickname }}</h3>
+              <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
               <span class="tag">{{ applicationStatusText[application.status] }}</span>
             </div>
             <p>{{ application.message }}</p>
@@ -229,3 +229,222 @@ onMounted(load)
     </div>
   </section>
 </template>
+
+<style scoped>
+.detail-layout {
+  gap: var(--space-8);
+}
+
+.panel {
+  border: 1.5px solid var(--border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.panel h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.panel h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  position: relative;
+  padding-left: var(--space-3);
+}
+
+.panel h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--primary-400), var(--secondary-500));
+  border-radius: 2px;
+}
+
+.panel .tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 5px 14px;
+  background: linear-gradient(135deg, var(--primary-50), var(--secondary-50));
+  color: var(--primary-600);
+  border: 1px solid var(--primary-100);
+}
+
+.panel .page-title p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+.panel .page-title p a {
+  color: var(--primary-600);
+  font-weight: 600;
+}
+
+.panel .page-title p a:hover {
+  color: var(--primary-700);
+}
+
+.panel > p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.panel .grid.two .panel {
+  padding: var(--space-4);
+  background: var(--bg-body);
+  border: 1px solid var(--border-light);
+}
+
+.panel .grid.two .panel strong {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.panel .grid.two .panel p {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.upload-grid {
+  gap: var(--space-3);
+}
+
+.upload-card {
+  border: 1.5px solid var(--border-light);
+  transition: all var(--transition-base);
+}
+
+.upload-card:hover {
+  border-color: var(--primary-300);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+}
+
+.upload-card img {
+  transition: transform var(--transition-base);
+}
+
+.upload-card:hover img {
+  transform: scale(1.03);
+}
+
+aside .panel {
+  border: 1.5px solid var(--border-light);
+}
+
+aside .panel h2 {
+  font-size: 15px;
+}
+
+aside .panel .button.primary {
+  padding: 11px 20px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+aside .panel .button.primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
+}
+
+aside .panel textarea {
+  min-height: 100px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-body);
+  transition: all var(--transition-fast);
+}
+
+aside .panel textarea:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), var(--shadow-sm);
+  background: var(--bg-surface);
+}
+
+aside .panel textarea::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.item-card {
+  padding: var(--space-4);
+  border: 1.5px solid var(--border-light);
+}
+
+.item-card:hover {
+  border-color: rgba(99, 102, 241, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+}
+
+.item-card h3 a {
+  color: var(--primary-600);
+  font-weight: 700;
+}
+
+.item-card h3 a:hover {
+  color: var(--primary-700);
+}
+
+.item-card .button.secondary {
+  padding: 9px 18px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-surface);
+}
+
+.item-card .button.secondary:hover:not(:disabled) {
+  border-color: var(--primary-400);
+  background: var(--primary-50);
+  color: var(--primary-700);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.empty-state {
+  padding: var(--space-8) var(--space-4);
+  font-size: 13px;
+  font-weight: 600;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.02), transparent 60%),
+    var(--bg-surface);
+  border: 2px dashed var(--border-medium);
+}
+
+.error-message,
+.success-message {
+  margin-top: var(--space-2);
+  padding: 10px 14px;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 1024px) {
+  .detail-layout {
+    gap: var(--space-6);
+  }
+}
+</style>
