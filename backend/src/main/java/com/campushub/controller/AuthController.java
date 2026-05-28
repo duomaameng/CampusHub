@@ -2,10 +2,10 @@ package com.campushub.controller;
 
 import com.campushub.common.ApiResponse;
 import com.campushub.dto.request.*;
-import com.campushub.dto.response.LoginResponse;
-import com.campushub.dto.response.RegisterResponse;
-import com.campushub.dto.response.VerifyEmailResponse;
 import com.campushub.service.AuthService;
+import com.campushub.vo.auth.LoginVO;
+import com.campushub.vo.auth.RegisterVO;
+import com.campushub.vo.auth.VerifyEmailVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,12 +19,12 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ApiResponse<RegisterVO> register(@Valid @RequestBody RegisterRequest request) {
         return ApiResponse.success(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ApiResponse<LoginVO> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.success(authService.login(request));
     }
 
@@ -35,7 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email")
-    public ApiResponse<VerifyEmailResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+    public ApiResponse<VerifyEmailVO> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         return ApiResponse.success(authService.verifyEmail(request));
     }
 

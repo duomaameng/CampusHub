@@ -59,6 +59,11 @@ public class OrderController {
         return ApiResponse.success();
     }
 
+    @GetMapping("/{orderId}/messages")
+    public ApiResponse<List<com.campushub.vo.order.OrderMessageVO>> messages(@PathVariable Long orderId) {
+        return ApiResponse.success(orderService.listMessages(orderId));
+    }
+
     @PostMapping("/{orderId}/reviews")
     public ApiResponse<Void> submitReview(@PathVariable Long orderId, @Valid @RequestBody ReviewCreateRequest request) {
         orderService.submitReview(orderId, request);

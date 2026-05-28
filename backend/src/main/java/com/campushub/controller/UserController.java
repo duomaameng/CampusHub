@@ -1,16 +1,17 @@
 package com.campushub.controller;
 
 import com.campushub.common.ApiResponse;
-import com.campushub.common.PageResult;
 import com.campushub.dto.request.UpdateProfileRequest;
-import com.campushub.dto.response.CreditInfoResponse;
-import com.campushub.dto.response.PublicProfileResponse;
-import com.campushub.dto.response.UserProfileResponse;
 import com.campushub.service.UserService;
-import com.campushub.vo.order.ReviewItemVO;
+import com.campushub.vo.user.PublicProfileVO;
+import com.campushub.vo.user.UserCreditVO;
+import com.campushub.vo.user.UserProfileVO;
+import com.campushub.vo.user.UserReviewItemVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -20,36 +21,33 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/me")
-    public ApiResponse<UserProfileResponse> getCurrentUser() {
+    public ApiResponse<UserProfileVO> getCurrentUser() {
         return ApiResponse.success(userService.getCurrentUser());
     }
 
     @PatchMapping("/me")
-    public ApiResponse<UserProfileResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+    public ApiResponse<UserProfileVO> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return ApiResponse.success(userService.updateProfile(request));
     }
 
     @DeleteMapping("/me")
-    public ApiResponse<Void> deleteAccount() {
-        userService.deleteAccount();
+    public ApiResponse<Void> deleteCurrentUser() {
+        userService.deleteCurrentUser();
         return ApiResponse.success();
     }
 
     @GetMapping("/{userId}/profile")
-    public ApiResponse<PublicProfileResponse> getPublicProfile(@PathVariable Long userId) {
+    public ApiResponse<PublicProfileVO> getPublicProfile(@PathVariable Long userId) {
         return ApiResponse.success(userService.getPublicProfile(userId));
     }
 
     @GetMapping("/{userId}/reviews")
-    public ApiResponse<PageResult<ReviewItemVO>> getUserReviews(
-            @PathVariable Long userId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ApiResponse.success(userService.getUserReviews(userId, page, size));
+    public ApiResponse<List<UserReviewItemVO>> getUserReviews(@PathVariable Long userId) {
+        return ApiResponse.success(userService.getUserReviews(userId));
     }
 
     @GetMapping("/{userId}/credit")
-    public ApiResponse<CreditInfoResponse> getUserCredit(@PathVariable Long userId) {
+    public ApiResponse<UserCreditVO> getUserCredit(@PathVariable Long userId) {
         return ApiResponse.success(userService.getUserCredit(userId));
     }
 }

@@ -38,4 +38,10 @@ public class NotificationController {
         notificationService.markAllRead();
         return ApiResponse.success();
     }
+
+    @DeleteMapping("/{notificationId}")
+    public ApiResponse<Void> delete(@PathVariable Long notificationId) {
+        notificationService.deleteNotification(notificationId);
+        return ApiResponse.success();
+    }
 }

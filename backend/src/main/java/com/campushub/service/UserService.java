@@ -1,23 +1,24 @@
 package com.campushub.service;
 
-import com.campushub.common.PageResult;
 import com.campushub.dto.request.UpdateProfileRequest;
-import com.campushub.dto.response.CreditInfoResponse;
-import com.campushub.dto.response.PublicProfileResponse;
-import com.campushub.dto.response.UserProfileResponse;
-import com.campushub.vo.order.ReviewItemVO;
+import com.campushub.vo.user.PublicProfileVO;
+import com.campushub.vo.user.UserCreditVO;
+import com.campushub.vo.user.UserProfileVO;
+import com.campushub.vo.user.UserReviewItemVO;
+
+import java.util.List;
 
 public interface UserService {
 
-    UserProfileResponse getCurrentUser();
+    UserProfileVO getCurrentUser();
 
-    UserProfileResponse updateProfile(UpdateProfileRequest request);
+    UserProfileVO updateProfile(UpdateProfileRequest request);
 
-    void deleteAccount();
+    PublicProfileVO getPublicProfile(Long userId);
 
-    PublicProfileResponse getPublicProfile(Long userId);
+    void deleteCurrentUser();
 
-    PageResult<ReviewItemVO> getUserReviews(Long userId, int page, int size);
+    List<UserReviewItemVO> getUserReviews(Long userId);
 
-    CreditInfoResponse getUserCredit(Long userId);
+    UserCreditVO getUserCredit(Long userId);
 }

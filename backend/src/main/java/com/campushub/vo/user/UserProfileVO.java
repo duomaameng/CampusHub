@@ -1,4 +1,4 @@
-package com.campushub.dto.response;
+package com.campushub.vo.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileResponse {
+public class UserProfileVO {
     private Long id;
     private String email;
     private String role;

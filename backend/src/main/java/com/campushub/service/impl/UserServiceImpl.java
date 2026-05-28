@@ -1,28 +1,30 @@
 package com.campushub.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
-import com.campushub.common.PageResult;
 import com.campushub.dto.request.UpdateProfileRequest;
-import com.campushub.dto.response.CreditInfoResponse;
-import com.campushub.dto.response.PublicProfileResponse;
-import com.campushub.dto.response.UserProfileResponse;
+import com.campushub.entity.CreditLog;
 import com.campushub.entity.FileRecord;
+import com.campushub.entity.Order;
 import com.campushub.entity.Review;
 import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
+import com.campushub.enums.OrderStatus;
 import com.campushub.enums.UploadBusinessType;
 import com.campushub.enums.UserStatus;
+import com.campushub.mapper.CreditLogMapper;
+import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
 import com.campushub.security.SecurityUtils;
 import com.campushub.service.FileService;
 import com.campushub.service.UserService;
-import com.campushub.vo.order.ReviewItemVO;
+import com.campushub.vo.user.PublicProfileVO;
+import com.campushub.vo.user.UserCreditVO;
+import com.campushub.vo.user.UserProfileVO;
+import com.campushub.vo.user.UserReviewItemVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +32,6 @@ import org.springframework.util.StringUtils;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,11 +39,13 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserProfileMapper userProfileMapper;
-    private final ReviewMapper reviewMapper;
     private final FileService fileService;
+    private final ReviewMapper reviewMapper;
+    private final CreditLogMapper creditLogMapper;
+    private final OrderMapper orderMapper;
 
     @Override
-    public UserProfileResponse getCurrentUser() {
+    public UserProfileVO getCurrentUser() {
         Long userId = SecurityUtils.requireCurrentUserId();
         User user = userMapper.selectById(userId);
         if (user == null) {
@@ -53,7 +56,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserProfileResponse updateProfile(UpdateProfileRequest request) {
+    public UserProfileVO updateProfile(UpdateProfileRequest request) {
         Long userId = SecurityUtils.requireCurrentUserId();
         UserProfile profile = userProfileMapper.selectOne(
                 new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId));
@@ -100,7 +103,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PublicProfileResponse getPublicProfile(Long userId) {
+    public PublicProfileVO getPublicProfile(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
@@ -108,7 +111,7 @@ public class UserServiceImpl implements UserService {
         UserProfile profile = userProfileMapper.selectOne(
                 new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId));
 
-        PublicProfileResponse.PublicProfileResponseBuilder builder = PublicProfileResponse.builder()
+        PublicProfileVO.PublicProfileVOBuilder builder = PublicProfileVO.builder()
                 .userId(user.getId())
                 .nickname(profile != null ? profile.getNickname() : "")
                 .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
@@ -134,99 +137,119 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void deleteAccount() {
+    public void deleteCurrentUser() {
         Long userId = SecurityUtils.requireCurrentUserId();
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
+        user.setEmail("anonymized+" + userId + "@deleted.local");
+        user.setPasswordHash("{deleted}");
         user.setStatus(UserStatus.ANONYMIZED);
-        user.setEmail("deleted_" + userId + "@anonymized.local");
+        user.setVerified(false);
+        user.setStudentNoMasked(null);
+        user.setLoginFailures(0);
+        user.setLockedUntil(null);
         userMapper.updateById(user);
+
+        UserProfile profile = userProfileMapper.selectOne(
+                new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId));
+        if (profile != null) {
+            profile.setNickname("已注销用户");
+            profile.setAvatarUrl(null);
+            profile.setGender(null);
+            profile.setGrade(null);
+            profile.setCollege(null);
+            profile.setBio(null);
+            profile.setCampus(null);
+            profile.setContact(null);
+            profile.setContactVisible(false);
+            userProfileMapper.updateById(profile);
+        }
     }
 
     @Override
-    public PageResult<ReviewItemVO> getUserReviews(Long userId, int page, int size) {
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
-        }
-
-        IPage<Review> reviewPage = reviewMapper.selectPage(
-                new Page<>(page, size),
-                new LambdaQueryWrapper<Review>()
-                        .eq(Review::getRevieweeId, userId)
-                        .orderByDesc(Review::getCreatedAt));
-
-        List<ReviewItemVO> records = reviewPage.getRecords().stream()
-                .map(r -> {
-                    UserProfile reviewerProfile = userProfileMapper.selectOne(
-                            new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, r.getReviewerId()));
-                    return new ReviewItemVO(
-                            r.getId(), r.getOrderId(), r.getReviewerId(),
-                            reviewerProfile != null ? reviewerProfile.getNickname() : "",
-                            r.getRevieweeId(), "", r.getRating(), r.getContent(), r.getCreatedAt());
-                })
-                .collect(Collectors.toList());
-
-        return PageResult.of(reviewPage.getTotal(), page, size, records);
-    }
-
-    @Override
-    public CreditInfoResponse getUserCredit(Long userId) {
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
-        }
-
-        long completedOrders = reviewMapper.selectCount(
-                new LambdaQueryWrapper<Review>().eq(Review::getRevieweeId, userId));
-        double avgRating = 0;
-        if (completedOrders > 0) {
-            List<Review> reviews = reviewMapper.selectList(
-                    new LambdaQueryWrapper<Review>()
-                            .eq(Review::getRevieweeId, userId)
-                            .orderByDesc(Review::getCreatedAt)
-                            .last("LIMIT 10"));
-            avgRating = reviews.stream().mapToInt(Review::getRating).average().orElse(0);
-        }
-
-        List<ReviewItemVO> recentReviews = reviewMapper.selectList(
+    public List<UserReviewItemVO> getUserReviews(Long userId) {
+        ensureUserExists(userId);
+        return reviewMapper.selectList(
                         new LambdaQueryWrapper<Review>()
                                 .eq(Review::getRevieweeId, userId)
                                 .orderByDesc(Review::getCreatedAt)
-                                .last("LIMIT 5"))
-                .stream()
-                .map(r -> {
-                    UserProfile reviewerProfile = userProfileMapper.selectOne(
-                            new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, r.getReviewerId()));
-                    return new ReviewItemVO(
-                            r.getId(), r.getOrderId(), r.getReviewerId(),
-                            reviewerProfile != null ? reviewerProfile.getNickname() : "",
-                            r.getRevieweeId(), "", r.getRating(), r.getContent(), r.getCreatedAt());
-                })
-                .collect(Collectors.toList());
+                ).stream()
+                .map(review -> UserReviewItemVO.builder()
+                        .reviewId(review.getId())
+                        .orderId(review.getOrderId())
+                        .reviewerId(review.getReviewerId())
+                        .rating(review.getRating())
+                        .content(review.getContent())
+                        .createdAt(review.getCreatedAt())
+                        .build())
+                .toList();
+    }
 
-        return CreditInfoResponse.builder()
+    @Override
+    public UserCreditVO getUserCredit(Long userId) {
+        ensureUserExists(userId);
+
+        CreditLog latestCredit = creditLogMapper.selectOne(
+                new LambdaQueryWrapper<CreditLog>()
+                        .eq(CreditLog::getUserId, userId)
+                        .orderByDesc(CreditLog::getCreatedAt)
+                        .last("LIMIT 1"));
+        int score = latestCredit != null ? latestCredit.getScoreAfter() : 100;
+
+        long completedOrders = orderMapper.selectCount(
+                new LambdaQueryWrapper<Order>()
+                        .and(wrapper -> wrapper
+                                .eq(Order::getPublisherId, userId)
+                                .or()
+                                .eq(Order::getServiceProviderId, userId))
+                        .in(Order::getStatus, List.of(OrderStatus.COMPLETED, OrderStatus.REVIEWED)));
+
+        List<Review> reviews = reviewMapper.selectList(
+                new LambdaQueryWrapper<Review>()
+                        .eq(Review::getRevieweeId, userId)
+                        .orderByDesc(Review::getCreatedAt));
+        double praiseRate = reviews.isEmpty()
+                ? 1.0
+                : reviews.stream().mapToInt(Review::getRating).average().orElse(5.0) / 5.0;
+
+        List<UserCreditVO.CreditChangeItem> recentChanges = creditLogMapper.selectList(
+                        new LambdaQueryWrapper<CreditLog>()
+                                .eq(CreditLog::getUserId, userId)
+                                .orderByDesc(CreditLog::getCreatedAt)
+                                .last("LIMIT 10"))
+                .stream()
+                .map(log -> UserCreditVO.CreditChangeItem.builder()
+                        .changeAmount(log.getChangeAmount())
+                        .scoreBefore(log.getScoreBefore())
+                        .scoreAfter(log.getScoreAfter())
+                        .reason(log.getReason())
+                        .relatedOrderId(log.getRelatedOrderId())
+                        .createdAt(log.getCreatedAt())
+                        .build())
+                .toList();
+
+        return UserCreditVO.builder()
                 .userId(userId)
-                .score(100)
+                .score(score)
                 .completedOrders((int) completedOrders)
-                .praiseRate(Math.round(avgRating * 100.0) / 100.0)
-                .recentReviews(recentReviews)
+                .praiseRate(praiseRate)
+                .recentChanges(recentChanges)
                 .build();
     }
 
-    private UserProfileResponse buildProfileResponse(User user) {
+    private UserProfileVO buildProfileResponse(User user) {
         UserProfile profile = userProfileMapper.selectOne(
                 new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, user.getId()));
 
-        return UserProfileResponse.builder()
+        return UserProfileVO.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .role(user.getRole().getValue())
                 .status(user.getStatus().getValue())
                 .verified(user.getVerified())
-                .profile(UserProfileResponse.ProfileDetail.builder()
+                .profile(UserProfileVO.ProfileDetail.builder()
                         .nickname(profile != null ? profile.getNickname() : "")
                         .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
                         .gender(profile != null ? profile.getGender() : null)
@@ -237,12 +260,18 @@ public class UserServiceImpl implements UserService {
                         .contact(profile != null ? profile.getContact() : null)
                         .contactVisible(profile != null && profile.getContactVisible())
                         .build())
-                .credit(UserProfileResponse.CreditSummary.builder()
+                .credit(UserProfileVO.CreditSummary.builder()
                         .score(100)
                         .completedOrders(0)
                         .praiseRate(1.0)
                         .build())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    private void ensureUserExists(Long userId) {
+        if (userMapper.selectById(userId) == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
     }
 }

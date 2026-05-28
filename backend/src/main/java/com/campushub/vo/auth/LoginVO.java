@@ -1,4 +1,4 @@
-package com.campushub.dto.response;
+package com.campushub.vo.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginResponse {
+public class LoginVO {
     private String token;
     private String tokenType;
     private long expiresIn;

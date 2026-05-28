@@ -73,6 +73,23 @@ public class NotificationService {
     }
 
     @Transactional
+    public void deleteNotification(Long notificationId) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Notification notification = notificationMapper.selectOne(
+                new LambdaQueryWrapper<Notification>()
+                        .eq(Notification::getId, notificationId)
+                        .eq(Notification::getReceiverId, currentUserId)
+                        .eq(Notification::getIsDeleted, false)
+                        .last("LIMIT 1")
+        );
+        if (notification == null) {
+            throw new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND);
+        }
+        notification.setIsDeleted(true);
+        notificationMapper.updateById(notification);
+    }
+
+    @Transactional
     public void createApplicationNotification(Long receiverId, Long taskId, String applicantNickname, String taskTitle) {
         notificationMapper.insert(notificationFactory.application(receiverId, taskId, applicantNickname, taskTitle));
     }

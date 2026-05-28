@@ -1,19 +1,19 @@
 package com.campushub.service;
 
 import com.campushub.dto.request.*;
-import com.campushub.dto.response.LoginResponse;
-import com.campushub.dto.response.RegisterResponse;
-import com.campushub.dto.response.VerifyEmailResponse;
+import com.campushub.vo.auth.LoginVO;
+import com.campushub.vo.auth.RegisterVO;
+import com.campushub.vo.auth.VerifyEmailVO;
 
 public interface AuthService {
 
-    RegisterResponse register(RegisterRequest request);
+    RegisterVO register(RegisterRequest request);
 
-    LoginResponse login(LoginRequest request);
+    LoginVO login(LoginRequest request);
 
     void sendVerificationCode(SendVerificationCodeRequest request);
 
-    VerifyEmailResponse verifyEmail(VerifyEmailRequest request);
+    VerifyEmailVO verifyEmail(VerifyEmailRequest request);
 
     void resetPassword(ResetPasswordRequest request);
 
