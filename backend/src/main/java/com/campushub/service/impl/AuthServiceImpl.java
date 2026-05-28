@@ -4,10 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
 import com.campushub.dto.request.*;
-import com.campushub.dto.response.LoginResponse;
-import com.campushub.dto.response.RegisterResponse;
-import com.campushub.dto.response.VerifyEmailResponse;
-import com.campushub.dto.response.UserProfileResponse;
 import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
 import com.campushub.entity.VerificationCode;
@@ -20,6 +16,10 @@ import com.campushub.security.JwtTokenProvider;
 import com.campushub.security.TokenBlacklistService;
 import com.campushub.service.AuthService;
 import com.campushub.service.EmailService;
+import com.campushub.vo.auth.LoginVO;
+import com.campushub.vo.auth.RegisterVO;
+import com.campushub.vo.auth.VerifyEmailVO;
+import com.campushub.vo.user.UserProfileVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public RegisterResponse register(RegisterRequest request) {
+    public RegisterVO register(RegisterRequest request) {
         if (!request.getEmail().endsWith("@smail.nju.edu.cn")
                 && !request.getEmail().endsWith("@nju.edu.cn")) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "请使用学校邮箱注册");
@@ -90,11 +90,11 @@ public class AuthServiceImpl implements AuthService {
         userProfileMapper.insert(profile);
 
         log.info("User registered: {}", user.getEmail());
-        return RegisterResponse.builder().userId(user.getId()).email(user.getEmail()).build();
+        return RegisterVO.builder().userId(user.getId()).email(user.getEmail()).build();
     }
 
     @Override
-    public LoginResponse login(LoginRequest request) {
+    public LoginVO login(LoginRequest request) {
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail()));
         if (user == null) {
@@ -126,11 +126,11 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail(), user.getRole().getValue());
 
-        return LoginResponse.builder()
+        return LoginVO.builder()
                 .token(token)
                 .tokenType("Bearer")
                 .expiresIn(86400000L)
-                .user(LoginResponse.LoginUser.builder()
+                .user(LoginVO.LoginUser.builder()
                         .id(user.getId())
                         .email(user.getEmail())
                         .role(user.getRole().getValue())
@@ -173,14 +173,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public VerifyEmailResponse verifyEmail(VerifyEmailRequest request) {
+    public VerifyEmailVO verifyEmail(VerifyEmailRequest request) {
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail()));
         if (user == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_FOUND);
         }
         if (user.getVerified()) {
-            return new VerifyEmailResponse(true);
+            return new VerifyEmailVO(true);
         }
 
         VerificationCode vc = verificationCodeMapper.selectOne(
@@ -204,7 +204,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.updateById(user);
 
         log.info("Email verified: {}", request.getEmail());
-        return new VerifyEmailResponse(true);
+        return new VerifyEmailVO(true);
     }
 
     @Override
@@ -257,35 +257,5 @@ public class AuthServiceImpl implements AuthService {
                 jwtTokenProvider.getExpirationFromToken(token).toInstant().atZone(ZoneId.systemDefault()).toInstant()
         );
         log.info("JWT token logged out and blacklisted.");
-    }
-
-    private UserProfileResponse buildProfileResponse(User user) {
-        UserProfile profile = userProfileMapper.selectOne(
-                new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, user.getId()));
-
-        return UserProfileResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .role(user.getRole().getValue())
-                .status(user.getStatus().getValue())
-                .verified(user.getVerified())
-                .profile(UserProfileResponse.ProfileDetail.builder()
-                        .nickname(profile != null ? profile.getNickname() : "")
-                        .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
-                        .gender(profile != null ? profile.getGender() : null)
-                        .grade(profile != null ? profile.getGrade() : null)
-                        .college(profile != null ? profile.getCollege() : null)
-                        .bio(profile != null ? profile.getBio() : null)
-                        .campus(profile != null ? profile.getCampus() : null)
-                        .contact(profile != null ? profile.getContact() : null)
-                        .contactVisible(profile != null && profile.getContactVisible())
-                        .build())
-                .credit(UserProfileResponse.CreditSummary.builder()
-                        .score(100)
-                        .completedOrders(0)
-                        .praiseRate(1.0)
-                        .build())
-                .createdAt(user.getCreatedAt())
-                .build();
     }
 }

@@ -1,4 +1,4 @@
-package com.campushub.dto.response;
+package com.campushub.vo.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PublicProfileResponse {
+public class PublicProfileVO {
     private Long userId;
     private String nickname;
     private String avatarUrl;

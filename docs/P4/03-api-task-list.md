@@ -24,14 +24,14 @@
 
 ## 2. 用户模块（User）
 
-| 序号 | 方法 | 路径 | 说明 | 认证 | 状态 |
-|------|------|------|------|------|------|
+| 序号 | 方法 | 路径 | 说明 | 认证 | 状态  |
+|------|------|------|------|------|-----|
 | U-01 | GET | `/api/users/me` | 获取当前用户资料 | JWT | 已完成 |
 | U-02 | PATCH | `/api/users/me` | 修改个人资料 | JWT | 已完成 |
-| U-03 | DELETE | `/api/users/me` | 注销账号 | JWT | 未完成 |
+| U-03 | DELETE | `/api/users/me` | 注销账号 | JWT | 已完成 |
 | U-04 | GET | `/api/users/{userId}/profile` | 获取用户公开资料 | JWT | 已完成 |
-| U-05 | GET | `/api/users/{userId}/reviews` | 获取用户评价记录 | JWT | 未完成 |
-| U-06 | GET | `/api/users/{userId}/credit` | 获取用户信用信息 | JWT | 未完成 |
+| U-05 | GET | `/api/users/{userId}/reviews` | 获取用户评价记录 | JWT | 已完成 |
+| U-06 | GET | `/api/users/{userId}/credit` | 获取用户信用信息 | JWT | 已完成 |
 
 ---
 

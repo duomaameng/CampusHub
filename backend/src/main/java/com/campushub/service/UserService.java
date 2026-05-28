@@ -1,14 +1,24 @@
 package com.campushub.service;
 
 import com.campushub.dto.request.UpdateProfileRequest;
-import com.campushub.dto.response.PublicProfileResponse;
-import com.campushub.dto.response.UserProfileResponse;
+import com.campushub.vo.user.PublicProfileVO;
+import com.campushub.vo.user.UserCreditVO;
+import com.campushub.vo.user.UserProfileVO;
+import com.campushub.vo.user.UserReviewItemVO;
+
+import java.util.List;
 
 public interface UserService {
 
-    UserProfileResponse getCurrentUser();
+    UserProfileVO getCurrentUser();
 
-    UserProfileResponse updateProfile(UpdateProfileRequest request);
+    UserProfileVO updateProfile(UpdateProfileRequest request);
 
-    PublicProfileResponse getPublicProfile(Long userId);
+    PublicProfileVO getPublicProfile(Long userId);
+
+    void deleteCurrentUser();
+
+    List<UserReviewItemVO> getUserReviews(Long userId);
+
+    UserCreditVO getUserCredit(Long userId);
 }
