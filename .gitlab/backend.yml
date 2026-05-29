@@ -1,10 +1,46 @@
-# 配置仅供参考！
 stages:
   - build
+  - test
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  key: backend-maven-cache
+  paths:
+    - .m2/repository
 
 backend-build:
   stage: build
   image: maven:3.9.9-eclipse-temurin-17
   script:
     - cd backend
-    - mvn clean package -DskipTests
+    - mvn -B -q clean compile
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - backend/target
+
+backend-unit-test:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-17
+  script:
+    - cd backend
+    - mvn -B -q -Dtest=OrderServiceTest,AdminServiceTest test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - backend/target/surefire-reports
+
+backend-integration-test:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-17
+  script:
+    - cd backend
+    - mvn -B -q -Dtest=CoreFlowIntegrationTest test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - backend/target/surefire-reports

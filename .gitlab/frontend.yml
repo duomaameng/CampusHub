@@ -1,11 +1,19 @@
-# 配置仅供参考！
 stages:
   - build
+
+cache:
+  key: frontend-node-cache
+  paths:
+    - frontend/node_modules
 
 frontend-build:
   stage: build
   image: node:20
   script:
     - cd frontend
-    - npm install
+    - npm ci
     - npm run build
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - frontend/dist
