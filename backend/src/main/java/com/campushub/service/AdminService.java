@@ -276,10 +276,8 @@ public class AdminService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "Order status is required");
         }
         Order order = requireOrder(orderId);
-        if (!OrderStatus.DISPUTE.equals(request.getStatus()) && !OrderStatus.IN_PROGRESS.equals(request.getStatus())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Admin order status update only supports DISPUTE or IN_PROGRESS");
-        }
-        if (OrderStatus.DISPUTE.equals(request.getStatus())) {
+        OrderStatus requestedStatus = request.getStatus();
+        if (OrderStatus.DISPUTE.equals(requestedStatus)) {
             if (OrderStatus.DISPUTE.equals(order.getStatus())) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "Order is already disputed");
             }
@@ -294,7 +292,7 @@ public class AdminService {
             }
         }
         OrderStatus currentStatus = order.getStatus();
-        if (OrderStatus.DISPUTE.equals(request.getStatus())) {
+        if (OrderStatus.DISPUTE.equals(requestedStatus)) {
             order.setStatus(OrderStatus.DISPUTE);
             orderMapper.updateById(order);
             recordAdminOperation("UPDATE_ORDER_STATUS", "ORDER", orderId,
@@ -310,6 +308,10 @@ public class AdminService {
         }
         if (OrderStatus.DISPUTE.equals(restoreStatus)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "Cannot restore order to disputed status");
+        }
+        if (!requestedStatus.equals(restoreStatus)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "Restore target must match the original order status before dispute: " + restoreStatus.name());
         }
         order.setStatus(restoreStatus);
         orderMapper.updateById(order);

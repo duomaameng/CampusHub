@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复 Bug 共 **17** 项，主要集中在：
+本阶段目前已修复 Bug 共 **20** 项，主要集中在：
 
 - 认证与验证码流程
 - 任务、订单、举报主链
@@ -31,6 +31,9 @@
 - 前端注册页与后端验证码契约一致性
 - SMTP 验证码邮件发送能力
 - 前后端分离部署下上传图片资源地址解析
+- 用户资料与真实信用数据一致性
+- 接单确认并发保护
+- 后台订单冻结/恢复接口契约一致性
 
 ---
 
@@ -441,7 +444,7 @@
 - [RegisterView.vue](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\views\RegisterView.vue)
 - [api.ts](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\services\api.ts)
 - [auth.ts](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\stores\auth.ts)
-- [mock.ts](C:\Users\duoma\java\软工2项目\CampusHub\frontend\src\services\mock.ts)
+- [mock.ts](C:\Users\duoma\java\soft工2项目\CampusHub\frontend\src\services\mock.ts)
 
 ---
 
@@ -553,5 +556,109 @@
 
 - `backend/src/main/java/com/campushub/controller/AdminController.java`
 - `backend/src/main/java/com/campushub/controller/ReportController.java`
+
+---
+
+### Bug 18：用户资料接口返回的信用数据是写死值
+
+**问题现象**
+
+- `GET /api/users/me`
+- `PATCH /api/users/me`
+- `GET /api/users/{userId}/profile`
+
+这些接口返回的信用摘要原先固定为：
+
+- `creditScore = 100`
+- `completedOrders = 0`
+- `praiseRate = 1.0`
+
+即使用户已有真实信用变动、完成订单和评价记录，资料接口仍展示假数据。
+
+**影响范围**
+
+- 当前用户资料页
+- 公开用户资料页
+- 更新资料后的即时回显
+
+**修复方案**
+
+- 在 `UserServiceImpl` 中抽出统一的信用摘要计算方法
+- 复用真实的：
+  - 信用日志最新分数
+  - 已完成订单数
+  - 平均评分换算出的好评率
+- 让资料页与信用接口口径保持一致
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/service/impl/UserServiceImpl.java`
+
+---
+
+### Bug 19：确认接单流程缺少并发保护，可能重复成单
+
+**问题现象**
+
+- `POST /api/applications/{applicationId}/confirm`
+
+原逻辑先检查任务状态是否为 `OPEN`，随后再更新任务状态并创建订单。  
+在两个确认请求几乎同时进入时，存在并发下重复创建订单的风险。
+
+**影响范围**
+
+- 接单确认主链
+- 订单唯一性
+
+**修复方案**
+
+- 在 `TaskMapper` 中增加带条件的状态更新：
+  - 只有当前状态仍为 `OPEN` 时，才允许改成 `IN_PROGRESS`
+- `TaskService.confirmApplication(...)` 依据更新影响行数判断是否抢占成功
+- 若条件更新失败，则视为任务已被他人确认接单，直接返回业务错误
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/mapper/TaskMapper.java`
+- `backend/src/main/java/com/campushub/service/TaskService.java`
+
+---
+
+### Bug 20：后台订单“恢复”接口请求语义与实际结果不一致
+
+**问题现象**
+
+- `PATCH /api/admin/orders/{orderId}/status`
+
+上一版虽然已经收紧到“冻结 / 恢复”语义，但恢复请求仍要求传 `IN_PROGRESS`，  
+而真实恢复结果可能是：
+
+- `PENDING_CONFIRM`
+- `PENDING_COMPLETION`
+- `IN_PROGRESS`
+
+这会导致：
+
+- 请求里写的是 `IN_PROGRESS`
+- 最终结果却不一定是 `IN_PROGRESS`
+
+前后端接口契约存在误导。
+
+**影响范围**
+
+- 后台订单管理
+- 前后端联调
+
+**修复方案**
+
+- 仍保留 `DISPUTE` 表示冻结
+- 当订单当前处于 `DISPUTE` 时，恢复请求必须显式传入“冻结前原状态”
+- 后端根据管理员操作日志取出冻结前状态，并校验请求值必须与其一致
+- 只有一致时才允许恢复，确保“请求状态 = 最终状态”
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/service/AdminService.java`
+- `backend/src/main/java/com/campushub/dto/admin/AdminOrderStatusUpdateRequest.java`
 
 ---

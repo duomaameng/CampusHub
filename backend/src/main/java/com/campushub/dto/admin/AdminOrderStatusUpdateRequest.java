@@ -10,8 +10,10 @@ public class AdminOrderStatusUpdateRequest {
 
     /**
      * Admin order action is intentionally narrowed to:
-     * DISPUTE     - freeze an active order
-     * IN_PROGRESS - restore a disputed order
+     * DISPUTE - freeze an active order
+     * others  - when the current order is DISPUTE, restore it to the exact
+     *           original status before the dispute (for example IN_PROGRESS,
+     *           PENDING_CONFIRM, or PENDING_COMPLETION)
      */
     @NotNull
     private OrderStatus status;

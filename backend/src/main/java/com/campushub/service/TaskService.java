@@ -194,6 +194,10 @@ public class TaskService {
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_ALREADY_TAKEN);
         }
+        int updatedRows = taskMapper.updateStatusIfCurrent(task.getId(), TaskStatus.OPEN.name(), TaskStatus.IN_PROGRESS.name());
+        if (updatedRows != 1) {
+            throw new BusinessException(ErrorCode.TASK_ALREADY_TAKEN);
+        }
 
         application.setStatus(ApplicationStatus.APPROVED);
         applicationMapper.updateById(application);
@@ -207,7 +211,6 @@ public class TaskService {
                 });
 
         task.setStatus(TaskStatus.IN_PROGRESS);
-        taskMapper.updateById(task);
 
         Order order = new Order();
         order.setTaskId(task.getId());

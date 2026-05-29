@@ -110,6 +110,7 @@ public class UserServiceImpl implements UserService {
         }
         UserProfile profile = userProfileMapper.selectOne(
                 new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId));
+        UserProfileVO.CreditSummary creditSummary = buildCreditSummary(userId);
 
         PublicProfileVO.PublicProfileVOBuilder builder = PublicProfileVO.builder()
                 .userId(user.getId())
@@ -119,9 +120,9 @@ public class UserServiceImpl implements UserService {
                 .college(profile != null ? profile.getCollege() : null)
                 .campus(profile != null ? profile.getCampus() : null)
                 .verified(user.getVerified())
-                .creditScore(100)
-                .completedOrders(0)
-                .praiseRate(1.0)
+                .creditScore(creditSummary.getScore())
+                .completedOrders(creditSummary.getCompletedOrders())
+                .praiseRate(creditSummary.getPraiseRate())
                 .memberSince(user.getCreatedAt().toLocalDate().format(DateTimeFormatter.ISO_DATE));
 
         if (profile != null && profile.getContactVisible()) {
@@ -190,7 +191,61 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserCreditVO getUserCredit(Long userId) {
         ensureUserExists(userId);
+        UserProfileVO.CreditSummary creditSummary = buildCreditSummary(userId);
 
+        List<UserCreditVO.CreditChangeItem> recentChanges = creditLogMapper.selectList(
+                        new LambdaQueryWrapper<CreditLog>()
+                                .eq(CreditLog::getUserId, userId)
+                                .orderByDesc(CreditLog::getCreatedAt)
+                                .last("LIMIT 10"))
+                .stream()
+                .map(log -> UserCreditVO.CreditChangeItem.builder()
+                        .changeAmount(log.getChangeAmount())
+                        .scoreBefore(log.getScoreBefore())
+                        .scoreAfter(log.getScoreAfter())
+                        .reason(log.getReason())
+                        .relatedOrderId(log.getRelatedOrderId())
+                        .createdAt(log.getCreatedAt())
+                        .build())
+                .toList();
+
+        return UserCreditVO.builder()
+                .userId(userId)
+                .score(creditSummary.getScore())
+                .completedOrders(creditSummary.getCompletedOrders())
+                .praiseRate(creditSummary.getPraiseRate())
+                .recentChanges(recentChanges)
+                .build();
+    }
+
+    private UserProfileVO buildProfileResponse(User user) {
+        UserProfile profile = userProfileMapper.selectOne(
+                new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, user.getId()));
+        UserProfileVO.CreditSummary creditSummary = buildCreditSummary(user.getId());
+
+        return UserProfileVO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .role(user.getRole().getValue())
+                .status(user.getStatus().getValue())
+                .verified(user.getVerified())
+                .profile(UserProfileVO.ProfileDetail.builder()
+                        .nickname(profile != null ? profile.getNickname() : "")
+                        .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
+                        .gender(profile != null ? profile.getGender() : null)
+                        .grade(profile != null ? profile.getGrade() : null)
+                        .college(profile != null ? profile.getCollege() : null)
+                        .bio(profile != null ? profile.getBio() : null)
+                        .campus(profile != null ? profile.getCampus() : null)
+                        .contact(profile != null ? profile.getContact() : null)
+                        .contactVisible(profile != null && profile.getContactVisible())
+                        .build())
+                .credit(creditSummary)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    private UserProfileVO.CreditSummary buildCreditSummary(Long userId) {
         CreditLog latestCredit = creditLogMapper.selectOne(
                 new LambdaQueryWrapper<CreditLog>()
                         .eq(CreditLog::getUserId, userId)
@@ -214,58 +269,10 @@ public class UserServiceImpl implements UserService {
                 ? 1.0
                 : reviews.stream().mapToInt(Review::getRating).average().orElse(5.0) / 5.0;
 
-        List<UserCreditVO.CreditChangeItem> recentChanges = creditLogMapper.selectList(
-                        new LambdaQueryWrapper<CreditLog>()
-                                .eq(CreditLog::getUserId, userId)
-                                .orderByDesc(CreditLog::getCreatedAt)
-                                .last("LIMIT 10"))
-                .stream()
-                .map(log -> UserCreditVO.CreditChangeItem.builder()
-                        .changeAmount(log.getChangeAmount())
-                        .scoreBefore(log.getScoreBefore())
-                        .scoreAfter(log.getScoreAfter())
-                        .reason(log.getReason())
-                        .relatedOrderId(log.getRelatedOrderId())
-                        .createdAt(log.getCreatedAt())
-                        .build())
-                .toList();
-
-        return UserCreditVO.builder()
-                .userId(userId)
+        return UserProfileVO.CreditSummary.builder()
                 .score(score)
                 .completedOrders((int) completedOrders)
                 .praiseRate(praiseRate)
-                .recentChanges(recentChanges)
-                .build();
-    }
-
-    private UserProfileVO buildProfileResponse(User user) {
-        UserProfile profile = userProfileMapper.selectOne(
-                new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, user.getId()));
-
-        return UserProfileVO.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .role(user.getRole().getValue())
-                .status(user.getStatus().getValue())
-                .verified(user.getVerified())
-                .profile(UserProfileVO.ProfileDetail.builder()
-                        .nickname(profile != null ? profile.getNickname() : "")
-                        .avatarUrl(profile != null ? profile.getAvatarUrl() : null)
-                        .gender(profile != null ? profile.getGender() : null)
-                        .grade(profile != null ? profile.getGrade() : null)
-                        .college(profile != null ? profile.getCollege() : null)
-                        .bio(profile != null ? profile.getBio() : null)
-                        .campus(profile != null ? profile.getCampus() : null)
-                        .contact(profile != null ? profile.getContact() : null)
-                        .contactVisible(profile != null && profile.getContactVisible())
-                        .build())
-                .credit(UserProfileVO.CreditSummary.builder()
-                        .score(100)
-                        .completedOrders(0)
-                        .praiseRate(1.0)
-                        .build())
-                .createdAt(user.getCreatedAt())
                 .build();
     }
 
