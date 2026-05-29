@@ -16,7 +16,7 @@ import {
   UserRound
 } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -118,7 +118,12 @@ async function handleLogout() {
       </nav>
 
       <div class="account-area">
-        <button class="theme-toggle" type="button" :aria-label="isDark ? '切换到亮色模式' : '切换到暗色模式'" @click="toggleTheme">
+        <button
+          class="theme-toggle"
+          type="button"
+          :aria-label="isDark ? '切换到亮色模式' : '切换到暗色模式'"
+          @click="toggleTheme"
+        >
           <Moon v-if="isDark" class="theme-toggle-icon" aria-hidden="true" />
           <Sun v-else class="theme-toggle-icon" aria-hidden="true" />
         </button>
