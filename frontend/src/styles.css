@@ -99,6 +99,7 @@
   --font-body: 'SourceHanSansSC', 'ManropeLocal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   --font-display: 'SourceHanSansSC', 'ManropeLocal', sans-serif;
+  --font-title: 'Songti SC', 'STSong', 'SimSun', 'SourceHanSansSC', serif;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -866,11 +867,12 @@ select {
 }
 
 .page-title h1 {
+  font-family: var(--font-title);
   font-size: 26px;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.035em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
   background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1116,10 +1118,11 @@ select {
 }
 
 .hero-copy strong {
+  font-family: var(--font-title);
   font-size: 18px;
-  font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -0.015em;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
   position: relative;
   z-index: 1;
 }
