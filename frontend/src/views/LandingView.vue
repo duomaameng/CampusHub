@@ -3,7 +3,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bell,
-  GraduationCap,
   HandHeart,
   Mail,
   MessageCircleMore,
@@ -12,12 +11,44 @@ import {
   Sparkles,
   UserPlus
 } from '@lucide/vue'
-import { onMounted, ref } from 'vue'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 
+import { taskApi } from '@/services/api'
+import { taskStatusText } from '@/types'
+import type { RewardType, TaskCategory, TaskItem } from '@/types'
+
+gsap.registerPlugin(ScrollTrigger)
+
 const router = useRouter()
-const mounted = ref(false)
+const landingRoot = ref<HTMLElement | null>(null)
 const useMock = import.meta.env.VITE_USE_MOCK === 'true'
+let animationContext: gsap.Context | undefined
+
+const landingTasks = ref<TaskItem[]>([])
+const landingTasksLoading = ref(false)
+const landingTasksError = ref('')
+
+const rewardTypeText: Record<RewardType, string> = {
+  CASH: '现金',
+  NEGOTIABLE: '面议',
+  CREDIT_INTENT: '积分意向'
+}
+
+const categoryText: Record<TaskCategory, string> = {
+  EXPRESS: '快递代取',
+  ERRAND: '跑腿代办',
+  TUTORING: '学习辅导',
+  SECOND_HAND: '二手交易',
+  LOST_FOUND: '失物招领',
+  CONSULTATION: '咨询问答',
+  TEAM_UP: '组队搭子',
+  OTHER: '其他'
+}
+
+const taskAccentClasses = ['accent-mint', 'accent-sun', 'accent-sky', 'accent-rose']
 
 const featureCards = [
   {
@@ -43,37 +74,6 @@ const featureCards = [
   }
 ]
 
-const scenarioCards = [
-  {
-    category: '快递代取',
-    title: '晚课前帮忙取一件京东快递',
-    meta: '仙林校区 · 30 分钟内',
-    reward: '现金 / 面议',
-    accent: 'mint'
-  },
-  {
-    category: '学习辅导',
-    title: '软件工程作业结对讲解',
-    meta: '鼓楼校区 · 今晚 20:00',
-    reward: '积分意向',
-    accent: 'sun'
-  },
-  {
-    category: '组队搭子',
-    title: '周末羽毛球双打临时补位',
-    meta: '浦口校区 · 本周六',
-    reward: 'AA / 面议',
-    accent: 'sky'
-  },
-  {
-    category: '二手交易',
-    title: '转一台闲置显示器，支持宿舍自提',
-    meta: '苏州校区 · 本周内',
-    reward: '现金',
-    accent: 'rose'
-  }
-]
-
 const navigation = [
   { label: '平台特色', href: '#features' },
   { label: '任务场景', href: '#board' },
@@ -81,11 +81,129 @@ const navigation = [
   { label: '联系与说明', href: '#footer' }
 ]
 
-onMounted(() => {
-  requestAnimationFrame(() => {
-    mounted.value = true
-  })
+onMounted(async () => {
+  await loadLandingTasks()
+  await nextTick()
+
+  if (!landingRoot.value) return
+
+  animationContext = gsap.context(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (reduceMotion) {
+      gsap.set(
+        [
+          '.landing-nav',
+          '.hero-kicker',
+          '.hero-title',
+          '.hero-description',
+          '.hero-cta > *',
+          '.hero-metrics article',
+          '.hero-board',
+          '.board-card',
+          '.landing-section',
+          '.landing-footer',
+          '.feature-card',
+          '.scenario-card',
+          '.journey-step'
+        ],
+        { autoAlpha: 1, clearProps: 'transform,visibility,opacity' }
+      )
+      return
+    }
+
+    gsap.defaults({ ease: 'power3.out' })
+
+    const heroTimeline = gsap.timeline({
+      defaults: { duration: 0.72, ease: 'power3.out' }
+    })
+
+    heroTimeline
+      .from('.landing-nav', { autoAlpha: 0, y: -16, duration: 0.56 })
+      .from('.hero-kicker', { autoAlpha: 0, y: 14 }, '-=0.2')
+      .from('.hero-title', { autoAlpha: 0, y: 22 }, '-=0.18')
+      .from('.hero-description', { autoAlpha: 0, y: 18 }, '-=0.42')
+      .from('.hero-cta > *', { autoAlpha: 0, y: 16, stagger: 0.08 }, '-=0.36')
+      .from('.hero-metrics article', { autoAlpha: 0, y: 20, stagger: 0.08 }, '-=0.24')
+      .from('.hero-board', { autoAlpha: 0, y: 24, scale: 0.98 }, '-=0.6')
+      .from('.hero-board .board-card', { autoAlpha: 0, y: 18, stagger: 0.08 }, '-=0.36')
+
+    gsap.utils.toArray<HTMLElement>('.landing-section').forEach((section) => {
+      const heading = section.querySelector('.section-heading')
+      const cards = section.querySelectorAll('.feature-card, .scenario-card, .journey-step')
+      const sectionTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: section,
+          start: 'top 78%',
+          once: true
+        },
+        defaults: { duration: 0.62, ease: 'power2.out' }
+      })
+
+      sectionTimeline
+        .from(section, { autoAlpha: 0, y: 28 })
+      if (heading) sectionTimeline.from(heading, { autoAlpha: 0, y: 18 }, '-=0.38')
+      if (cards.length) sectionTimeline.from(cards, { autoAlpha: 0, y: 22, stagger: 0.08 }, '-=0.24')
+    })
+
+    ScrollTrigger.matchMedia({
+      '(min-width: 721px)': () => {
+        gsap.to('.landing-glow-a', {
+          y: 72,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.campus-landing',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.8
+          }
+        })
+
+        gsap.to('.landing-glow-b', {
+          y: -54,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.campus-landing',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 0.8
+          }
+        })
+      }
+    })
+  }, landingRoot.value)
 })
+
+onUnmounted(() => {
+  animationContext?.revert()
+})
+
+async function loadLandingTasks() {
+  landingTasksError.value = ''
+  landingTasksLoading.value = true
+  try {
+    const page = await taskApi.list({ page: 1, size: 4, sort: 'latest' })
+    landingTasks.value = page.records
+  } catch (err) {
+    landingTasks.value = []
+    landingTasksError.value = err instanceof Error ? err.message : '任务加载失败'
+  } finally {
+    landingTasksLoading.value = false
+  }
+}
+
+function formatLandingTaskDate(value: string) {
+  return new Date(value).toLocaleDateString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function taskAccentClass(index: number) {
+  return taskAccentClasses[index % taskAccentClasses.length]
+}
 
 function goExplore() {
   router.push('/tasks')
@@ -93,7 +211,7 @@ function goExplore() {
 </script>
 
 <template>
-  <div class="campus-landing" :class="{ 'is-mounted': mounted }">
+  <div ref="landingRoot" class="campus-landing">
     <div class="landing-atmosphere" aria-hidden="true">
       <div class="landing-glow landing-glow-a" />
       <div class="landing-glow landing-glow-b" />
@@ -104,7 +222,7 @@ function goExplore() {
     <header class="landing-nav">
       <RouterLink class="landing-brand" to="/">
         <span class="landing-brand-mark">
-          <GraduationCap aria-hidden="true" />
+          <HandHeart aria-hidden="true" />
         </span>
         <span class="landing-brand-copy">
           <strong>CampusHub</strong>
@@ -223,7 +341,7 @@ function goExplore() {
         <div class="section-heading split">
           <div>
             <span class="section-eyebrow">任务场景</span>
-            <h2>把常见校园需求做成有质感的任务卡，而不是一串冰冷列表。</h2>
+            <h2>从公开任务大厅中选取最新需求，让游客也能直接看到真实发布内容。</h2>
           </div>
           <RouterLink class="landing-inline-link" to="/tasks">
             浏览全部任务
@@ -231,21 +349,28 @@ function goExplore() {
           </RouterLink>
         </div>
 
-        <div class="scenario-grid">
-          <article
-            v-for="item in scenarioCards"
-            :key="item.title"
-            class="scenario-card"
-            :class="`accent-${item.accent}`"
+        <div v-if="landingTasksLoading" class="order-board-state">正在加载公开任务...</div>
+        <div v-else-if="landingTasksError" class="order-board-state warning">{{ landingTasksError }}</div>
+        <div v-else-if="!landingTasks.length" class="order-board-state">
+          暂无公开任务，发布后的任务会优先出现在这里。
+        </div>
+        <div v-else class="scenario-grid">
+          <RouterLink
+            v-for="(task, index) in landingTasks"
+            :key="task.id"
+            class="scenario-card task-card"
+            :class="taskAccentClass(index)"
+            :to="{ name: 'task-detail', params: { id: task.id } }"
           >
-            <span class="scenario-category">{{ item.category }}</span>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.meta }}</p>
+            <span class="scenario-category">{{ categoryText[task.category] }}</span>
+            <h3>{{ task.title }}</h3>
+            <p>{{ task.description }}</p>
+            <p class="task-meta">{{ task.campus }} · {{ rewardTypeText[task.rewardType] }} · {{ task.publisherNickname }}</p>
             <div class="scenario-footer">
-              <span>{{ item.reward }}</span>
+              <span>{{ taskStatusText[task.status] }} · {{ formatLandingTaskDate(task.deadline) }} 截止</span>
               <ArrowRight aria-hidden="true" />
             </div>
-          </article>
+          </RouterLink>
         </div>
       </section>
 
@@ -271,6 +396,25 @@ function goExplore() {
             <h3>沟通与完成</h3>
             <p>订单内沟通、上传凭证、确认完成、评价与举报全部闭环，减少纠纷成本。</p>
           </article>
+        </div>
+      </section>
+
+      <section class="landing-section landing-cta-section" aria-labelledby="landing-cta-title">
+        <div>
+          <span class="section-eyebrow">开始使用</span>
+          <h2 id="landing-cta-title">把下一条校园需求，放进一个可追踪、可协作、可完成的流程里。</h2>
+          <p>
+            先浏览公开任务，了解平台如何组织需求；准备好后注册账号，就可以发布、申请接单并进入订单协作。
+          </p>
+        </div>
+        <div class="landing-cta-actions">
+          <RouterLink class="landing-primary-button large" to="/tasks">
+            浏览任务大厅
+            <ArrowRight class="landing-button-icon" aria-hidden="true" />
+          </RouterLink>
+          <RouterLink class="landing-secondary-button" to="/register">
+            创建账号
+          </RouterLink>
         </div>
       </section>
     </main>
@@ -312,6 +456,7 @@ function goExplore() {
   min-height: 100vh;
   position: relative;
   overflow-x: clip;
+  padding: 18px 0 28px;
   background:
     linear-gradient(180deg, rgba(251, 247, 239, 0.98), rgba(245, 239, 227, 0.96)),
     var(--landing-paper);
@@ -330,6 +475,7 @@ function goExplore() {
   border-radius: 50%;
   filter: blur(90px);
   opacity: 0.7;
+  will-change: transform;
 }
 
 .landing-glow-a {
@@ -375,7 +521,7 @@ function goExplore() {
 
 .landing-nav {
   width: min(1240px, calc(100vw - 32px));
-  margin: 18px auto 0;
+  margin: 0 auto;
   padding: 16px 20px;
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -531,7 +677,7 @@ function goExplore() {
   width: min(1240px, calc(100vw - 32px));
   margin: 22px auto 0;
   display: grid;
-  gap: 34px;
+  gap: 40px;
 }
 
 .hero-layout {
@@ -564,7 +710,7 @@ function goExplore() {
   color: var(--landing-leaf-deep);
   font-size: 0.92rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 
 .hero-title,
@@ -583,7 +729,7 @@ function goExplore() {
   font-size: clamp(2.15rem, 4.2vw, 4rem);
   font-weight: 800;
   line-height: 1.12;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
 }
 
 .hero-title span {
@@ -592,7 +738,7 @@ function goExplore() {
   color: var(--landing-leaf);
   font-size: clamp(1.05rem, 1.85vw, 1.65rem);
   line-height: 1.35;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .hero-description {
@@ -682,7 +828,7 @@ function goExplore() {
   color: #56657a;
   font-size: 0.92rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -772,7 +918,7 @@ function goExplore() {
   font-size: clamp(1.6rem, 2.6vw, 2.35rem);
   font-weight: 800;
   line-height: 1.18;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
 }
 
 .landing-inline-link {
@@ -885,10 +1031,40 @@ function goExplore() {
   margin-top: 24px;
 }
 
+.order-board-state {
+  margin-top: 24px;
+  padding: 28px;
+  border: 1px dashed rgba(17, 32, 49, 0.16);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.46);
+  color: var(--landing-ink-soft);
+  line-height: 1.7;
+}
+
+.order-board-state.warning {
+  color: #9a5b20;
+  border-color: rgba(232, 168, 79, 0.32);
+  background: rgba(246, 215, 160, 0.18);
+}
+
 .scenario-card {
   display: flex;
   flex-direction: column;
   min-height: 360px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.task-card {
+  cursor: pointer;
+}
+
+.task-card .scenario-category {
+  margin-top: 0;
+}
+
+.task-card .task-meta {
+  font-size: 0.98rem;
 }
 
 .scenario-card.accent-mint::before {
@@ -956,9 +1132,45 @@ function goExplore() {
   font-size: 1.85rem;
 }
 
+.landing-cta-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(205, 231, 219, 0.7), transparent 34%),
+    radial-gradient(circle at 88% 82%, rgba(248, 223, 164, 0.38), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(251, 247, 239, 0.7));
+}
+
+.landing-cta-section h2 {
+  max-width: 18ch;
+  margin: 14px 0 0;
+  color: var(--landing-ink);
+  font-family: var(--landing-display);
+  font-size: clamp(1.8rem, 3vw, 2.65rem);
+  line-height: 1.16;
+}
+
+.landing-cta-section p {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: var(--landing-ink-soft);
+  font-size: 1.05rem;
+  line-height: 1.85;
+}
+
+.landing-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
 .landing-footer {
   width: min(1240px, calc(100vw - 32px));
-  margin: 0 auto 28px;
+  margin: 40px auto 0;
   padding: 28px 32px;
   display: grid;
   grid-template-columns: 1.2fr auto auto;
@@ -990,45 +1202,6 @@ function goExplore() {
   color: var(--landing-ink-soft);
 }
 
-.campus-landing.is-mounted .hero-copy,
-.campus-landing.is-mounted .hero-board,
-.campus-landing.is-mounted .landing-section,
-.campus-landing.is-mounted .landing-footer {
-  animation: landing-rise 500ms ease both;
-}
-
-.campus-landing.is-mounted .hero-board {
-  animation-delay: 60ms;
-}
-
-.campus-landing.is-mounted .landing-section:nth-of-type(1) {
-  animation-delay: 100ms;
-}
-
-.campus-landing.is-mounted .landing-section:nth-of-type(2) {
-  animation-delay: 140ms;
-}
-
-.campus-landing.is-mounted .landing-section:nth-of-type(3) {
-  animation-delay: 180ms;
-}
-
-.campus-landing.is-mounted .landing-footer {
-  animation-delay: 220ms;
-}
-
-@keyframes landing-rise {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @media (hover: hover) and (pointer: fine) {
   .feature-card,
   .scenario-card,
@@ -1036,6 +1209,7 @@ function goExplore() {
   .hero-metrics article,
   .board-card.compact,
   .board-card.lead {
+    will-change: transform;
     transition:
       transform 220ms ease,
       box-shadow 220ms ease,
@@ -1053,6 +1227,33 @@ function goExplore() {
     border-color: rgba(30, 125, 95, 0.2);
     box-shadow: 0 26px 56px rgba(17, 32, 49, 0.12);
   }
+
+  .landing-primary-button:hover .landing-button-icon,
+  .landing-inline-link:hover .landing-inline-icon,
+  .scenario-card:hover .scenario-footer svg {
+    transform: translateX(3px);
+  }
+
+  .landing-button-icon,
+  .landing-inline-icon,
+  .scenario-footer svg {
+    transition: transform 180ms ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campus-landing *,
+  .campus-landing *::before,
+  .campus-landing *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .landing-glow {
+    will-change: auto;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -1062,11 +1263,13 @@ function goExplore() {
   .scenario-grid,
   .journey-grid,
   .board-grid,
+  .landing-cta-section,
   .landing-footer {
     grid-template-columns: 1fr 1fr;
   }
 
   .hero-layout,
+  .landing-cta-section,
   .landing-footer {
     grid-template-columns: 1fr;
   }
@@ -1087,7 +1290,8 @@ function goExplore() {
   }
 
   .landing-links,
-  .landing-actions {
+  .landing-actions,
+  .landing-cta-actions {
     flex-wrap: wrap;
   }
 
@@ -1102,10 +1306,22 @@ function goExplore() {
 }
 
 @media (max-width: 720px) {
+  .campus-landing {
+    padding: 10px 0 20px;
+  }
+
   .landing-nav,
   .landing-content,
   .landing-footer {
     width: min(100vw - 20px, 100%);
+  }
+
+  .landing-content {
+    gap: 28px;
+  }
+
+  .landing-footer {
+    margin-top: 28px;
   }
 
   .hero-copy,
@@ -1151,8 +1367,13 @@ function goExplore() {
     width: 100%;
   }
 
-  .hero-cta {
+  .hero-cta,
+  .landing-cta-actions {
     flex-direction: column;
+  }
+
+  .landing-cta-actions {
+    justify-content: stretch;
   }
 }
 </style>
