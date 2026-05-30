@@ -7,6 +7,7 @@ import lombok.Getter;
 public enum NotificationType {
     APPLICATION("APPLICATION"),
     ORDER_STATUS("ORDER_STATUS"),
+    ORDER_MESSAGE("ORDER_MESSAGE"),
     REVIEW_REQUEST("REVIEW_REQUEST"),
     REPORT_RESULT("REPORT_RESULT");
 

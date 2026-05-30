@@ -452,6 +452,18 @@ function pushNotification(db: MockDatabase, item: Omit<NotificationItem, 'id' | 
   })
 }
 
+function pushOrderMessageNotification(db: MockDatabase, order: OrderDetail, senderId: number, senderNickname: string, preview: string) {
+  const receiverId = order.publisherId === senderId ? order.serviceProviderId : order.publisherId
+  if (!receiverId || receiverId === senderId) return
+  pushNotification(db, {
+    type: 'ORDER_MESSAGE',
+    title: '订单收到新留言',
+    content: `${senderNickname}：${preview}`,
+    targetType: 'ORDER',
+    targetId: order.id
+  })
+}
+
 function saveVerificationCode(db: MockDatabase, email: string, purpose: MockVerificationCode['purpose']) {
   db.verificationCodes = db.verificationCodes.filter((item) => !(item.email === email && item.purpose === purpose))
   db.verificationCodes.push({
@@ -859,6 +871,7 @@ export const mockApi = {
       createdAt: new Date().toISOString()
     }
     order.messages.push(message)
+    pushOrderMessageNotification(db, order, user.id, user.profile.nickname, content.trim())
     saveDb(db)
     return clone(message)
   },
@@ -883,6 +896,7 @@ export const mockApi = {
       createdAt: new Date().toISOString()
     }
     order.messages.push(message)
+    pushOrderMessageNotification(db, order, user.id, user.profile.nickname, '发送了一张图片')
     saveDb(db)
     return clone(message)
   },

@@ -20,7 +20,7 @@ export type OrderStatus =
   | 'DISPUTE'
   | 'REVIEWED'
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
-export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
+export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
 export type MessageType = 'TEXT' | 'IMAGE'
 export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE'
 export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'

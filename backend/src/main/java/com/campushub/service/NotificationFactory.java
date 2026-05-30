@@ -24,6 +24,14 @@ public class NotificationFactory {
         return notification;
     }
 
+    public Notification orderMessage(Long receiverId, Long orderId, String senderNickname, String preview) {
+        Notification notification = base(receiverId, NotificationType.ORDER_MESSAGE);
+        notification.setTitle("订单收到新留言");
+        notification.setContent(senderNickname + "：" + preview);
+        notification.setRelatedOrderId(orderId);
+        return notification;
+    }
+
     public Notification reviewRequest(Long receiverId, Long orderId, String taskTitle) {
         Notification notification = base(receiverId, NotificationType.REVIEW_REQUEST);
         notification.setTitle("请完成本次评价");

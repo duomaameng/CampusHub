@@ -162,6 +162,15 @@ public class OrderService {
         }
 
         orderMessageMapper.insert(message);
+
+        Long receiverId = Objects.equals(currentUserId, order.getPublisherId())
+                ? order.getServiceProviderId()
+                : order.getPublisherId();
+        String senderNickname = findNickname(currentUserId);
+        String preview = MessageType.IMAGE.equals(request.getMessageType())
+                ? "发送了一张图片"
+                : message.getContent();
+        notificationService.createOrderMessageNotification(receiverId, order.getId(), senderNickname, preview);
     }
 
     @Transactional
