@@ -60,6 +60,14 @@
   --bg-hover: #eef0f5;
   --bg-selected: #e8ebff;
   --bg-overlay: rgba(15, 17, 26, 0.5);
+  --glass-card-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(248, 250, 255, 0.68) 48%, rgba(238, 242, 255, 0.74) 100%);
+  --glass-card-bg-hover:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 248, 255, 0.76) 48%, rgba(240, 245, 255, 0.82) 100%);
+  --glass-panel-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 255, 0.72) 55%, rgba(245, 243, 255, 0.78) 100%);
+  --glass-card-border: rgba(255, 255, 255, 0.58);
+  --glass-card-shadow: 0 18px 46px rgba(31, 41, 77, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.72);
 
   --text-primary: #0f1117;
   --text-secondary: #4a4f65;
@@ -96,10 +104,10 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  --font-body: 'SourceHanSansSC', 'ManropeLocal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'ManropeLocal', 'SourceHanSansSC', 'Microsoft YaHei', 'PingFang SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  --font-display: 'SourceHanSansSC', 'ManropeLocal', sans-serif;
-  --font-title: 'Songti SC', 'STSong', 'SimSun', 'SourceHanSansSC', serif;
+  --font-display: 'ManropeLocal', 'SourceHanSansSC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  --font-title: 'STZhongsong', 'Songti SC', 'Noto Serif SC', 'SourceHanSansSC', serif;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -139,6 +147,14 @@
     --bg-hover: #1a1c30;
     --bg-selected: #1a1c3a;
     --bg-overlay: rgba(0, 0, 0, 0.6);
+    --glass-card-bg:
+      linear-gradient(135deg, rgba(22, 24, 40, 0.78) 0%, rgba(18, 20, 34, 0.62) 48%, rgba(30, 27, 75, 0.48) 100%);
+    --glass-card-bg-hover:
+      linear-gradient(135deg, rgba(28, 31, 52, 0.86) 0%, rgba(22, 24, 40, 0.7) 48%, rgba(49, 46, 129, 0.48) 100%);
+    --glass-panel-bg:
+      linear-gradient(135deg, rgba(22, 24, 40, 0.82) 0%, rgba(17, 19, 32, 0.7) 55%, rgba(30, 27, 75, 0.38) 100%);
+    --glass-card-border: rgba(255, 255, 255, 0.09);
+    --glass-card-shadow: 0 22px 52px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
     --text-primary: #e8eaf0;
     --text-secondary: #8a8fa8;
@@ -179,6 +195,14 @@
   --bg-hover: #1a1c30;
   --bg-selected: #1a1c3a;
   --bg-overlay: rgba(0, 0, 0, 0.6);
+  --glass-card-bg:
+    linear-gradient(135deg, rgba(22, 24, 40, 0.78) 0%, rgba(18, 20, 34, 0.62) 48%, rgba(30, 27, 75, 0.48) 100%);
+  --glass-card-bg-hover:
+    linear-gradient(135deg, rgba(28, 31, 52, 0.86) 0%, rgba(22, 24, 40, 0.7) 48%, rgba(49, 46, 129, 0.48) 100%);
+  --glass-panel-bg:
+    linear-gradient(135deg, rgba(22, 24, 40, 0.82) 0%, rgba(17, 19, 32, 0.7) 55%, rgba(30, 27, 75, 0.38) 100%);
+  --glass-card-border: rgba(255, 255, 255, 0.09);
+  --glass-card-shadow: 0 22px 52px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   --text-primary: #e8eaf0;
   --text-secondary: #8a8fa8;
@@ -256,6 +280,19 @@ body {
   letter-spacing: -0.01em;
   min-height: 100vh;
   position: relative;
+}
+
+h1,
+h2,
+h3,
+.landing-headline,
+.hero-title,
+.section-heading h2,
+.journey-step h3,
+.board-card.lead strong,
+.landing-cta-section h2 {
+  font-family: var(--font-title);
+  letter-spacing: 0;
 }
 
 body::before {
@@ -871,8 +908,8 @@ select {
   font-size: 26px;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
-  line-height: 1.08;
+  letter-spacing: 0;
+  line-height: 1.1;
   background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -908,13 +945,15 @@ select {
 .panel,
 .item-card,
 .metric-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
+  background: var(--glass-card-bg);
+  border: 1px solid var(--glass-card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .panel::before,
@@ -959,7 +998,8 @@ select {
 
 .panel {
   animation: fadeSlideUp 0.5s var(--transition-slow) both;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+  background: var(--glass-panel-bg);
+  box-shadow: var(--glass-card-shadow);
 }
 
 .item-card {
@@ -968,22 +1008,25 @@ select {
   gap: var(--space-3);
   animation: fadeSlideUp 0.5s var(--transition-slow) both;
   animation-delay: calc(var(--i, 0) * 60ms);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--glass-card-shadow);
 }
 
 .item-card:hover {
+  background: var(--glass-card-bg-hover);
   border-color: rgba(99, 102, 241, 0.15);
   box-shadow: 0 8px 30px rgba(99, 102, 241, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
   transform: translateY(-4px);
 }
 
 .panel:hover {
+  background: var(--glass-card-bg-hover);
   border-color: rgba(99, 102, 241, 0.12);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
   transform: translateY(-2px);
 }
 
 .metric-card:hover {
+  background: var(--glass-card-bg-hover);
   border-color: rgba(99, 102, 241, 0.15);
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.08), 0 2px 6px rgba(0, 0, 0, 0.03);
   transform: translateY(-3px);
@@ -998,10 +1041,11 @@ select {
 
 .item-title h2,
 .item-title h3 {
+  font-family: var(--font-title);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.3;
 }
 
@@ -1146,8 +1190,8 @@ select {
   overflow: hidden;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.05), transparent 60%),
-    var(--bg-surface);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+    var(--glass-card-bg);
+  box-shadow: var(--glass-card-shadow);
 }
 
 .metric-card::before {
@@ -1249,16 +1293,18 @@ select {
   gap: var(--space-4);
   align-items: flex-end;
   background:
-    linear-gradient(135deg, rgba(99, 102, 241, 0.02), transparent 40%),
-    var(--bg-surface);
-  border: 1px solid var(--border-light);
+    linear-gradient(135deg, rgba(99, 102, 241, 0.08), transparent 42%),
+    var(--glass-panel-bg);
+  border: 1px solid var(--glass-card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
   margin-bottom: var(--space-6);
   animation: fadeSlideUp 0.5s var(--transition-slow) 0.1s both;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--glass-card-shadow);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .toolbar::before {
@@ -1287,13 +1333,16 @@ select {
 .form-panel {
   max-width: 640px;
   margin: 0 auto;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
+  background: var(--glass-panel-bg);
+  border: 1px solid var(--glass-card-border);
   border-radius: var(--radius-xl);
   padding: var(--space-8);
   animation: scaleIn 0.5s var(--transition-slow) both;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--glass-card-shadow);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .form-panel::before {
@@ -1762,12 +1811,15 @@ select {
   font-size: 13px;
   font-weight: 500;
   background:
-    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.02), transparent 60%),
-    var(--bg-surface);
-  border: 1px dashed var(--border-medium);
+    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08), transparent 60%),
+    var(--glass-panel-bg);
+  border: 1px dashed var(--glass-card-border);
   border-radius: var(--radius-lg);
   animation: fadeIn 0.4s ease;
   position: relative;
+  box-shadow: var(--glass-card-shadow);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .empty-state::before {
@@ -1783,11 +1835,14 @@ select {
 
 /* ===== Table ===== */
 .table-wrapper {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
+  background: var(--glass-panel-bg);
+  border: 1px solid var(--glass-card-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   animation: fadeSlideUp 0.5s var(--transition-slow) both;
+  box-shadow: var(--glass-card-shadow);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .table-wrapper table {
