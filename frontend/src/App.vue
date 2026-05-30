@@ -10,7 +10,6 @@ import {
   Moon,
   PlusCircle,
   ShieldCheck,
-  Sparkles,
   Sun,
   UserPlus,
   UserRound
@@ -25,8 +24,6 @@ const router = useRouter()
 const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
-const useMock = import.meta.env.VITE_USE_MOCK === 'true'
-const workspaceStatus = computed(() => (useMock ? '演示模式' : '已连接服务器'))
 
 const isDark = ref(false)
 
@@ -143,19 +140,6 @@ async function handleLogout() {
     </aside>
 
     <section class="workspace-shell">
-      <header class="workspace-top">
-        <div>
-          <span class="eyebrow">
-            <Sparkles class="eyebrow-icon" aria-hidden="true" />
-            CampusHub
-          </span>
-          <strong>校园互助主流程演示版</strong>
-        </div>
-        <span class="workspace-status">
-          {{ workspaceStatus }}
-        </span>
-      </header>
-
       <main class="page-container">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
