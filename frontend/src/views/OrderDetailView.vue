@@ -28,6 +28,8 @@ const uploadedChatImage = ref<UploadedFileItem | null>(null)
 const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
 const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.id)
+const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS')
+const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
 
 async function load() {
   error.value = ''
@@ -93,9 +95,27 @@ async function completeOrder() {
   await runAction(() => orderApi.complete(order.value!.id), '已提交完成')
 }
 
+async function handleCompleteOrderClick() {
+  if (!canSubmitCompletion.value) {
+    error.value = '只有订单进行中时，服务方才能提交完成'
+    success.value = ''
+    return
+  }
+  await completeOrder()
+}
+
 async function confirmOrderCompletion() {
   if (!order.value) return
   await runAction(() => orderApi.confirmCompletion(order.value!.id), '已确认完成')
+}
+
+async function handleConfirmCompletionClick() {
+  if (!canConfirmCompletion.value) {
+    error.value = '需要服务方先提交完成后，发布方才能确认完成'
+    success.value = ''
+    return
+  }
+  await confirmOrderCompletion()
 }
 
 async function cancelOrder() {
@@ -189,19 +209,23 @@ onMounted(load)
         <section class="panel grid">
           <h2>订单操作</h2>
           <button
+            v-if="isProvider"
             class="button secondary"
+            :class="{ 'is-soft-disabled': !canSubmitCompletion }"
+            :aria-disabled="!canSubmitCompletion"
             type="button"
-            :disabled="!isProvider || order.status !== 'IN_PROGRESS'"
-            @click="completeOrder"
+            @click="handleCompleteOrderClick"
           >
             <MessageSquareText class="button-icon" aria-hidden="true" />
             <span>提交完成</span>
           </button>
           <button
+            v-if="isPublisher"
             class="button primary"
+            :class="{ 'is-soft-disabled': !canConfirmCompletion }"
+            :aria-disabled="!canConfirmCompletion"
             type="button"
-            :disabled="!isPublisher || order.status !== 'PENDING_COMPLETION'"
-            @click="confirmOrderCompletion"
+            @click="handleConfirmCompletionClick"
           >
             <CheckCheck class="button-icon" aria-hidden="true" />
             <span>确认完成</span>
@@ -254,3 +278,16 @@ onMounted(load)
     </div>
   </section>
 </template>
+
+<style scoped>
+.button.is-soft-disabled {
+  opacity: 0.48;
+  filter: grayscale(0.18);
+  box-shadow: none;
+}
+
+.button.is-soft-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+</style>
