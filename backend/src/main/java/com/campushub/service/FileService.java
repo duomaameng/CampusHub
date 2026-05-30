@@ -131,6 +131,29 @@ public class FileService {
         return record;
     }
 
+    @Transactional
+    public void deleteOwnedFile(Long fileId) {
+        FileRecord record = requireOwnedFile(fileId);
+        String fileUrl = record.getFileUrl();
+        String storedFileName = fileUrl == null ? "" : fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+        if (storedFileName.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "File url is invalid");
+        }
+
+        Path targetDirectory = Paths.get(uploadPath).toAbsolutePath().normalize();
+        Path targetFile = targetDirectory.resolve(storedFileName).normalize();
+        if (!targetFile.startsWith(targetDirectory)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "File path is invalid");
+        }
+
+        fileRecordMapper.deleteById(fileId);
+        try {
+            Files.deleteIfExists(targetFile);
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "File delete failed");
+        }
+    }
+
     private void validateFile(MultipartFile file, String extension) {
         if (file.getSize() > maxFileSize) {
             throw new BusinessException(ErrorCode.FILE_TOO_LARGE);

@@ -1084,6 +1084,17 @@ export const mockApi = {
     return clone(item)
   },
 
+  async deleteUploadedFile(fileId: number): Promise<null> {
+    await wait()
+    loadDb()
+    getCurrentUser()
+    const uploaded = volatileUploadedFiles.find((item) => item.id === fileId)
+    if (!uploaded) throw new Error('上传文件不存在')
+    if (uploaded.url.startsWith('blob:')) URL.revokeObjectURL(uploaded.url)
+    volatileUploadedFiles = volatileUploadedFiles.filter((item) => item.id !== fileId)
+    return null
+  },
+
   async submitReport(taskId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
     await wait()
     const db = loadDb()

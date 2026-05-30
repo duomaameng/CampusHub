@@ -256,6 +256,13 @@ export const fileApi = {
         'Content-Type': 'multipart/form-data'
       }
     })
+  },
+  remove(fileId: number): Promise<null> {
+    if (useMock) return mockApi.deleteUploadedFile(fileId)
+    return request<null>({
+      method: 'DELETE',
+      url: `/files/${fileId}`
+    })
   }
 }
 

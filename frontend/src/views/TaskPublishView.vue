@@ -30,6 +30,7 @@ const loading = ref(false)
 const error = ref('')
 const uploadError = ref('')
 const imageUploading = ref(false)
+const removingImageIds = ref<number[]>([])
 const uploadedImages = ref<UploadedFileItem[]>([])
 
 const categoryLabel: Record<TaskCategory, string> = {
@@ -119,9 +120,23 @@ async function handleTaskImageChange(event: Event) {
   }
 }
 
-function removeUploadedImage(imageId: number) {
-  uploadedImages.value = uploadedImages.value.filter((item) => item.id !== imageId)
-  form.imageIds = form.imageIds.filter((item) => item !== imageId)
+async function removeUploadedImage(imageId: number) {
+  if (removingImageIds.value.includes(imageId)) return
+
+  uploadError.value = ''
+  removingImageIds.value = [...removingImageIds.value, imageId]
+  try {
+    await fileApi.remove(imageId)
+    uploadedImages.value = uploadedImages.value.filter((item) => item.id !== imageId)
+    form.imageIds = form.imageIds.filter((item) => item !== imageId)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : ''
+    uploadError.value = message.includes('status code 404')
+      ? '移除失败：后端删除接口未生效，请重启后端服务后重试'
+      : message || '任务配图移除失败'
+  } finally {
+    removingImageIds.value = removingImageIds.value.filter((item) => item !== imageId)
+  }
 }
 </script>
 
@@ -148,7 +163,14 @@ function removeUploadedImage(imageId: number) {
             <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
             <div class="upload-card-meta">
               <strong>{{ item.fileName }}</strong>
-              <button class="button ghost" type="button" @click="removeUploadedImage(item.id)">移除</button>
+              <button
+                class="button ghost"
+                type="button"
+                :disabled="removingImageIds.includes(item.id)"
+                @click="removeUploadedImage(item.id)"
+              >
+                {{ removingImageIds.includes(item.id) ? '移除中...' : '移除' }}
+              </button>
             </div>
           </article>
         </div>

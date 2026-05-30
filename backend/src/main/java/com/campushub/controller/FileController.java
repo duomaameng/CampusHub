@@ -20,4 +20,10 @@ public class FileController {
                                               @RequestParam("businessType") UploadBusinessType businessType) {
         return ApiResponse.success(fileService.upload(file, businessType));
     }
+
+    @DeleteMapping("/{fileId}")
+    public ApiResponse<Void> delete(@PathVariable Long fileId) {
+        fileService.deleteOwnedFile(fileId);
+        return ApiResponse.success(null);
+    }
 }
