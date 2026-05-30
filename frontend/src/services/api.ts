@@ -139,7 +139,7 @@ export const orderApi = {
   },
   complete(orderId: number) {
     if (useMock) return mockApi.updateOrderStatus(orderId, 'PENDING_COMPLETION', '服务方提交完成凭证')
-    return request({ method: 'POST', url: `/orders/${orderId}/complete`, data: { proofImageId: 1, note: '任务已完成' } })
+    return request({ method: 'POST', url: `/orders/${orderId}/complete`, data: { note: '任务已完成' } })
   },
   confirmCompletion(orderId: number) {
     if (useMock) return mockApi.updateOrderStatus(orderId, 'COMPLETED', '发布者确认完成')
