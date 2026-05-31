@@ -11,6 +11,7 @@ import {
   PlusCircle,
   ShieldCheck,
   Sun,
+  Undo2,
   UserPlus,
   UserRound
 } from '@lucide/vue'
@@ -83,6 +84,10 @@ async function handleLogout() {
       </RouterLink>
 
       <nav class="nav-links" aria-label="主导航">
+        <RouterLink to="/">
+          <Undo2 class="nav-icon" aria-hidden="true" />
+          <span>返回首页</span>
+        </RouterLink>
         <RouterLink to="/tasks">
           <Home class="nav-icon" aria-hidden="true" />
           <span>任务大厅</span>

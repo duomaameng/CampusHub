@@ -3,6 +3,9 @@ import { LogIn, UserPlus, ArrowRight, Compass, GraduationCap } from '@lucide/vue
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 const router = useRouter()
 const mounted = ref(false)
 
@@ -54,15 +57,20 @@ function goExplore() {
       </p>
 
       <div class="landing-actions">
-        <RouterLink to="/login" class="landing-btn landing-btn-primary">
+        <button v-if="auth.isAuthenticated" class="landing-btn landing-btn-primary" type="button" @click="goExplore">
+          <Compass class="btn-icon" aria-hidden="true" />
+          <span>进入任务大厅</span>
+          <ArrowRight class="btn-icon-sm" aria-hidden="true" />
+        </button>
+        <RouterLink v-if="!auth.isAuthenticated" to="/login" class="landing-btn landing-btn-primary">
           <LogIn class="btn-icon" aria-hidden="true" />
           <span>登录</span>
         </RouterLink>
-        <RouterLink to="/register" class="landing-btn landing-btn-secondary">
+        <RouterLink v-if="!auth.isAuthenticated" to="/register" class="landing-btn landing-btn-secondary">
           <UserPlus class="btn-icon" aria-hidden="true" />
           <span>注册</span>
         </RouterLink>
-        <button class="landing-btn landing-btn-ghost" type="button" @click="goExplore">
+        <button v-if="!auth.isAuthenticated" class="landing-btn landing-btn-ghost" type="button" @click="goExplore">
           <Compass class="btn-icon" aria-hidden="true" />
           <span>暂不登录，先逛逛</span>
           <ArrowRight class="btn-icon-sm" aria-hidden="true" />
@@ -186,6 +194,7 @@ function goExplore() {
 }
 
 .particle {
+  --i: 0;
   position: absolute;
   width: 2px;
   height: 2px;

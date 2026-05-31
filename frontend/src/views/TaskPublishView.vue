@@ -32,6 +32,11 @@ const uploadError = ref('')
 const imageUploading = ref(false)
 const removingImageIds = ref<number[]>([])
 const uploadedImages = ref<UploadedFileItem[]>([])
+const minDeadline = computed(() => {
+  const date = new Date(Date.now() + 60 * 1000)
+  date.setSeconds(0, 0)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000).toISOString().slice(0, 16)
+})
 
 const categoryLabel: Record<TaskCategory, string> = {
   EXPRESS: '快递代取',
@@ -88,6 +93,10 @@ watch(
 
 async function submit() {
   error.value = ''
+  if (!form.deadline || new Date(form.deadline).getTime() <= Date.now()) {
+    error.value = '截止时间必须晚于当前时间'
+    return
+  }
   loading.value = true
   try {
     const result = await taskApi.create(form)
@@ -231,7 +240,7 @@ async function removeUploadedImage(imageId: number) {
             <CalendarClock class="label-icon" aria-hidden="true" />
             截止时间
           </label>
-          <input id="deadline" v-model="form.deadline" type="datetime-local" required />
+          <input id="deadline" v-model="form.deadline" type="datetime-local" :min="minDeadline" required />
         </div>
       </div>
 

@@ -662,3 +662,89 @@
 - `backend/src/main/java/com/campushub/dto/admin/AdminOrderStatusUpdateRequest.java`
 
 ---
+
+### Bug 21：任务配图上传成功后前端预览图片不显示
+
+**问题现象**
+
+- 用户在发布需求页面上传任务配图后，上传接口已经返回成功，上传目录中也能看到实际图片文件。
+- 但前端预览卡片中的 `<img>` 显示为破图，只能看到文件名，无法看到图片内容。
+- 重启前端开发服务器后问题仍然存在。
+
+**影响范围**
+
+- 发布需求页面的任务配图上传预览。
+- 后续依赖上传图片回显的任务详情、订单留言图片等展示场景。
+
+**修复方案**
+
+- 为 Vite 开发环境补充 `/uploads` 代理，将前端站点下的 `/uploads/**` 请求转发到真实后端服务。
+- 调整后端静态资源映射，确保本地上传目录以规范的绝对路径暴露给 `/uploads/**`。
+- 保持图片地址仍使用后端返回的 `/uploads/...` 路径，避免前端各页面重复拼接资源域名。
+
+**涉及文件**
+
+- `frontend/vite.config.ts`
+- `backend/src/main/java/com/campushub/config/WebMvcConfig.java`
+
+---
+
+### Bug 22：任务配图点击移除后只从前端隐藏，服务器文件未真实删除
+
+**问题现象**
+
+- 用户上传任务配图后点击“移除”，前端预览卡片会消失。
+- 但打开本地 `uploads` 目录后，刚才上传的图片文件仍然存在。
+- 多次上传和移除会在服务器目录中遗留无效文件，造成存储污染。
+- 初次补充删除请求时，前端出现 `Request failed with status code 404`，说明前后端删除接口契约没有闭环。
+
+**影响范围**
+
+- 发布需求页面的任务配图管理。
+- 文件上传模块的资源清理。
+- 后续长期使用时的无效文件堆积问题。
+
+**修复方案**
+
+- 后端新增文件删除接口 `DELETE /api/files/{fileId}`。
+- 删除前校验文件归属，确保用户只能删除自己上传的文件。
+- 后端删除数据库中的 `file_record` 记录，并同步删除磁盘上的实际上传文件。
+- 前端 `fileApi` 新增删除方法，点击“移除”时先调用后端删除接口，成功后再从页面列表移除。
+- 对删除失败场景保留错误提示，避免用户误以为文件已经清理。
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/controller/FileController.java`
+- `backend/src/main/java/com/campushub/service/FileService.java`
+- `frontend/src/services/api.ts`
+- `frontend/src/services/mock.ts`
+- `frontend/src/views/TaskPublishView.vue`
+
+---
+
+### Bug 23：服务方提交完成时前端误传写死的完成凭证文件 ID
+
+**问题现象**
+
+- 服务方在订单详情页点击“提交完成”后，页面顶部报错：`You can only use files uploaded by yourself`。
+- 实际用户并没有在提交完成时选择完成凭证图片。
+- 前端请求体中写死传入了 `proofImageId: 1`。
+- 后端会按完成凭证规则校验该文件是否属于当前用户且用途正确，因此当文件 1 不属于当前服务方时会被拒绝。
+
+**影响范围**
+
+- 订单详情页服务方提交完成流程。
+- 订单状态从 `IN_PROGRESS` 流转到 `PENDING_COMPLETION` 的主链路。
+
+**修复方案**
+
+- 移除前端提交完成接口中的硬编码 `proofImageId: 1`。
+- 在未提供完成凭证上传入口的情况下，只提交完成说明 `note`。
+- 保留后端对 `proofImageId` 的归属与用途校验，确保未来补充完成凭证上传时仍然安全。
+
+**涉及文件**
+
+- `frontend/src/services/api.ts`
+- `backend/src/main/java/com/campushub/service/OrderService.java`
+
+---

@@ -20,7 +20,13 @@ http.interceptors.request.use((config) => {
 })
 
 export async function request<T>(config: AxiosRequestConfig): Promise<T> {
-  const response = await http.request<ApiEnvelope<T>>(config)
+  const response = await http.request<ApiEnvelope<T>>(config).catch((err: unknown) => {
+    if (axios.isAxiosError<ApiEnvelope<unknown>>(err)) {
+      const message = err.response?.data?.message
+      if (message) throw new Error(message)
+    }
+    throw err
+  })
   const body = response.data
 
   if (typeof body?.code === 'number' && body.code !== 0) {

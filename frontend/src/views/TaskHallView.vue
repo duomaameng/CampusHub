@@ -281,12 +281,18 @@ section {
 .item-card::after {
   content: '';
   position: absolute;
+  inset: auto;
   top: 0;
   left: 0;
   right: 0;
+  bottom: auto;
+  width: auto;
+  min-width: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--primary-400), var(--secondary-400), var(--accent-400));
+  filter: none;
   opacity: 0;
+  transform: none;
   transition: opacity var(--transition-base);
   background-size: 200% 100%;
 }

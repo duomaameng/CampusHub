@@ -3,16 +3,33 @@ import { CalendarClock, ClipboardList, UserRound } from '@lucide/vue'
 import { onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { orderApi } from '@/services/api'
+import { orderApi, taskApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import { orderStatusText } from '@/types'
-import type { OrderItem, OrderStatus, PageData } from '@/types'
+import type { OrderItem, OrderStatus, PageData, TaskItem } from '@/types'
 
-const filters = reactive({
+type OrderRoleFilter = '' | 'PUBLISHER' | 'PROVIDER'
+
+const auth = useAuthStore()
+
+const roleOptions: Array<{ value: OrderRoleFilter; label: string }> = [
+  { value: '', label: '全部订单' },
+  { value: 'PUBLISHER', label: '我的发布' },
+  { value: 'PROVIDER', label: '我的接单' }
+]
+
+const filters = reactive<{
+  role: OrderRoleFilter
+  status: ''
+  keyword: string
+}>({
   role: '',
   status: '',
   keyword: ''
 })
+
 const page = ref<PageData<OrderItem>>()
+const missingPublishedTasks = ref<TaskItem[]>([])
 const loading = ref(false)
 const error = ref('')
 
@@ -36,11 +53,45 @@ async function loadOrders() {
       status: (filters.status || undefined) as OrderStatus | undefined,
       keyword: filters.keyword || undefined
     })
+    missingPublishedTasks.value = await loadMissingPublishedTasks(page.value.records)
   } catch (err) {
+    missingPublishedTasks.value = []
     error.value = err instanceof Error ? err.message : '订单加载失败'
   } finally {
     loading.value = false
   }
+}
+
+async function loadMissingPublishedTasks(orders: OrderItem[]) {
+  if (!auth.user || filters.role === 'PROVIDER' || filters.status) return []
+
+  const linkedTaskIds = new Set(orders.map((order) => order.taskId))
+  const result = await taskApi.list({
+    page: 1,
+    size: 100,
+    keyword: filters.keyword || undefined,
+    sort: 'newest'
+  })
+
+  return result.records.filter((task) => task.publisherId === auth.user?.id && !linkedTaskIds.has(task.id))
+}
+
+function setRoleFilter(role: OrderRoleFilter) {
+  if (filters.role === role) return
+  filters.role = role
+  void loadOrders()
+}
+
+function relationLabel(order: OrderItem) {
+  if (order.publisherId === auth.user?.id) return '我发布'
+  if (order.serviceProviderId === auth.user?.id) return '我接单'
+  return '相关订单'
+}
+
+function relationClass(order: OrderItem) {
+  if (order.publisherId === auth.user?.id) return 'publisher'
+  if (order.serviceProviderId === auth.user?.id) return 'provider'
+  return ''
 }
 
 onMounted(loadOrders)
@@ -51,19 +102,22 @@ onMounted(loadOrders)
     <div class="page-title">
       <div>
         <h1>我的订单</h1>
-        <p>查看我发布的订单、我接单的订单和订单状态。</p>
       </div>
     </div>
 
+    <div class="role-tabs" aria-label="订单角色筛选">
+      <button
+        v-for="option in roleOptions"
+        :key="option.value || 'ALL'"
+        type="button"
+        :class="['role-tab', { active: filters.role === option.value }]"
+        @click="setRoleFilter(option.value)"
+      >
+        <strong>{{ option.label }}</strong>
+      </button>
+    </div>
+
     <form class="toolbar" @submit.prevent="loadOrders">
-      <div class="field">
-        <label for="role">角色</label>
-        <select id="role" v-model="filters.role">
-          <option value="">全部</option>
-          <option value="PUBLISHER">我发布的</option>
-          <option value="PROVIDER">我接单的</option>
-        </select>
-      </div>
       <div class="field">
         <label for="status">状态</label>
         <select id="status" v-model="filters.status">
@@ -78,7 +132,7 @@ onMounted(loadOrders)
       </div>
       <div class="field">
         <label for="keyword">关键词</label>
-        <input id="keyword" v-model.trim="filters.keyword" type="search" />
+        <input id="keyword" v-model.trim="filters.keyword" type="search" placeholder="搜索任务标题" />
       </div>
       <div class="field">
         <label>&nbsp;</label>
@@ -88,27 +142,74 @@ onMounted(loadOrders)
 
     <p v-if="error" class="error-message">{{ error }}</p>
     <div v-if="loading" class="empty-state">正在加载订单</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无订单</div>
+    <div v-else-if="!page?.records.length && !missingPublishedTasks.length" class="empty-state">暂无符合条件的订单</div>
 
     <div v-else class="cards-grid">
       <RouterLink
-        v-for="(order, index) in page.records"
+        v-for="(order, index) in page?.records || []"
         :key="order.id"
         class="item-card"
         :to="`/orders/${order.id}`"
         :style="{ '--i': index }"
       >
         <div class="item-title">
-          <h2>{{ order.taskTitle }}</h2>
+          <div>
+            <span :class="['relation-pill', relationClass(order)]">{{ relationLabel(order) }}</span>
+            <h2>{{ order.taskTitle }}</h2>
+          </div>
           <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
         </div>
         <div class="meta-line">
-          <span><UserRound class="meta-icon" aria-hidden="true" />发布者 <RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">{{ order.publisherNickname }}</RouterLink></span>
-          <span><ClipboardList class="meta-icon" aria-hidden="true" />服务方 <RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></span>
+          <span>
+            <UserRound class="meta-icon" aria-hidden="true" />
+            发布者
+            <RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">
+              {{ order.publisherNickname }}
+            </RouterLink>
+          </span>
+          <span>
+            <ClipboardList class="meta-icon" aria-hidden="true" />
+            服务方
+            <RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">
+              {{ order.serviceProviderNickname }}
+            </RouterLink>
+          </span>
         </div>
         <p class="hint">
           <CalendarClock class="meta-icon" aria-hidden="true" />
           订单号 {{ order.id }} · {{ new Date(order.createdAt).toLocaleString() }}
+        </p>
+      </RouterLink>
+      <RouterLink
+        v-for="(task, index) in missingPublishedTasks"
+        :key="`task-${task.id}`"
+        class="item-card"
+        :to="`/tasks/${task.id}`"
+        :style="{ '--i': (page?.records.length || 0) + index }"
+      >
+        <div class="item-title">
+          <div>
+            <span class="relation-pill publisher">我发布</span>
+            <h2>{{ task.title }}</h2>
+          </div>
+          <span class="tag warning">待接单</span>
+        </div>
+        <div class="meta-line">
+          <span>
+            <UserRound class="meta-icon" aria-hidden="true" />
+            发布者
+            <RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">
+              {{ task.publisherNickname }}
+            </RouterLink>
+          </span>
+          <span>
+            <ClipboardList class="meta-icon" aria-hidden="true" />
+            尚未接单
+          </span>
+        </div>
+        <p class="hint">
+          <CalendarClock class="meta-icon" aria-hidden="true" />
+          任务号 {{ task.id }} · {{ new Date(task.createdAt).toLocaleString() }}
         </p>
       </RouterLink>
     </div>
@@ -116,6 +217,48 @@ onMounted(loadOrders)
 </template>
 
 <style scoped>
+.role-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.role-tab {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--glass-panel-bg);
+  color: var(--text-secondary);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.role-tab strong {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.role-tab:hover {
+  border-color: rgba(99, 102, 241, 0.24);
+  transform: translateY(-1px);
+}
+
+.role-tab.active {
+  border-color: rgba(99, 102, 241, 0.42);
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(99, 102, 241, 0.1), transparent 58%),
+    var(--glass-panel-bg);
+  box-shadow: 0 10px 24px rgba(70, 82, 140, 0.11), inset 0 0 0 1px rgba(99, 102, 241, 0.08);
+}
+
+.role-tab.active strong {
+  color: var(--primary-600);
+}
+
 .toolbar {
   position: relative;
 }
@@ -179,12 +322,18 @@ onMounted(loadOrders)
 .item-card::after {
   content: '';
   position: absolute;
+  inset: auto;
   top: 0;
   left: 0;
   right: 0;
+  bottom: auto;
+  width: auto;
+  min-width: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--primary-400), var(--secondary-400));
+  filter: none;
   opacity: 0;
+  transform: none;
   transition: opacity var(--transition-base);
 }
 
@@ -192,10 +341,39 @@ onMounted(loadOrders)
   opacity: 1;
 }
 
+.item-title {
+  align-items: flex-start;
+}
+
 .item-card h2 {
+  margin-top: 6px;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.relation-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  background: rgba(138, 143, 168, 0.08);
+  border: 1px solid rgba(138, 143, 168, 0.14);
+}
+
+.relation-pill.publisher {
+  color: var(--primary-600);
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.16);
+}
+
+.relation-pill.provider {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.16);
 }
 
 .item-card .tag {
@@ -234,6 +412,7 @@ onMounted(loadOrders)
 }
 
 @media (max-width: 768px) {
+  .role-tabs,
   .toolbar {
     grid-template-columns: 1fr;
   }
