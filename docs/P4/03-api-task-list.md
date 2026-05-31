@@ -42,10 +42,10 @@
 | T-01 | GET | `/api/tasks` | 任务大厅列表（分类 / 校区 / 关键词筛选 + 排序 + 分页） | 无 | 已完成 |
 | T-02 | POST | `/api/tasks` | 发布需求 | JWT | 已完成 |
 | T-03 | GET | `/api/tasks/{taskId}` | 需求详情 | 无 | 已完成 |
-| T-04 | PATCH | `/api/tasks/{taskId}` | 编辑需求（仅发布者，未接单时可操作） | JWT | 未完成 |
-| T-05 | DELETE | `/api/tasks/{taskId}` | 删除需求（仅发布者，未接单时可操作） | JWT | 未完成 |
-| T-06 | POST | `/api/tasks/{taskId}/favorite` | 收藏 / 取消收藏 | JWT | 未完成 |
-| T-07 | GET | `/api/tasks/favorites` | 我的收藏列表 | JWT | 未完成 |
+| T-04 | PATCH | `/api/tasks/{taskId}` | 编辑需求（仅发布者，未接单时可操作） | JWT | 已完成 |
+| T-05 | DELETE | `/api/tasks/{taskId}` | 删除需求（仅发布者，未接单时可操作） | JWT | 已完成 |
+| T-06 | POST | `/api/tasks/{taskId}/favorite` | 收藏 / 取消收藏 | JWT | 已完成 |
+| T-07 | GET | `/api/tasks/favorites` | 我的收藏列表 | JWT | 已完成 |
 
 ---
 
@@ -56,7 +56,7 @@
 | AP-01 | GET | `/api/tasks/{taskId}/applications` | 查看需求的所有接单申请 | JWT | 已完成 |
 | AP-02 | POST | `/api/tasks/{taskId}/applications` | 发起接单申请 | JWT | 已完成 |
 | AP-03 | POST | `/api/applications/{applicationId}/confirm` | 确认接单（生成订单） | JWT | 已完成 |
-| AP-04 | POST | `/api/applications/{applicationId}/reject` | 拒绝接单申请 | JWT | 未完成 |
+| AP-04 | POST | `/api/applications/{applicationId}/reject` | 拒绝接单申请 | JWT | 已完成 |
 
 ---
 
@@ -69,7 +69,7 @@
 | O-03 | POST | `/api/orders/{orderId}/complete` | 服务方提交完成凭证 | JWT | 已完成 |
 | O-04 | POST | `/api/orders/{orderId}/confirm-completion` | 发布者确认完成 | JWT | 已完成 |
 | O-05 | POST | `/api/orders/{orderId}/cancel` | 取消订单 | JWT | 已完成 |
-| O-06 | GET | `/api/orders/{orderId}/status-logs` | 订单状态变更日志 | JWT | 未完成 |
+| O-06 | GET | `/api/orders/{orderId}/status-logs` | 订单状态变更日志 | JWT | 已完成 |
 
 ---
 

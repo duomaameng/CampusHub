@@ -7,6 +7,7 @@ import com.campushub.enums.OrderStatus;
 import com.campushub.service.OrderService;
 import com.campushub.vo.order.OrderDetailVO;
 import com.campushub.vo.order.OrderItemVO;
+import com.campushub.vo.order.OrderStatusLogVO;
 import com.campushub.vo.order.ReviewItemVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -73,5 +74,10 @@ public class OrderController {
     @GetMapping("/{orderId}/reviews")
     public ApiResponse<List<ReviewItemVO>> reviews(@PathVariable Long orderId) {
         return ApiResponse.success(orderService.listReviews(orderId));
+    }
+
+    @GetMapping("/{orderId}/status-logs")
+    public ApiResponse<List<OrderStatusLogVO>> statusLogs(@PathVariable Long orderId) {
+        return ApiResponse.success(orderService.listStatusLogs(orderId));
     }
 }
