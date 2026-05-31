@@ -49,8 +49,37 @@ public class TaskController {
         return ApiResponse.success(taskService.listApplications(taskId));
     }
 
+    @PatchMapping("/tasks/{taskId}")
+    public ApiResponse<TaskItemVO> update(@PathVariable Long taskId, @Valid @RequestBody TaskCreateRequest request) {
+        return ApiResponse.success(taskService.updateTask(taskId, request));
+    }
+
+    @DeleteMapping("/tasks/{taskId}")
+    public ApiResponse<Void> delete(@PathVariable Long taskId) {
+        taskService.deleteTask(taskId);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/tasks/{taskId}/favorite")
+    public ApiResponse<Void> toggleFavorite(@PathVariable Long taskId) {
+        taskService.toggleFavorite(taskId);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/tasks/favorites")
+    public ApiResponse<PageResult<TaskItemVO>> favorites(@RequestParam(defaultValue = "1") int page,
+                                                          @RequestParam(defaultValue = "20") int size) {
+        return ApiResponse.success(taskService.getFavorites(page, size));
+    }
+
     @PostMapping("/applications/{applicationId}/confirm")
     public ApiResponse<ApplicationConfirmVO> confirm(@PathVariable Long applicationId) {
         return ApiResponse.success(taskService.confirmApplication(applicationId));
+    }
+
+    @PostMapping("/applications/{applicationId}/reject")
+    public ApiResponse<Void> reject(@PathVariable Long applicationId) {
+        taskService.rejectApplication(applicationId);
+        return ApiResponse.success();
     }
 }

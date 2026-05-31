@@ -46,8 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -228,6 +228,106 @@ public class TaskService {
 
         notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.IN_PROGRESS);
         return new ApplicationConfirmVO(order.getId(), task.getId(), order.getStatus(), order.getCreatedAt());
+    }
+
+    public TaskItemVO updateTask(Long taskId, TaskCreateRequest request) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Task task = requireTask(taskId);
+        if (!Objects.equals(task.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
+        }
+        if (!TaskStatus.OPEN.equals(task.getStatus())) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
+        }
+
+        task.setCategory(request.getCategory());
+        task.setTitle(request.getTitle().trim());
+        task.setDescription(request.getDescription().trim());
+        task.setCampus(request.getCampus().trim());
+        task.setRewardType(request.getRewardType());
+        task.setDeadline(request.getDeadline());
+        task.setAnonymous(Boolean.TRUE.equals(request.getAnonymous()));
+        task.setCategoryFields(toJson(request.getCategoryFields()));
+        taskMapper.updateById(task);
+
+        taskImageMapper.delete(new LambdaQueryWrapper<TaskImage>().eq(TaskImage::getTaskId, taskId));
+        bindTaskImages(taskId, request.getImageIds());
+        return toTaskItemVO(task);
+    }
+
+    public void deleteTask(Long taskId) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Task task = requireTask(taskId);
+        if (!Objects.equals(task.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
+        }
+        if (!TaskStatus.OPEN.equals(task.getStatus())) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
+        }
+        taskMapper.deleteById(taskId);
+    }
+
+    public void toggleFavorite(Long taskId) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        requireTask(taskId);
+        Favorite existing = favoriteMapper.selectOne(new LambdaQueryWrapper<Favorite>()
+                .eq(Favorite::getUserId, currentUserId)
+                .eq(Favorite::getTaskId, taskId));
+        if (existing != null) {
+            favoriteMapper.deleteById(existing.getId());
+        } else {
+            Favorite fav = new Favorite();
+            fav.setUserId(currentUserId);
+            fav.setTaskId(taskId);
+            favoriteMapper.insert(fav);
+        }
+    }
+
+    public PageResult<TaskItemVO> getFavorites(int page, int size) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Page<Favorite> favPage = favoriteMapper.selectPage(
+                new Page<>(page, size),
+                new LambdaQueryWrapper<Favorite>()
+                        .eq(Favorite::getUserId, currentUserId)
+                        .orderByDesc(Favorite::getCreatedAt));
+
+        if (favPage.getRecords().isEmpty()) {
+            return PageResult.of(0, page, size, List.of());
+        }
+
+        Set<Long> taskIds = favPage.getRecords().stream().map(Favorite::getTaskId).collect(java.util.stream.Collectors.toSet());
+        List<Task> tasks = taskMapper.selectList(new LambdaQueryWrapper<Task>().in(Task::getId, taskIds));
+        Map<Long, Task> taskMap = tasks.stream().collect(java.util.stream.Collectors.toMap(Task::getId, t -> t));
+
+        List<TaskItemVO> records = favPage.getRecords().stream()
+                .map(fav -> {
+                    Task task = taskMap.get(fav.getTaskId());
+                    if (task == null) return null;
+                    TaskItemVO vo = toTaskItemVO(task);
+                    vo.setFavorited(true);
+                    return vo;
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        return PageResult.of(favPage.getTotal(), page, size, records);
+    }
+
+    public void rejectApplication(Long applicationId) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Application application = applicationMapper.selectById(applicationId);
+        if (application == null) {
+            throw new BusinessException(ErrorCode.APPLICATION_NOT_FOUND);
+        }
+        Task task = requireTask(application.getTaskId());
+        if (!Objects.equals(task.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
+        }
+        if (!ApplicationStatus.PENDING.equals(application.getStatus())) {
+            throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
+        }
+        application.setStatus(ApplicationStatus.REJECTED);
+        applicationMapper.updateById(application);
     }
 
     private void bindTaskImages(Long taskId, List<Long> imageIds) {
