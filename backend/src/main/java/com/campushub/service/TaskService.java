@@ -221,6 +221,7 @@ public class TaskService {
 
         OrderStatusLog log = new OrderStatusLog();
         log.setOrderId(order.getId());
+        log.setFromStatus(OrderStatus.PENDING_CONFIRM.name());
         log.setToStatus(OrderStatus.IN_PROGRESS.name());
         log.setOperatorId(currentUserId);
         log.setReason("Publisher confirmed application");

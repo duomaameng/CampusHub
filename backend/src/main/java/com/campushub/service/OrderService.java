@@ -12,6 +12,7 @@ import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
 import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
+import com.campushub.enums.TaskStatus;
 import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.*;
 import com.campushub.security.SecurityUtils;
@@ -107,10 +108,13 @@ public class OrderService {
 
         order.setStatus(OrderStatus.COMPLETED);
         orderMapper.updateById(order);
+        Task task = requireTask(order.getTaskId());
+        task.setStatus(TaskStatus.COMPLETED);
+        taskMapper.updateById(task);
         saveStatusLog(order.getId(), OrderStatus.PENDING_COMPLETION, OrderStatus.COMPLETED, currentUserId, "Publisher confirmed completion");
 
         notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.COMPLETED);
-        String taskTitle = requireTask(order.getTaskId()).getTitle();
+        String taskTitle = task.getTitle();
         notificationService.createReviewRequestNotification(order.getPublisherId(), order.getId(), taskTitle);
         notificationService.createReviewRequestNotification(order.getServiceProviderId(), order.getId(), taskTitle);
     }
