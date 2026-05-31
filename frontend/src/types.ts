@@ -163,6 +163,12 @@ export interface TaskForm {
   categoryFields: Record<string, string | number | boolean>
 }
 
+export type TaskUpdatePayload = Partial<TaskForm>
+
+export interface FavoriteToggleResult {
+  favorited: boolean
+}
+
 export interface ApplicationItem {
   id: number
   taskId: number
@@ -193,15 +199,18 @@ export interface OrderDetail extends OrderItem {
   rewardType: RewardType
   proofImageUrl?: string
   completionNote?: string
-  statusLogs: Array<{
-    id: number
-    fromStatus?: OrderStatus
-    toStatus: OrderStatus
-    operatorNickname: string
-    reason: string
-    createdAt: string
-  }>
+  statusLogs: OrderStatusLog[]
   messages: OrderMessage[]
+}
+
+export interface OrderStatusLog {
+  id: number
+  fromStatus?: OrderStatus
+  toStatus: OrderStatus
+  operatorId?: number
+  operatorNickname: string
+  reason: string
+  createdAt: string
 }
 
 export interface OrderMessage {

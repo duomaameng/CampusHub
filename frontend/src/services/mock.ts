@@ -19,6 +19,7 @@ import type {
   ReviewItem,
   TaskForm,
   TaskItem,
+  TaskUpdatePayload,
   UploadedFileItem,
   UploadBusinessType,
   UserProfile,
@@ -700,6 +701,64 @@ export const mockApi = {
     return { id, status: 'OPEN', createdAt }
   },
 
+  async updateTask(taskId: number, payload: TaskUpdatePayload): Promise<TaskItem> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('只能编辑自己发布的需求')
+    if (task.status !== 'OPEN') throw new Error('需求当前状态不可编辑')
+    if (db.applications.some((item) => item.taskId === taskId)) throw new Error('需求已有接单申请，不可编辑')
+
+    const imageUrls = payload.imageIds
+      ? payload.imageIds
+          .map((imageId) => getUploadedFileById(db, imageId, 'TASK_IMAGE')?.url)
+          .filter((url): url is string => Boolean(url))
+      : task.imageUrls
+
+    Object.assign(task, {
+      ...payload,
+      imageUrls,
+      updatedAt: new Date().toISOString()
+    })
+    saveDb(db)
+    return clone(task)
+  },
+
+  async deleteTask(taskId: number): Promise<null> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('只能删除自己发布的需求')
+    if (task.status !== 'OPEN') throw new Error('需求当前状态不可删除')
+    if (db.applications.some((item) => item.taskId === taskId)) throw new Error('需求已有接单申请，不可删除')
+    db.tasks = db.tasks.filter((item) => item.id !== taskId)
+    saveDb(db)
+    return null
+  },
+
+  async toggleTaskFavorite(taskId: number): Promise<{ favorited: boolean }> {
+    await wait()
+    const db = loadDb()
+    getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    task.isFavorited = !task.isFavorited
+    task.favoriteCount = Math.max(0, task.favoriteCount + (task.isFavorited ? 1 : -1))
+    saveDb(db)
+    return { favorited: task.isFavorited }
+  },
+
+  async listFavoriteTasks(params: { page?: number; size?: number }): Promise<PageData<TaskItem>> {
+    await wait()
+    const db = loadDb()
+    getCurrentUser(db)
+    return paginate(clone(db.tasks.filter((item) => item.isFavorited)), params.page, params.size)
+  },
+
   async applyTask(taskId: number, message: string) {
     await wait()
     const db = loadDb()
@@ -801,6 +860,21 @@ export const mockApi = {
     })
     saveDb(db)
     return { orderId, taskId: task.id, status: 'IN_PROGRESS', createdAt }
+  },
+
+  async rejectApplication(applicationId: number): Promise<null> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const application = db.applications.find((item) => item.id === applicationId)
+    if (!application) throw new Error('接单申请不存在')
+    const task = db.tasks.find((item) => item.id === application.taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('无权拒绝该申请')
+    if (application.status !== 'PENDING') throw new Error('接单申请已被处理')
+    application.status = 'REJECTED'
+    saveDb(db)
+    return null
   },
 
   async listOrders(params: { page?: number; size?: number; role?: string; status?: OrderStatus; keyword?: string }): Promise<PageData<OrderItem>> {
@@ -937,6 +1011,18 @@ export const mockApi = {
   async getOrderReviews(orderId: number): Promise<ReviewItem[]> {
     await wait()
     return clone(loadDb().reviews.filter((item) => item.orderId === orderId))
+  },
+
+  async getOrderStatusLogs(orderId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+    if (order.publisherId !== user.id && order.serviceProviderId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('无权查看该订单')
+    }
+    return clone(order.statusLogs)
   },
 
   async listNotifications(params: { page?: number; size?: number; read?: boolean }) {

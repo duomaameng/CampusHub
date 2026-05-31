@@ -6,13 +6,14 @@ import { RouterLink, useRoute } from 'vue-router'
 import { fileApi, orderApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { orderStatusText } from '@/types'
-import type { OrderDetail, ReviewItem, UploadedFileItem } from '@/types'
+import type { OrderDetail, OrderStatusLog, ReviewItem, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
 const auth = useAuthStore()
 
 const order = ref<OrderDetail>()
+const statusLogs = ref<OrderStatusLog[]>([])
 const reviews = ref<ReviewItem[]>([])
 const error = ref('')
 const success = ref('')
@@ -36,6 +37,7 @@ async function load() {
   loading.value = true
   try {
     order.value = await orderApi.get(orderId.value)
+    statusLogs.value = await orderApi.statusLogs(orderId.value)
     reviews.value = await orderApi.reviews(orderId.value)
   } catch (err) {
     error.value = err instanceof Error ? err.message : '订单加载失败'
@@ -158,7 +160,7 @@ onMounted(load)
         <section class="grid">
           <h2>状态日志</h2>
           <ul class="timeline">
-            <li v-for="log in order.statusLogs" :key="log.id">
+            <li v-for="log in statusLogs" :key="log.id">
               <strong>{{ orderStatusText[log.toStatus] }}</strong>
               <p>{{ log.reason }} · {{ log.operatorNickname }} · {{ new Date(log.createdAt).toLocaleString() }}</p>
             </li>

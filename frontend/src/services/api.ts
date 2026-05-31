@@ -8,10 +8,12 @@ import type {
   AnnouncementPublishResult,
   ApplicationItem,
   CreditInfo,
+  FavoriteToggleResult,
   LoginResult,
   NotificationItem,
   OrderDetail,
   OrderItem,
+  OrderStatusLog,
   OrderStatus,
   PageData,
   PublicProfile,
@@ -19,6 +21,7 @@ import type {
   ReviewItem,
   TaskForm,
   TaskItem,
+  TaskUpdatePayload,
   UploadedFileItem,
   UploadBusinessType,
   UserProfile,
@@ -107,6 +110,22 @@ export const taskApi = {
     if (useMock) return mockApi.createTask(payload)
     return request<{ id: number; status: string; createdAt: string }>({ method: 'POST', url: '/tasks', data: payload })
   },
+  update(taskId: number, payload: TaskUpdatePayload): Promise<TaskItem> {
+    if (useMock) return mockApi.updateTask(taskId, payload)
+    return request<TaskItem>({ method: 'PATCH', url: `/tasks/${taskId}`, data: payload })
+  },
+  remove(taskId: number): Promise<null> {
+    if (useMock) return mockApi.deleteTask(taskId)
+    return request<null>({ method: 'DELETE', url: `/tasks/${taskId}` })
+  },
+  toggleFavorite(taskId: number): Promise<FavoriteToggleResult> {
+    if (useMock) return mockApi.toggleTaskFavorite(taskId)
+    return request<FavoriteToggleResult>({ method: 'POST', url: `/tasks/${taskId}/favorite` })
+  },
+  favorites(params: { page?: number; size?: number }): Promise<PageData<TaskItem>> {
+    if (useMock) return mockApi.listFavoriteTasks(params)
+    return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/favorites', params })
+  },
   apply(taskId: number, message: string) {
     if (useMock) return mockApi.applyTask(taskId, message)
     return request<{ applicationId: number; taskId: number; status: string; createdAt: string }>({
@@ -125,6 +144,10 @@ export const taskApi = {
       method: 'POST',
       url: `/applications/${applicationId}/confirm`
     })
+  },
+  rejectApplication(applicationId: number): Promise<null> {
+    if (useMock) return mockApi.rejectApplication(applicationId)
+    return request<null>({ method: 'POST', url: `/applications/${applicationId}/reject` })
   }
 }
 
@@ -168,6 +191,10 @@ export const orderApi = {
   reviews(orderId: number): Promise<ReviewItem[]> {
     if (useMock) return mockApi.getOrderReviews(orderId)
     return request<ReviewItem[]>({ method: 'GET', url: `/orders/${orderId}/reviews` })
+  },
+  statusLogs(orderId: number): Promise<OrderStatusLog[]> {
+    if (useMock) return mockApi.getOrderStatusLogs(orderId)
+    return request<OrderStatusLog[]>({ method: 'GET', url: `/orders/${orderId}/status-logs` })
   }
 }
 

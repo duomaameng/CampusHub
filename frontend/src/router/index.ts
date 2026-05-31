@@ -11,6 +11,7 @@ const router = createRouter({
     { path: '/verify-email', name: 'verify-email', component: () => import('@/views/VerifyEmailView.vue') },
     { path: '/forgot-password', name: 'forgot-password', component: () => import('@/views/ForgotPasswordView.vue') },
     { path: '/tasks', name: 'tasks', component: () => import('@/views/TaskHallView.vue') },
+    { path: '/tasks/favorites', name: 'task-favorites', component: () => import('@/views/TaskFavoritesView.vue'), meta: { requiresAuth: true } },
     { path: '/announcements', name: 'announcements', component: () => import('@/views/AnnouncementsView.vue') },
     {
       path: '/tasks/new',

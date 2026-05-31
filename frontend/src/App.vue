@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Bell,
+  Bookmark,
   ClipboardList,
   GraduationCap,
   Home,
@@ -99,6 +100,10 @@ async function handleLogout() {
         <RouterLink v-if="auth.isAuthenticated" to="/tasks/new">
           <PlusCircle class="nav-icon" aria-hidden="true" />
           <span>发布需求</span>
+        </RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/tasks/favorites">
+          <Bookmark class="nav-icon" aria-hidden="true" />
+          <span>我的收藏</span>
         </RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/orders">
           <ClipboardList class="nav-icon" aria-hidden="true" />
