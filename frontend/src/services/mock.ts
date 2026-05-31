@@ -836,6 +836,10 @@ export const mockApi = {
 
     const fromStatus = order.status
     order.status = status
+    const task = db.tasks.find((item) => item.id === order.taskId)
+    if (task && status === 'COMPLETED') {
+      task.status = 'COMPLETED'
+    }
     order.statusLogs.push({
       id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
       fromStatus,
