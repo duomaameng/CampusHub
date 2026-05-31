@@ -42,6 +42,7 @@ class OrderServiceTest {
     @Mock private OrderStatusLogMapper orderStatusLogMapper;
     @Mock private OrderMessageMapper orderMessageMapper;
     @Mock private ReviewMapper reviewMapper;
+    @Mock private CreditLogMapper creditLogMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
 
@@ -373,6 +374,7 @@ class OrderServiceTest {
             Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.COMPLETED);
             when(orderMapper.selectById(1L)).thenReturn(order);
             when(reviewMapper.selectCount(any())).thenReturn(0L);
+            when(creditLogMapper.selectOne(any())).thenReturn(null);
 
             ReviewCreateRequest request = new ReviewCreateRequest();
             request.setRating(5);
@@ -388,6 +390,7 @@ class OrderServiceTest {
             assertThat(saved.getRevieweeId()).isEqualTo(OTHER_USER_ID);
             assertThat(saved.getRating()).isEqualTo(5);
             assertThat(saved.getContent()).isEqualTo("Great service!");
+            verify(creditLogMapper).insert(any(CreditLog.class));
         }
 
         @Test
