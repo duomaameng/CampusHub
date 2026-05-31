@@ -1,12 +1,14 @@
 package com.campushub.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
 import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.dto.task.TaskCreateRequest;
+import com.campushub.dto.task.TaskUpdateRequest;
 import com.campushub.entity.Application;
 import com.campushub.entity.CreditLog;
 import com.campushub.entity.Favorite;
@@ -34,12 +36,14 @@ import com.campushub.mapper.UserProfileMapper;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.task.ApplicationConfirmVO;
 import com.campushub.vo.task.ApplicationItemVO;
+import com.campushub.vo.task.FavoriteToggleVO;
 import com.campushub.vo.task.TaskApplyVO;
 import com.campushub.vo.task.TaskCreateVO;
 import com.campushub.vo.task.TaskItemVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -199,8 +203,14 @@ public class TaskService {
             throw new BusinessException(ErrorCode.TASK_ALREADY_TAKEN);
         }
 
+        int applicationUpdatedRows = applicationMapper.update(null, new LambdaUpdateWrapper<Application>()
+                .eq(Application::getId, applicationId)
+                .eq(Application::getStatus, ApplicationStatus.PENDING)
+                .set(Application::getStatus, ApplicationStatus.APPROVED));
+        if (applicationUpdatedRows != 1) {
+            throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
+        }
         application.setStatus(ApplicationStatus.APPROVED);
-        applicationMapper.updateById(application);
 
         applicationMapper.selectList(new LambdaQueryWrapper<Application>()
                         .eq(Application::getTaskId, task.getId())
@@ -231,7 +241,8 @@ public class TaskService {
         return new ApplicationConfirmVO(order.getId(), task.getId(), order.getStatus(), order.getCreatedAt());
     }
 
-    public TaskItemVO updateTask(Long taskId, TaskCreateRequest request) {
+    @Transactional
+    public TaskItemVO updateTask(Long taskId, TaskUpdateRequest request) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Task task = requireTask(taskId);
         if (!Objects.equals(task.getPublisherId(), currentUserId)) {
@@ -240,22 +251,42 @@ public class TaskService {
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
+        ensureNoApplications(taskId);
 
-        task.setCategory(request.getCategory());
-        task.setTitle(request.getTitle().trim());
-        task.setDescription(request.getDescription().trim());
-        task.setCampus(request.getCampus().trim());
-        task.setRewardType(request.getRewardType());
-        task.setDeadline(request.getDeadline());
-        task.setAnonymous(Boolean.TRUE.equals(request.getAnonymous()));
-        task.setCategoryFields(toJson(request.getCategoryFields()));
+        if (request.getCategory() != null) {
+            task.setCategory(request.getCategory());
+        }
+        if (request.getTitle() != null) {
+            task.setTitle(requireText(request.getTitle(), "title"));
+        }
+        if (request.getDescription() != null) {
+            task.setDescription(requireText(request.getDescription(), "description"));
+        }
+        if (request.getCampus() != null) {
+            task.setCampus(requireText(request.getCampus(), "campus"));
+        }
+        if (request.getRewardType() != null) {
+            task.setRewardType(request.getRewardType());
+        }
+        if (request.getDeadline() != null) {
+            task.setDeadline(request.getDeadline());
+        }
+        if (request.getAnonymous() != null) {
+            task.setAnonymous(request.getAnonymous());
+        }
+        if (request.getCategoryFields() != null) {
+            task.setCategoryFields(toJson(request.getCategoryFields()));
+        }
         taskMapper.updateById(task);
 
-        taskImageMapper.delete(new LambdaQueryWrapper<TaskImage>().eq(TaskImage::getTaskId, taskId));
-        bindTaskImages(taskId, request.getImageIds());
+        if (request.getImageIds() != null) {
+            taskImageMapper.delete(new LambdaQueryWrapper<TaskImage>().eq(TaskImage::getTaskId, taskId));
+            bindTaskImages(taskId, request.getImageIds());
+        }
         return toTaskItemVO(task);
     }
 
+    @Transactional
     public void deleteTask(Long taskId) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Task task = requireTask(taskId);
@@ -265,10 +296,12 @@ public class TaskService {
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
+        ensureNoApplications(taskId);
         taskMapper.deleteById(taskId);
     }
 
-    public void toggleFavorite(Long taskId) {
+    @Transactional
+    public FavoriteToggleVO toggleFavorite(Long taskId) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         requireTask(taskId);
         Favorite existing = favoriteMapper.selectOne(new LambdaQueryWrapper<Favorite>()
@@ -276,11 +309,17 @@ public class TaskService {
                 .eq(Favorite::getTaskId, taskId));
         if (existing != null) {
             favoriteMapper.deleteById(existing.getId());
+            return new FavoriteToggleVO(false);
         } else {
             Favorite fav = new Favorite();
             fav.setUserId(currentUserId);
             fav.setTaskId(taskId);
-            favoriteMapper.insert(fav);
+            try {
+                favoriteMapper.insert(fav);
+            } catch (DuplicateKeyException ignored) {
+                return new FavoriteToggleVO(true);
+            }
+            return new FavoriteToggleVO(true);
         }
     }
 
@@ -314,6 +353,7 @@ public class TaskService {
         return PageResult.of(favPage.getTotal(), page, size, records);
     }
 
+    @Transactional
     public void rejectApplication(Long applicationId) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Application application = applicationMapper.selectById(applicationId);
@@ -327,8 +367,28 @@ public class TaskService {
         if (!ApplicationStatus.PENDING.equals(application.getStatus())) {
             throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
         }
-        application.setStatus(ApplicationStatus.REJECTED);
-        applicationMapper.updateById(application);
+        int updatedRows = applicationMapper.update(null, new LambdaUpdateWrapper<Application>()
+                .eq(Application::getId, applicationId)
+                .eq(Application::getStatus, ApplicationStatus.PENDING)
+                .set(Application::getStatus, ApplicationStatus.REJECTED));
+        if (updatedRows != 1) {
+            throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
+        }
+    }
+
+    private String requireText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " must not be blank");
+        }
+        return value.trim();
+    }
+
+    private void ensureNoApplications(Long taskId) {
+        long applicationCount = applicationMapper.selectCount(
+                new LambdaQueryWrapper<Application>().eq(Application::getTaskId, taskId));
+        if (applicationCount > 0) {
+            throw new BusinessException(ErrorCode.TASK_HAS_APPLICATION);
+        }
     }
 
     private void bindTaskImages(Long taskId, List<Long> imageIds) {

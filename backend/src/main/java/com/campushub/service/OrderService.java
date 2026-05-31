@@ -288,7 +288,7 @@ public class OrderService {
     private OrderStatusLogVO toStatusLogVO(OrderStatusLog log) {
         OrderStatus fromStatus = log.getFromStatus() == null ? null : OrderStatus.valueOf(log.getFromStatus());
         OrderStatus toStatus = log.getToStatus() == null ? null : OrderStatus.valueOf(log.getToStatus());
-        return new OrderStatusLogVO(log.getId(), fromStatus, toStatus, findNickname(log.getOperatorId()), log.getReason(), log.getCreatedAt());
+        return new OrderStatusLogVO(log.getId(), fromStatus, toStatus, log.getOperatorId(), findNickname(log.getOperatorId()), log.getReason(), log.getCreatedAt());
     }
 
     private OrderMessageVO toOrderMessageVO(OrderMessage message) {

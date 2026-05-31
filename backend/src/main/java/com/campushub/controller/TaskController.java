@@ -4,6 +4,7 @@ import com.campushub.common.ApiResponse;
 import com.campushub.common.PageResult;
 import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.dto.task.TaskCreateRequest;
+import com.campushub.dto.task.TaskUpdateRequest;
 import com.campushub.service.TaskService;
 import com.campushub.vo.task.*;
 import jakarta.validation.Valid;
@@ -50,7 +51,7 @@ public class TaskController {
     }
 
     @PatchMapping("/tasks/{taskId}")
-    public ApiResponse<TaskItemVO> update(@PathVariable Long taskId, @Valid @RequestBody TaskCreateRequest request) {
+    public ApiResponse<TaskItemVO> update(@PathVariable Long taskId, @Valid @RequestBody TaskUpdateRequest request) {
         return ApiResponse.success(taskService.updateTask(taskId, request));
     }
 
@@ -61,9 +62,8 @@ public class TaskController {
     }
 
     @PostMapping("/tasks/{taskId}/favorite")
-    public ApiResponse<Void> toggleFavorite(@PathVariable Long taskId) {
-        taskService.toggleFavorite(taskId);
-        return ApiResponse.success();
+    public ApiResponse<FavoriteToggleVO> toggleFavorite(@PathVariable Long taskId) {
+        return ApiResponse.success(taskService.toggleFavorite(taskId));
     }
 
     @GetMapping("/tasks/favorites")
