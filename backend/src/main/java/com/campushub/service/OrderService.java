@@ -33,6 +33,7 @@ public class OrderService {
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final OrderMessageMapper orderMessageMapper;
     private final ReviewMapper reviewMapper;
+    private final CreditLogMapper creditLogMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
 
@@ -196,6 +197,21 @@ public class OrderService {
         review.setRating(request.getRating());
         review.setContent(request.getContent().trim());
         reviewMapper.insert(review);
+
+        int creditChange = (request.getRating() - 3) * 5;
+        CreditLog latest = creditLogMapper.selectOne(new LambdaQueryWrapper<CreditLog>()
+                .eq(CreditLog::getUserId, review.getRevieweeId())
+                .orderByDesc(CreditLog::getId)
+                .last("LIMIT 1"));
+        int scoreBefore = latest != null ? latest.getScoreAfter() : 100;
+        CreditLog creditLog = new CreditLog();
+        creditLog.setUserId(review.getRevieweeId());
+        creditLog.setChangeAmount(creditChange);
+        creditLog.setScoreBefore(scoreBefore);
+        creditLog.setScoreAfter(scoreBefore + creditChange);
+        creditLog.setReason("Order #" + orderId + " review rating: " + request.getRating());
+        creditLog.setRelatedOrderId(orderId);
+        creditLogMapper.insert(creditLog);
 
         long reviewCount = reviewMapper.selectCount(new LambdaQueryWrapper<Review>().eq(Review::getOrderId, orderId));
         if (reviewCount >= 2 && !OrderStatus.REVIEWED.equals(order.getStatus())) {
