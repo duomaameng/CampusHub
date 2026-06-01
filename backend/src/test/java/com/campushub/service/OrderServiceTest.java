@@ -11,6 +11,7 @@ import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
 import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
+import com.campushub.enums.TaskStatus;
 import com.campushub.mapper.*;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.order.*;
@@ -41,6 +42,7 @@ class OrderServiceTest {
     @Mock private UserProfileMapper userProfileMapper;
     @Mock private OrderStatusLogMapper orderStatusLogMapper;
     @Mock private OrderMessageMapper orderMessageMapper;
+    @Mock private ApplicationMapper applicationMapper;
     @Mock private ReviewMapper reviewMapper;
     @Mock private CreditLogMapper creditLogMapper;
     @Mock private NotificationService notificationService;
@@ -258,7 +260,7 @@ class OrderServiceTest {
         }
 
         @Test
-        void shouldCancelFromInProgressAsServiceProvider() {
+        void shouldSubmitCancelRequestFromInProgressAsServiceProvider() {
             Order order = createOrder(1L, 10L, OTHER_USER_ID, CURRENT_USER_ID, OrderStatus.IN_PROGRESS);
             when(orderMapper.selectById(1L)).thenReturn(order);
 
@@ -267,8 +269,44 @@ class OrderServiceTest {
 
             orderService.cancelOrder(1L, request);
 
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.CANCELLED));
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PROGRESS);
+            assertThat(order.getCancelReason()).isEqualTo("Cannot fulfill");
+            ArgumentCaptor<OrderStatusLog> logCaptor = ArgumentCaptor.forClass(OrderStatusLog.class);
+            verify(orderStatusLogMapper).insert(logCaptor.capture());
+            assertThat(logCaptor.getValue().getFromStatus()).isEqualTo(OrderStatus.IN_PROGRESS.name());
+            assertThat(logCaptor.getValue().getToStatus()).isEqualTo(OrderStatus.IN_PROGRESS.name());
+            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.IN_PROGRESS));
+        }
+
+        @Test
+        void shouldApproveCancelRequestAndReopenTask() {
+            Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.IN_PROGRESS);
+            order.setCancelReason("Cannot fulfill");
+            Task task = createTask(10L, CURRENT_USER_ID, "Test task");
+            task.setStatus(TaskStatus.IN_PROGRESS);
+            when(orderMapper.selectById(1L)).thenReturn(order);
+            when(taskMapper.selectById(10L)).thenReturn(task);
+
+            orderService.approveCancelRequest(1L);
+
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_CONFIRM);
+            assertThat(order.getCancelReason()).isNull();
+            assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
+            verify(applicationMapper).update(isNull(), any());
+            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.PENDING_CONFIRM));
+        }
+
+        @Test
+        void shouldRejectCancelRequestAndKeepOrderInProgress() {
+            Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.IN_PROGRESS);
+            order.setCancelReason("Cannot fulfill");
+            when(orderMapper.selectById(1L)).thenReturn(order);
+
+            orderService.rejectCancelRequest(1L);
+
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PROGRESS);
+            assertThat(order.getCancelReason()).isNull();
+            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.IN_PROGRESS));
         }
 
         @Test

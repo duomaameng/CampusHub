@@ -43,7 +43,7 @@ export const applicationStatusText: Record<ApplicationStatus, string> = {
 }
 
 export const orderStatusText: Record<OrderStatus, string> = {
-  PENDING_CONFIRM: '待确认',
+  PENDING_CONFIRM: '待接单',
   IN_PROGRESS: '进行中',
   PENDING_COMPLETION: '待确认完成',
   COMPLETED: '已完成',

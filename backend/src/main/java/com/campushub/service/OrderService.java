@@ -10,6 +10,7 @@ import com.campushub.dto.order.OrderCompleteRequest;
 import com.campushub.dto.order.OrderMessageRequest;
 import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
+import com.campushub.enums.ApplicationStatus;
 import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskStatus;
@@ -33,6 +34,7 @@ public class OrderService {
     private final UserProfileMapper userProfileMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final OrderMessageMapper orderMessageMapper;
+    private final ApplicationMapper applicationMapper;
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
     private final NotificationService notificationService;
@@ -132,13 +134,63 @@ public class OrderService {
         }
 
         OrderStatus fromStatus = order.getStatus();
-        order.setStatus(OrderStatus.CANCELLED);
         order.setCancelReason(request.getReason().trim());
-        orderMapper.updateById(order);
-        saveStatusLog(order.getId(), fromStatus, OrderStatus.CANCELLED, currentUserId, request.getReason().trim());
+        if (Objects.equals(currentUserId, order.getPublisherId())) {
+            order.setStatus(OrderStatus.CANCELLED);
+            orderMapper.updateById(order);
+            saveStatusLog(order.getId(), fromStatus, OrderStatus.CANCELLED, currentUserId, request.getReason().trim());
 
-        Long receiverId = Objects.equals(currentUserId, order.getPublisherId()) ? order.getServiceProviderId() : order.getPublisherId();
-        notificationService.createOrderStatusNotification(receiverId, order.getId(), OrderStatus.CANCELLED);
+            notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.CANCELLED);
+            return;
+        }
+
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        orderMapper.updateById(order);
+        saveStatusLog(order.getId(), fromStatus, OrderStatus.IN_PROGRESS, currentUserId, "服务方申请取消：" + request.getReason().trim());
+        notificationService.createOrderStatusNotification(order.getPublisherId(), order.getId(), OrderStatus.IN_PROGRESS);
+    }
+
+    @Transactional
+    public void approveCancelRequest(Long orderId) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(order.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+        ensurePendingCancelRequest(order);
+
+        String reason = order.getCancelReason();
+        order.setStatus(OrderStatus.PENDING_CONFIRM);
+        order.setCancelReason(null);
+        orderMapper.updateById(order);
+
+        Task task = requireTask(order.getTaskId());
+        task.setStatus(TaskStatus.OPEN);
+        taskMapper.updateById(task);
+        applicationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Application>()
+                .eq(Application::getTaskId, task.getId())
+                .eq(Application::getStatus, ApplicationStatus.APPROVED)
+                .set(Application::getStatus, ApplicationStatus.CANCELLED));
+
+        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
+        notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.PENDING_CONFIRM);
+    }
+
+    @Transactional
+    public void rejectCancelRequest(Long orderId) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(order.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+        ensurePendingCancelRequest(order);
+
+        String reason = order.getCancelReason();
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        order.setCancelReason(null);
+        orderMapper.updateById(order);
+        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
+        notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.IN_PROGRESS);
     }
 
     @Transactional
@@ -357,6 +409,12 @@ public class OrderService {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(currentUserId, order.getPublisherId()) && !Objects.equals(currentUserId, order.getServiceProviderId())) {
             throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+    }
+
+    private void ensurePendingCancelRequest(Order order) {
+        if (!OrderStatus.IN_PROGRESS.equals(order.getStatus()) || order.getCancelReason() == null || order.getCancelReason().isBlank()) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
         }
     }
 

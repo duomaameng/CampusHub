@@ -16,7 +16,7 @@ import { RouterLink } from 'vue-router'
 
 import { taskApi } from '@/services/api'
 import { taskStatusText } from '@/types'
-import type { PageData, TaskItem } from '@/types'
+import type { PageData, TaskItem, TaskStatus } from '@/types'
 
 const categories = [
   { value: '', label: '全部分类' },
@@ -35,6 +35,13 @@ const rewardText: Record<string, string> = {
   CASH: '现金',
   NEGOTIABLE: '面议',
   CREDIT_INTENT: '积分意向'
+}
+const statusTagClass: Record<TaskStatus, string> = {
+  OPEN: 'success',
+  IN_PROGRESS: 'info',
+  COMPLETED: 'warning',
+  CANCELLED: 'danger',
+  EXPIRED: 'danger'
 }
 
 const filters = reactive({
@@ -161,7 +168,7 @@ onMounted(loadTasks)
       >
         <div class="item-title">
           <h2>{{ task.title }}</h2>
-          <span class="tag">{{ categoryText[task.category] }}</span>
+          <span class="tag category-tag">{{ categoryText[task.category] }}</span>
         </div>
         <p>{{ task.description }}</p>
         <div class="meta-line">
@@ -173,7 +180,7 @@ onMounted(loadTasks)
         <div class="meta-line">
           <span><Users class="meta-icon" aria-hidden="true" />申请 {{ task.applicationCount }}</span>
           <span><Bookmark class="meta-icon" aria-hidden="true" />收藏 {{ task.favoriteCount }}</span>
-          <span :class="['tag', task.status === 'OPEN' ? 'success' : 'warning']">{{ taskStatusText[task.status] }}</span>
+          <span :class="['tag', 'status-tag', statusTagClass[task.status]]">{{ taskStatusText[task.status] }}</span>
         </div>
         <span class="card-action">
           查看详情
@@ -327,9 +334,39 @@ section {
   font-weight: 700;
   letter-spacing: 0.03em;
   padding: 4px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.item-card .category-tag {
   background: linear-gradient(135deg, var(--primary-50), var(--secondary-50));
   color: var(--primary-600);
   border: 1px solid var(--primary-100);
+  min-width: max-content;
+}
+
+.item-card .status-tag.success {
+  background: linear-gradient(135deg, var(--success-bg), rgba(16, 185, 129, 0.08));
+  color: #047857;
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.item-card .status-tag.info {
+  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.08));
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.item-card .status-tag.warning {
+  background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.08));
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.danger {
+  background: linear-gradient(135deg, var(--danger-bg), rgba(239, 68, 68, 0.08));
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 .item-card .meta-line {

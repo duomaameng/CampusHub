@@ -31,6 +31,17 @@ const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
 const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.id)
 const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS')
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
+const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED'].includes(order.value.status)))
+const latestStatusLog = computed(() => statusLogs.value[statusLogs.value.length - 1])
+const hasPendingCancelRequest = computed(() => Boolean(
+  isPublisher.value &&
+  order.value?.status === 'IN_PROGRESS' &&
+  latestStatusLog.value?.toStatus === 'IN_PROGRESS' &&
+  (
+    latestStatusLog.value?.operatorId === order.value?.serviceProviderId ||
+    latestStatusLog.value?.reason.includes('申请取消')
+  )
+))
 
 async function load() {
   error.value = ''
@@ -122,7 +133,29 @@ async function handleConfirmCompletionClick() {
 
 async function cancelOrder() {
   if (!order.value) return
-  await runAction(() => orderApi.cancel(order.value!.id, cancelReason.value), '订单已取消')
+  if (isOrderTerminal.value) {
+    error.value = '订单已完成、已评价或已取消，不能再取消'
+    success.value = ''
+    return
+  }
+  if (!cancelReason.value.trim()) {
+    error.value = '请先填写取消原因'
+    success.value = ''
+    return
+  }
+  const successText = isProvider.value && !isPublisher.value ? 'Cancel request submitted, waiting for publisher approval' : 'Order cancelled'
+  await runAction(() => orderApi.cancel(order.value!.id, cancelReason.value), successText)
+  cancelReason.value = ''
+}
+
+async function approveCancelRequest() {
+  if (!order.value) return
+  await runAction(() => orderApi.approveCancelRequest(order.value!.id), 'Cancel request approved, task reopened')
+}
+
+async function rejectCancelRequest() {
+  if (!order.value) return
+  await runAction(() => orderApi.rejectCancelRequest(order.value!.id), 'Cancel request rejected')
 }
 
 onMounted(load)
@@ -232,13 +265,25 @@ onMounted(load)
             <CheckCheck class="button-icon" aria-hidden="true" />
             <span>确认完成</span>
           </button>
+          <div v-if="hasPendingCancelRequest" class="cancel-request-actions">
+            <p class="hint">服务方申请取消订单，请审核。</p>
+            <button class="button primary" type="button" @click="approveCancelRequest">
+              <CheckCheck class="button-icon" aria-hidden="true" />
+              <span>同意取消申请</span>
+            </button>
+            <button class="button secondary" type="button" @click="rejectCancelRequest">
+              <XCircle class="button-icon" aria-hidden="true" />
+              <span>拒绝取消申请</span>
+            </button>
+          </div>
           <div class="field">
             <input v-model.trim="cancelReason" placeholder="取消原因" />
           </div>
           <button
             class="button danger"
             type="button"
-            :disabled="!cancelReason || ['COMPLETED', 'REVIEWED', 'CANCELLED'].includes(order.status)"
+            :class="{ 'is-soft-disabled': !cancelReason && !isOrderTerminal }"
+            :disabled="isOrderTerminal"
             @click="cancelOrder"
           >
             <XCircle class="button-icon" aria-hidden="true" />
@@ -291,5 +336,14 @@ onMounted(load)
 .button.is-soft-disabled:hover {
   transform: none;
   box-shadow: none;
+}
+
+.cancel-request-actions {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid rgba(245, 158, 11, 0.24);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.04));
 }
 </style>

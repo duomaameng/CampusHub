@@ -54,6 +54,18 @@ public class OrderController {
         return ApiResponse.success();
     }
 
+    @PostMapping("/{orderId}/cancel-request/approve")
+    public ApiResponse<Void> approveCancelRequest(@PathVariable Long orderId) {
+        orderService.approveCancelRequest(orderId);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/{orderId}/cancel-request/reject")
+    public ApiResponse<Void> rejectCancelRequest(@PathVariable Long orderId) {
+        orderService.rejectCancelRequest(orderId);
+        return ApiResponse.success();
+    }
+
     @PostMapping("/{orderId}/messages")
     public ApiResponse<Void> sendMessage(@PathVariable Long orderId, @Valid @RequestBody OrderMessageRequest request) {
         orderService.sendMessage(orderId, request);

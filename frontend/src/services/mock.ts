@@ -909,25 +909,82 @@ export const mockApi = {
     if (!order) throw new Error('订单不存在')
 
     const fromStatus = order.status
-    order.status = status
+    const isProviderCancelRequest = status === 'CANCELLED' && order.serviceProviderId === user.id && order.publisherId !== user.id
+    const nextStatus = isProviderCancelRequest ? 'IN_PROGRESS' : status
+    order.status = nextStatus
+    if (isProviderCancelRequest) {
+      ;(order as OrderDetail & { cancelReason?: string }).cancelReason = reason
+    }
     const task = db.tasks.find((item) => item.id === order.taskId)
-    if (task && status === 'COMPLETED') {
+    if (task && nextStatus === 'COMPLETED') {
       task.status = 'COMPLETED'
     }
     order.statusLogs.push({
       id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
       fromStatus,
-      toStatus: status,
+      toStatus: nextStatus,
       operatorNickname: user.profile.nickname,
-      reason,
+      reason: isProviderCancelRequest ? `服务方申请取消：${reason}` : reason,
       createdAt: new Date().toISOString()
     })
     pushNotification(db, {
-      type: status === 'COMPLETED' ? 'REVIEW_REQUEST' : 'ORDER_STATUS',
-      title: status === 'COMPLETED' ? '订单已完成' : '订单状态已更新',
-      content: `${order.taskTitle} 的状态变更为 ${status}`,
+      type: nextStatus === 'COMPLETED' ? 'REVIEW_REQUEST' : 'ORDER_STATUS',
+      title: nextStatus === 'COMPLETED' ? 'Order completed' : 'Order status updated',
+      content: `${order.taskTitle} status changed to ${nextStatus}`,
       targetType: 'ORDER',
       targetId: order.id
+    })
+    saveDb(db)
+  },
+
+  async approveCancelRequest(orderId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('Order not found')
+    if (order.publisherId !== user.id) throw new Error('Only publisher can approve cancel request')
+    const reason = (order as OrderDetail & { cancelReason?: string }).cancelReason
+    if (order.status !== 'IN_PROGRESS' || !reason) throw new Error('No pending cancel request')
+
+    order.status = 'PENDING_CONFIRM'
+    delete (order as OrderDetail & { cancelReason?: string }).cancelReason
+    const task = db.tasks.find((item) => item.id === order.taskId)
+    if (task) task.status = 'OPEN'
+    db.applications
+      .filter((item) => item.taskId === order.taskId && item.status === 'APPROVED')
+      .forEach((item) => {
+        item.status = 'CANCELLED'
+      })
+    order.statusLogs.push({
+      id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
+      fromStatus: 'IN_PROGRESS',
+      toStatus: 'PENDING_CONFIRM',
+      operatorNickname: user.profile.nickname,
+      reason: `发布方同意取消申请：${reason}`,
+      createdAt: new Date().toISOString()
+    })
+    saveDb(db)
+  },
+
+  async rejectCancelRequest(orderId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('Order not found')
+    if (order.publisherId !== user.id) throw new Error('Only publisher can reject cancel request')
+    const reason = (order as OrderDetail & { cancelReason?: string }).cancelReason
+    if (order.status !== 'IN_PROGRESS' || !reason) throw new Error('No pending cancel request')
+
+    delete (order as OrderDetail & { cancelReason?: string }).cancelReason
+    order.statusLogs.push({
+      id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
+      fromStatus: 'IN_PROGRESS',
+      toStatus: 'IN_PROGRESS',
+      operatorNickname: user.profile.nickname,
+      reason: `发布方拒绝取消申请：${reason}`,
+      createdAt: new Date().toISOString()
     })
     saveDb(db)
   },

@@ -179,6 +179,14 @@ export const orderApi = {
     if (useMock) return mockApi.updateOrderStatus(orderId, 'CANCELLED', reason)
     return request({ method: 'POST', url: `/orders/${orderId}/cancel`, data: { reason } })
   },
+  approveCancelRequest(orderId: number) {
+    if (useMock) return mockApi.approveCancelRequest(orderId)
+    return request({ method: 'POST', url: `/orders/${orderId}/cancel-request/approve` })
+  },
+  rejectCancelRequest(orderId: number) {
+    if (useMock) return mockApi.rejectCancelRequest(orderId)
+    return request({ method: 'POST', url: `/orders/${orderId}/cancel-request/reject` })
+  },
   sendMessage(orderId: number, content: string) {
     if (useMock) return mockApi.sendMessage(orderId, content)
     return request({ method: 'POST', url: `/orders/${orderId}/messages`, data: { messageType: 'TEXT', content } })
