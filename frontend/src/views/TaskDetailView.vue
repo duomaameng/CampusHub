@@ -390,6 +390,7 @@ onMounted(load)
             <p>{{ application.message }}</p>
             <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
             <button
+              v-if="task.status === 'OPEN'"
               class="button secondary"
               type="button"
               :disabled="application.status !== 'PENDING' || actionLoadingApplicationId === application.id"
@@ -398,6 +399,7 @@ onMounted(load)
               确认接单
             </button>
             <button
+              v-if="task.status === 'OPEN'"
               class="button danger"
               type="button"
               :disabled="application.status !== 'PENDING' || actionLoadingApplicationId === application.id"
