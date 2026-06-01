@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复 Bug 共 **20** 项，主要集中在：
+本阶段目前已修复 Bug 共 **30** 项，主要集中在：
 
 - 认证与验证码流程
 - 任务、订单、举报主链
@@ -922,3 +922,29 @@
 **涉及文件**
 
 - `frontend/src/views/TaskDetailView.vue`
+
+---
+
+### Bug 30（05-bug-list 序号 11）：取消后服务方"我的订单"仍展示该订单
+
+**问题现象**
+
+- 进行中的订单，服务方申请取消服务且发布方同意后。
+- 该订单仍出现在服务方的"我的订单"列表中，服务方不应再看到已不属于自己的订单。
+
+**影响范围**
+
+- 服务方的"我的订单"列表
+- 订单列表查询逻辑
+
+**修复方案**
+
+- 取消流程统一将订单状态改为 `PENDING_CONFIRM`（待接单），而非 `CANCELLED`。
+- `listOrders` 查询时服务方角色过滤掉 `CANCELLED` 和 `PENDING_CONFIRM` 状态的订单。
+- 无角色查询时，服务方相关的已取消/待接单订单也不显示，但发布方仍可见。
+- `confirmApplication` 中清理同一任务的旧待接单/已取消订单，避免 `task_id` 唯一约束冲突。
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/service/OrderService.java`
+- `backend/src/main/java/com/campushub/service/TaskService.java`
