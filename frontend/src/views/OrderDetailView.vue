@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { fileApi, orderApi } from '@/services/api'
+import { fileApi, orderApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import { orderStatusText } from '@/types'
-import type { OrderDetail, OrderStatusLog, ReviewItem, UploadedFileItem } from '@/types'
+import { applicationStatusText, orderStatusText } from '@/types'
+import type { ApplicationItem, OrderDetail, OrderStatusLog, ReviewItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 
 const order = ref<OrderDetail>()
+const task = ref<TaskItem>()
+const applications = ref<ApplicationItem[]>([])
 const statusLogs = ref<OrderStatusLog[]>([])
 const reviews = ref<ReviewItem[]>([])
 const error = ref('')
@@ -25,6 +28,22 @@ const reviewContent = ref('')
 const chatImageUploading = ref(false)
 const chatImageError = ref('')
 const uploadedChatImage = ref<UploadedFileItem | null>(null)
+const editMode = ref(false)
+const savingTask = ref(false)
+const deletingTask = ref(false)
+const deleteConfirming = ref(false)
+const actionLoadingApplicationId = ref<number | null>(null)
+const editForm = reactive<TaskUpdatePayload>({
+  category: 'EXPRESS',
+  title: '',
+  description: '',
+  campus: '',
+  rewardType: 'NEGOTIABLE',
+  deadline: '',
+  anonymous: false,
+  imageIds: [],
+  categoryFields: {}
+})
 
 const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
@@ -33,6 +52,7 @@ const isAwaitingNewProvider = computed(() => order.value?.status === 'PENDING_CO
 const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS' && !order.value?.cancelReason)
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
 const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.value.status)))
+const canEditTask = computed(() => Boolean(task.value && task.value.status === 'OPEN' && task.value.applicationCount === 0))
 
 const statusClass: Record<string, string> = {
   IN_PROGRESS: 'success',
@@ -61,6 +81,13 @@ async function load() {
     order.value = await orderApi.get(orderId.value)
     statusLogs.value = await orderApi.statusLogs(orderId.value)
     reviews.value = await orderApi.reviews(orderId.value)
+    if (isPublisher.value && isAwaitingNewProvider.value) {
+      task.value = await taskApi.get(order.value.taskId)
+      applications.value = await taskApi.applications(order.value.taskId)
+    } else {
+      task.value = undefined
+      applications.value = []
+    }
   } catch (err) {
     error.value = err instanceof Error ? err.message : '订单加载失败'
   } finally {
@@ -169,6 +196,105 @@ async function rejectCancelRequest() {
   await runAction(() => orderApi.rejectCancelRequest(order.value!.id), 'Cancel request rejected')
 }
 
+function toDatetimeLocal(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000).toISOString().slice(0, 16)
+}
+
+function startEdit() {
+  if (!task.value) return
+  deleteConfirming.value = false
+  editForm.category = task.value.category
+  editForm.title = task.value.title
+  editForm.description = task.value.description
+  editForm.campus = task.value.campus
+  editForm.rewardType = task.value.rewardType
+  editForm.deadline = toDatetimeLocal(task.value.deadline)
+  editForm.anonymous = task.value.anonymous
+  editForm.categoryFields = task.value.categoryFields || {}
+  editMode.value = true
+}
+
+async function saveTask() {
+  if (!task.value || !order.value) return
+  error.value = ''
+  success.value = ''
+  savingTask.value = true
+  try {
+    task.value = await taskApi.update(task.value.id, {
+      category: editForm.category,
+      title: editForm.title,
+      description: editForm.description,
+      campus: editForm.campus,
+      rewardType: editForm.rewardType,
+      deadline: editForm.deadline,
+      anonymous: editForm.anonymous,
+      categoryFields: editForm.categoryFields
+    })
+    order.value = {
+      ...order.value,
+      taskTitle: task.value.title,
+      taskDescription: task.value.description,
+      campus: task.value.campus,
+      rewardType: task.value.rewardType
+    }
+    editMode.value = false
+    success.value = '需求已更新'
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '需求更新失败'
+  } finally {
+    savingTask.value = false
+  }
+}
+
+async function deleteTask() {
+  if (!task.value) return
+  if (!deleteConfirming.value) {
+    deleteConfirming.value = true
+    return
+  }
+  error.value = ''
+  deletingTask.value = true
+  try {
+    await taskApi.remove(task.value.id)
+    router.push('/tasks')
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '需求删除失败'
+  } finally {
+    deletingTask.value = false
+    deleteConfirming.value = false
+  }
+}
+
+async function confirmApplication(applicationId: number) {
+  error.value = ''
+  actionLoadingApplicationId.value = applicationId
+  try {
+    const result = await taskApi.confirmApplication(applicationId)
+    router.push(`/orders/${result.orderId}`)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '确认接单失败'
+  } finally {
+    actionLoadingApplicationId.value = null
+  }
+}
+
+async function rejectApplication(applicationId: number) {
+  error.value = ''
+  success.value = ''
+  actionLoadingApplicationId.value = applicationId
+  try {
+    await taskApi.rejectApplication(applicationId)
+    success.value = '已拒绝接单申请'
+    await load()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '拒绝申请失败'
+  } finally {
+    actionLoadingApplicationId.value = null
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -183,7 +309,11 @@ onMounted(load)
         <div class="page-title">
           <div>
             <h1>{{ order.taskTitle }}</h1>
-            <p>订单号 {{ order.id }} · {{ order.campus }} · {{ new Date(order.createdAt).toLocaleString() }}</p>
+            <p>
+              订单号 {{ order.id }} ·
+              <RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">{{ order.publisherNickname }}</RouterLink>
+              · {{ order.campus }} · {{ new Date(order.createdAt).toLocaleString() }}
+            </p>
           </div>
           <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
         </div>
@@ -200,11 +330,6 @@ onMounted(load)
             <p v-if="isAwaitingNewProvider" class="hint">暂无服务方，任务已回到待接单</p>
             <p v-else-if="order.serviceProviderId"><RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></p>
           </div>
-        </div>
-
-        <div v-if="isAwaitingNewProvider" class="panel pending-provider-note">
-          <strong>已退回待接单</strong>
-          <p class="hint">原服务方已退出，该任务已重新开放，等待新的服务方申请接单。</p>
         </div>
 
         <section class="grid">
@@ -258,6 +383,84 @@ onMounted(load)
       </article>
 
       <aside class="grid">
+        <section v-if="isAwaitingNewProvider && isPublisher && task" class="panel grid">
+          <h2>需求管理</h2>
+          <p v-if="!canEditTask" class="hint">只有未接单、且没有接单申请的开放需求可以编辑或删除。</p>
+          <form v-if="editMode" class="grid" @submit.prevent="saveTask">
+            <div class="field">
+              <label for="edit-title">标题</label>
+              <input id="edit-title" v-model.trim="editForm.title" required maxlength="100" />
+            </div>
+            <div class="field">
+              <label for="edit-description">描述</label>
+              <textarea id="edit-description" v-model.trim="editForm.description" required maxlength="2000" />
+            </div>
+            <div class="grid two">
+              <div class="field">
+                <label for="edit-campus">校区</label>
+                <input id="edit-campus" v-model.trim="editForm.campus" required />
+              </div>
+              <div class="field">
+                <label for="edit-reward">报酬类型</label>
+                <select id="edit-reward" v-model="editForm.rewardType" required>
+                  <option value="CASH">现金</option>
+                  <option value="NEGOTIABLE">面议</option>
+                  <option value="CREDIT_INTENT">积分意向</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="edit-deadline">截止时间</label>
+              <input id="edit-deadline" v-model="editForm.deadline" type="datetime-local" required />
+            </div>
+            <label class="checkbox-label">
+              <input v-model="editForm.anonymous" type="checkbox" />
+              <span>匿名发布</span>
+            </label>
+            <div class="actions">
+              <button class="button primary" type="submit" :disabled="savingTask">{{ savingTask ? '保存中...' : '保存修改' }}</button>
+              <button class="button ghost" type="button" @click="editMode = false">取消</button>
+            </div>
+          </form>
+          <div v-else class="actions">
+            <button class="button secondary" type="button" :disabled="!canEditTask" @click="startEdit">编辑</button>
+            <button class="button danger" type="button" :disabled="!canEditTask || deletingTask" @click="deleteTask">
+              {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
+            </button>
+          </div>
+        </section>
+
+        <section v-if="isAwaitingNewProvider && isPublisher" class="panel grid">
+          <h2>接单申请</h2>
+          <div v-if="!applications.length" class="empty-state">暂无申请</div>
+          <div v-for="application in applications" :key="application.id" class="item-card">
+            <div class="item-title">
+              <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
+              <span class="tag">{{ applicationStatusText[application.status] }}</span>
+            </div>
+            <p>{{ application.message }}</p>
+            <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
+            <button
+              v-if="task?.status === 'OPEN' && application.status === 'PENDING'"
+              class="button secondary"
+              type="button"
+              :disabled="actionLoadingApplicationId === application.id"
+              @click="confirmApplication(application.id)"
+            >
+              确认接单
+            </button>
+            <button
+              v-if="task?.status === 'OPEN' && application.status === 'PENDING'"
+              class="button danger"
+              type="button"
+              :disabled="actionLoadingApplicationId === application.id"
+              @click="rejectApplication(application.id)"
+            >
+              拒绝申请
+            </button>
+          </div>
+        </section>
+
         <section v-if="!isAwaitingNewProvider" class="panel grid">
           <h2>订单操作</h2>
           <button
@@ -366,8 +569,16 @@ onMounted(load)
   background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.04));
 }
 
-.pending-provider-note {
-  border-color: rgba(59, 130, 246, 0.22);
-  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.04));
+.page-title p a,
+.panel p a,
+.item-card h3 a {
+  color: var(--primary-600);
+  font-weight: 600;
+}
+
+.page-title p a:hover,
+.panel p a:hover,
+.item-card h3 a:hover {
+  color: var(--primary-700);
 }
 </style>

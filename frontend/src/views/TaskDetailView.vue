@@ -268,10 +268,6 @@ onMounted(load)
             >
               {{ favoriteLoading ? '处理中...' : isFavorited ? '取消收藏' : '收藏' }}
             </button>
-            <button v-if="isPublisher" class="button secondary" type="button" :disabled="!canEditTask" @click="startEdit">编辑</button>
-            <button v-if="isPublisher" class="button danger" type="button" :disabled="!canEditTask || deletingTask" @click="deleteTask">
-              {{ deletingTask ? '删除中...' : '删除' }}
-            </button>
           </div>
         </div>
 
@@ -342,6 +338,12 @@ onMounted(load)
               <button class="button ghost" type="button" @click="editMode = false">取消</button>
             </div>
           </form>
+          <div v-else class="actions">
+            <button class="button secondary" type="button" :disabled="!canEditTask" @click="startEdit">编辑</button>
+            <button class="button danger" type="button" :disabled="!canEditTask || deletingTask" @click="deleteTask">
+              {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
+            </button>
+          </div>
         </section>
         <section v-if="!isPublisher" class="panel grid">
           <h2>申请接单</h2>
@@ -390,19 +392,19 @@ onMounted(load)
             <p>{{ application.message }}</p>
             <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
             <button
-              v-if="task.status === 'OPEN'"
+              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
               class="button secondary"
               type="button"
-              :disabled="application.status !== 'PENDING' || actionLoadingApplicationId === application.id"
+              :disabled="actionLoadingApplicationId === application.id"
               @click="confirmApplication(application.id)"
             >
               确认接单
             </button>
             <button
-              v-if="task.status === 'OPEN'"
+              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
               class="button danger"
               type="button"
-              :disabled="application.status !== 'PENDING' || actionLoadingApplicationId === application.id"
+              :disabled="actionLoadingApplicationId === application.id"
               @click="rejectApplication(application.id)"
             >
               拒绝申请
