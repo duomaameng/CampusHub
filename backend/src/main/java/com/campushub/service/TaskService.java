@@ -73,8 +73,7 @@ public class TaskService {
     public PageResult<TaskItemVO> listTasks(int page, int size, String category, String campus, String keyword, String sort) {
         Page<Task> pageQuery = new Page<>(page, size);
         LambdaQueryWrapper<Task> wrapper = new LambdaQueryWrapper<Task>()
-                .in(Task::getStatus, Arrays.asList(TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED))
-                .orderByDesc(Task::getCreatedAt);
+                .in(Task::getStatus, Arrays.asList(TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED));
 
         if (category != null && !category.isBlank()) {
             wrapper.eq(Task::getCategory, parseTaskCategory(category));
@@ -85,11 +84,14 @@ public class TaskService {
         if (keyword != null && !keyword.isBlank()) {
             wrapper.and(w -> w.like(Task::getTitle, keyword).or().like(Task::getDescription, keyword));
         }
+
+        String orderBy = "FIELD(status, 'OPEN', 'IN_PROGRESS', 'COMPLETED')";
         if ("deadline".equalsIgnoreCase(sort)) {
-            wrapper.orderByAsc(Task::getDeadline);
+            orderBy += ", deadline ASC";
         } else {
-            wrapper.orderByDesc(Task::getCreatedAt);
+            orderBy += ", created_at DESC";
         }
+        wrapper.last("ORDER BY " + orderBy);
 
         Page<Task> result = taskMapper.selectPage(pageQuery, wrapper);
         List<TaskItemVO> records = result.getRecords().stream().map(this::toTaskItemVO).toList();
