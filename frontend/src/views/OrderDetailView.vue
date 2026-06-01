@@ -32,6 +32,16 @@ const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.
 const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS' && !order.value?.cancelReason)
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
 const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.value.status)))
+
+const statusClass: Record<string, string> = {
+  IN_PROGRESS: 'success',
+  PENDING_COMPLETION: 'warning',
+  COMPLETED: 'success',
+  CANCELLED: 'danger',
+  DISPUTE: 'warning',
+  REVIEWED: 'success',
+  PENDING_CONFIRM: 'info'
+}
 const latestStatusLog = computed(() => statusLogs.value[statusLogs.value.length - 1])
 const hasPendingCancelRequest = computed(() => Boolean(
   isPublisher.value &&
@@ -174,7 +184,7 @@ onMounted(load)
             <h1>{{ order.taskTitle }}</h1>
             <p>订单号 {{ order.id }} · {{ order.campus }} · {{ new Date(order.createdAt).toLocaleString() }}</p>
           </div>
-          <span class="tag success">{{ orderStatusText[order.status] }}</span>
+          <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
         </div>
 
         <p>{{ order.taskDescription }}</p>

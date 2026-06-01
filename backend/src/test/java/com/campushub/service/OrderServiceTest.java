@@ -259,7 +259,10 @@ class OrderServiceTest {
         @Test
         void shouldCancelFromInProgressAsPublisher() {
             Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.IN_PROGRESS);
+            Task task = createTask(10L, CURRENT_USER_ID, "Test task");
+            task.setStatus(TaskStatus.IN_PROGRESS);
             when(orderMapper.selectById(1L)).thenReturn(order);
+            when(taskMapper.selectById(10L)).thenReturn(task);
 
             OrderCancelRequest request = new OrderCancelRequest();
             request.setReason("No longer needed");
@@ -268,7 +271,10 @@ class OrderServiceTest {
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.getCancelReason()).isEqualTo("No longer needed");
+            assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
             verify(orderStatusLogMapper).insert(any(OrderStatusLog.class));
+            verify(taskMapper).updateById(task);
+            verify(applicationMapper).update(isNull(), any());
             verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.CANCELLED));
         }
 
@@ -302,11 +308,11 @@ class OrderServiceTest {
 
             orderService.approveCancelRequest(1L);
 
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_CONFIRM);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.getCancelReason()).isNull();
             assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
             verify(applicationMapper).update(isNull(), any());
-            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), eq("发布方已同意取消申请"), eq("发布方已同意取消申请，订单已退回待接单状态"));
+            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), eq("发布方已同意取消申请"), eq("发布方已同意取消申请，订单已终止"));
         }
 
         @Test
@@ -602,13 +608,16 @@ class OrderServiceTest {
         @Test
         void cancelFromAnyNonFinalStateShouldWork() {
             Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.PENDING_COMPLETION);
+            Task task = createTask(10L, CURRENT_USER_ID, "Test task");
             when(orderMapper.selectById(1L)).thenReturn(order);
+            when(taskMapper.selectById(10L)).thenReturn(task);
 
             OrderCancelRequest request = new OrderCancelRequest();
             request.setReason("Changed mind");
 
             orderService.cancelOrder(1L, request);
             assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
         }
 
         @Test

@@ -11,8 +11,12 @@ export const http = axios.create({
   timeout: 10000
 })
 
+function getAuthToken(): string | null {
+  return sessionStorage.getItem('campus-hub-token') || localStorage.getItem('campus-hub-token')
+}
+
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('campus-hub-token')
+  const token = getAuthToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

@@ -144,6 +144,15 @@ public class OrderService {
             order.setCancelReason(request.getReason().trim());
             order.setStatus(OrderStatus.CANCELLED);
             orderMapper.updateById(order);
+
+            Task task = requireTask(order.getTaskId());
+            task.setStatus(TaskStatus.OPEN);
+            taskMapper.updateById(task);
+            applicationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Application>()
+                    .eq("task_id", task.getId())
+                    .eq("status", ApplicationStatus.APPROVED.name())
+                    .set("status", ApplicationStatus.CANCELLED.name()));
+
             saveStatusLog(order.getId(), fromStatus, OrderStatus.CANCELLED, currentUserId, request.getReason().trim());
 
             notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.CANCELLED);
@@ -171,20 +180,20 @@ public class OrderService {
         ensurePendingCancelRequest(order);
 
         String reason = order.getCancelReason();
-        order.setStatus(OrderStatus.PENDING_CONFIRM);
+        order.setStatus(OrderStatus.CANCELLED);
         order.setCancelReason(null);
         orderMapper.updateById(order);
 
         Task task = requireTask(order.getTaskId());
         task.setStatus(TaskStatus.OPEN);
         taskMapper.updateById(task);
-        applicationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Application>()
-                .eq(Application::getTaskId, task.getId())
-                .eq(Application::getStatus, ApplicationStatus.APPROVED)
-                .set(Application::getStatus, ApplicationStatus.CANCELLED));
+        applicationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Application>()
+                .eq("task_id", task.getId())
+                .eq("status", ApplicationStatus.APPROVED.name())
+                .set("status", ApplicationStatus.CANCELLED.name()));
 
-        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
-        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已同意取消申请", "发布方已同意取消申请，订单已退回待接单状态");
+        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED, currentUserId, "发布方同意取消申请：" + reason);
+        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已同意取消申请", "发布方已同意取消申请，订单已终止");
     }
 
     @Transactional

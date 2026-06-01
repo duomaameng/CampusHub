@@ -60,6 +60,7 @@ interface MockDatabase {
 }
 
 const dbKey = 'campus-hub-mock-db'
+const sessionDbKey = 'campus-hub-mock-db-session'
 const mockVerificationCode = '123456'
 const wait = () => new Promise((resolve) => window.setTimeout(resolve, 180))
 let volatileUploadedFiles: UploadedFileItem[] = []
@@ -369,10 +370,11 @@ function clone<T>(value: T): T {
 }
 
 function loadDb(): MockDatabase {
-  const raw = localStorage.getItem(dbKey)
+  const raw = sessionStorage.getItem(sessionDbKey) || localStorage.getItem(dbKey)
   if (!raw) {
-    localStorage.setItem(dbKey, JSON.stringify(initialDb))
-    return clone(initialDb)
+    const initial = clone(initialDb)
+    localStorage.setItem(dbKey, JSON.stringify(initial))
+    return initial
   }
 
   const db = JSON.parse(raw) as MockDatabase
@@ -384,6 +386,7 @@ function loadDb(): MockDatabase {
 }
 
 function saveDb(db: MockDatabase) {
+  sessionStorage.setItem(sessionDbKey, JSON.stringify(db))
   localStorage.setItem(dbKey, JSON.stringify(db))
 }
 
@@ -910,6 +913,7 @@ export const mockApi = {
 
     const fromStatus = order.status
     const isProviderCancelRequest = status === 'CANCELLED' && order.serviceProviderId === user.id && order.publisherId !== user.id
+    const isPublisherCancel = status === 'CANCELLED' && order.publisherId === user.id
     const nextStatus = isProviderCancelRequest ? 'IN_PROGRESS' : status
     order.status = nextStatus
     if (isProviderCancelRequest) {
@@ -918,6 +922,12 @@ export const mockApi = {
     const task = db.tasks.find((item) => item.id === order.taskId)
     if (task && nextStatus === 'COMPLETED') {
       task.status = 'COMPLETED'
+    }
+    if (task && isPublisherCancel) {
+      task.status = 'OPEN'
+      db.applications
+        .filter((item) => item.taskId === order.taskId && item.status === 'APPROVED')
+        .forEach((item) => { item.status = 'CANCELLED' })
     }
     order.statusLogs.push({
       id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
@@ -947,7 +957,7 @@ export const mockApi = {
     const reason = (order as OrderDetail & { cancelReason?: string }).cancelReason
     if (order.status !== 'IN_PROGRESS' || !reason) throw new Error('No pending cancel request')
 
-    order.status = 'PENDING_CONFIRM'
+    order.status = 'CANCELLED'
     delete (order as OrderDetail & { cancelReason?: string }).cancelReason
     const task = db.tasks.find((item) => item.id === order.taskId)
     if (task) task.status = 'OPEN'
@@ -959,7 +969,7 @@ export const mockApi = {
     order.statusLogs.push({
       id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
       fromStatus: 'IN_PROGRESS',
-      toStatus: 'PENDING_CONFIRM',
+      toStatus: 'CANCELLED',
       operatorNickname: user.profile.nickname,
       reason: `发布方同意取消申请：${reason}`,
       createdAt: new Date().toISOString()
@@ -1348,6 +1358,7 @@ export const mockApi = {
 
   reset() {
     volatileUploadedFiles = []
+    sessionStorage.removeItem(sessionDbKey)
     localStorage.setItem(dbKey, JSON.stringify(initialDb))
   }
 }

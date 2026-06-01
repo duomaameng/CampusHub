@@ -3,10 +3,33 @@ import { defineStore } from 'pinia'
 import { authApi, notificationApi, userApi } from '@/services/api'
 import type { LoginUser, UserProfile } from '@/types'
 
+function getStoredToken(): string {
+  return sessionStorage.getItem('campus-hub-token') || localStorage.getItem('campus-hub-token') || ''
+}
+
+function getStoredUser(): LoginUser | null {
+  const raw = sessionStorage.getItem('campus-hub-user') || localStorage.getItem('campus-hub-user')
+  return raw ? (JSON.parse(raw) as LoginUser) : null
+}
+
+function setAuthSession(token: string, user: LoginUser) {
+  sessionStorage.setItem('campus-hub-token', token)
+  sessionStorage.setItem('campus-hub-user', JSON.stringify(user))
+  localStorage.setItem('campus-hub-token', token)
+  localStorage.setItem('campus-hub-user', JSON.stringify(user))
+}
+
+function clearAuthSession() {
+  sessionStorage.removeItem('campus-hub-token')
+  sessionStorage.removeItem('campus-hub-user')
+  localStorage.removeItem('campus-hub-token')
+  localStorage.removeItem('campus-hub-user')
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: localStorage.getItem('campus-hub-token') || '',
-    user: JSON.parse(localStorage.getItem('campus-hub-user') || 'null') as LoginUser | null,
+    token: getStoredToken(),
+    user: getStoredUser(),
     profile: null as UserProfile | null,
     unreadCount: 0
   }),
@@ -19,8 +42,7 @@ export const useAuthStore = defineStore('auth', {
       const result = await authApi.login(email, password)
       this.token = result.token
       this.user = result.user
-      localStorage.setItem('campus-hub-token', result.token)
-      localStorage.setItem('campus-hub-user', JSON.stringify(result.user))
+      setAuthSession(result.token, result.user)
       await this.loadMe()
       await this.refreshUnread()
     },
@@ -46,8 +68,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.profile = null
       this.unreadCount = 0
-      localStorage.removeItem('campus-hub-token')
-      localStorage.removeItem('campus-hub-user')
+      clearAuthSession()
     },
     async loadMe() {
       if (!this.token) return
@@ -61,7 +82,7 @@ export const useAuthStore = defineStore('auth', {
         nickname: this.profile.profile.nickname,
         avatarUrl: this.profile.profile.avatarUrl
       }
-      localStorage.setItem('campus-hub-user', JSON.stringify(this.user))
+      setAuthSession(this.token, this.user)
     },
     async refreshUnread() {
       if (!this.token) return

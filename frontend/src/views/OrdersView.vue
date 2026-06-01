@@ -129,6 +129,7 @@ onMounted(loadOrders)
           <option value="REVIEWED">已评价</option>
           <option value="CANCELLED">已取消</option>
           <option value="DISPUTE">争议处理中</option>
+          <option value="PENDING_CONFIRM">待接单</option>
         </select>
       </div>
       <div class="field">
