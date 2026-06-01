@@ -24,6 +24,7 @@ import type {
   TaskUpdatePayload,
   UploadedFileItem,
   UploadBusinessType,
+  UserReviewItem,
   UserProfile,
   UserStatus
 } from '@/types'
@@ -83,10 +84,16 @@ export const userApi = {
     return request<UserProfile>({ method: 'PATCH', url: '/users/me', data: payload })
   },
   getPublicProfile(userId: number): Promise<PublicProfile> {
+    if (useMock) return mockApi.getPublicProfile(userId)
     return request<PublicProfile>({ method: 'GET', url: `/users/${userId}/profile` })
   },
   getUserCredit(userId: number): Promise<CreditInfo> {
+    if (useMock) return mockApi.getUserCredit(userId)
     return request<CreditInfo>({ method: 'GET', url: `/users/${userId}/credit` })
+  },
+  getUserReviews(userId: number): Promise<UserReviewItem[]> {
+    if (useMock) return mockApi.getUserReviews(userId)
+    return request<UserReviewItem[]>({ method: 'GET', url: `/users/${userId}/reviews` })
   }
 }
 

@@ -431,11 +431,19 @@ public class TaskService {
                 .toList());
         vo.setApplicationCount(applicationMapper.selectCount(new LambdaQueryWrapper<Application>().eq(Application::getTaskId, task.getId())));
         vo.setFavoriteCount(favoriteMapper.selectCount(new LambdaQueryWrapper<Favorite>().eq(Favorite::getTaskId, task.getId())));
-        vo.setFavorited(false);
+        vo.setFavorited(isFavoritedByCurrentUser(task.getId()));
         vo.setCreatedAt(task.getCreatedAt());
         vo.setUpdatedAt(task.getUpdatedAt());
         vo.setCategoryFields(parseCategoryFields(task.getCategoryFields()));
         return vo;
+    }
+
+    private boolean isFavoritedByCurrentUser(Long taskId) {
+        return SecurityUtils.getCurrentUserId()
+                .map(userId -> favoriteMapper.selectCount(new LambdaQueryWrapper<Favorite>()
+                        .eq(Favorite::getUserId, userId)
+                        .eq(Favorite::getTaskId, taskId)) > 0)
+                .orElse(false);
     }
 
     private ApplicationItemVO toApplicationItemVO(Application application) {

@@ -58,3 +58,11 @@ logs/
 .codex-logs/
 
 uploads/
+
+# Local generated architecture graph
+docs/architecture-graph.md
+
+# Local Codex and graphify artifacts
+.codex/
+AGENTS.md
+graphify-out/

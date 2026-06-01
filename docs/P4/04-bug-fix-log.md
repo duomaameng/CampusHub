@@ -748,3 +748,156 @@
 - `backend/src/main/java/com/campushub/service/OrderService.java`
 
 ---
+
+### Bug 24：任务编辑、删除、收藏与接单拒绝接口的业务约束不完整
+
+**问题现象**
+
+- `PATCH /api/tasks/{taskId}` 使用创建请求体承接编辑参数，导致编辑接口更像“重新发布”，不适合只修改部分字段。
+- 编辑、删除需求时主要校验任务状态，未充分覆盖“已有接单申请但尚未成单”的场景，发布者仍可能改动已经有人申请的需求。
+- `GET /api/tasks/favorites` 容易被公开任务详情的路径放行规则误覆盖，未登录访问时可能没有按 JWT 接口语义拦截。
+- `POST /api/tasks/{taskId}/favorite` 只返回通用成功结果，前端无法直接知道当前最终收藏状态。
+- 拒绝接单申请与确认接单流程缺少更严格的条件更新与事务边界，存在重复处理或并发状态覆盖风险。
+- 订单状态日志接口返回字段不完整，缺少操作者信息，不利于前端展示和审计追踪。
+
+**影响范围**
+
+- 需求编辑、删除、收藏、我的收藏列表。
+- 接单申请确认与拒绝。
+- 订单状态变更日志展示。
+
+**修复方案**
+
+- 新增 `TaskUpdateRequest`，让编辑接口支持局部更新，并与发布接口请求体解耦。
+- 编辑、删除需求时同时校验发布者身份、任务状态与申请记录；只允许发布者在未被申请/未接单前操作。
+- 收紧 Spring Security 放行规则，仅公开任务大厅和数字 ID 任务详情，避免 `/api/tasks/favorites` 被误放行。
+- 收藏切换接口返回 `favorited`，并对重复收藏的并发场景做兜底处理。
+- 为编辑、删除、拒绝申请、确认申请等状态写操作补充事务边界和条件更新。
+- 订单状态日志 VO 补充 `operatorId`，便于前端展示完整日志信息。
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/controller/TaskController.java`
+- `backend/src/main/java/com/campushub/service/TaskService.java`
+- `backend/src/main/java/com/campushub/config/SecurityConfig.java`
+- `backend/src/main/java/com/campushub/security/SecurityUtils.java`
+- `backend/src/main/java/com/campushub/dto/task/TaskUpdateRequest.java`
+- `backend/src/main/java/com/campushub/vo/task/FavoriteToggleVO.java`
+- `backend/src/main/java/com/campushub/vo/order/OrderStatusLogVO.java`
+- `backend/src/main/java/com/campushub/service/OrderService.java`
+- `backend/src/test/java/com/campushub/service/OrderServiceTest.java`
+
+---
+
+### Bug 25：已完成接口缺少前端调用闭环
+
+**问题现象**
+
+- 后端已提供任务编辑、删除、收藏、我的收藏、拒绝接单申请、订单状态日志等接口，但前端缺少对应 API 封装或页面入口。
+- 订单详情页只依赖订单详情返回的内嵌日志，没有独立调用 `GET /api/orders/{orderId}/status-logs`。
+- 任务详情页无法直接完成发布者编辑/删除、普通用户收藏、发布者拒绝申请等真实操作。
+- 我的收藏列表缺少独立页面，无法验证 `GET /api/tasks/favorites` 的真实联调效果。
+
+**影响范围**
+
+- T-04、T-05、T-06、T-07、AP-04、O-06 的前后端联调闭环。
+- 任务详情页、订单详情页、导航入口与 mock 环境。
+
+**修复方案**
+
+- 在前端 API 层补充 `taskApi.update`、`taskApi.remove`、`taskApi.toggleFavorite`、`taskApi.favorites`、`taskApi.rejectApplication` 与 `orderApi.statusLogs`。
+- 同步补齐 mock 服务，保证本地 mock 与真实后端的调用契约一致。
+- 新增“我的收藏”页面与路由入口。
+- 任务详情页补充编辑、删除、收藏/取消收藏、拒绝申请等交互。
+- 订单详情页改为独立拉取状态变更日志。
+- 使用真实后端完成登录、收藏、收藏列表、编辑、删除、拒绝申请和状态日志的浏览器联调验证。
+
+**涉及文件**
+
+- `frontend/src/services/api.ts`
+- `frontend/src/services/mock.ts`
+- `frontend/src/types.ts`
+- `frontend/src/router/index.ts`
+- `frontend/src/App.vue`
+- `frontend/src/views/TaskDetailView.vue`
+- `frontend/src/views/TaskFavoritesView.vue`
+- `frontend/src/views/OrderDetailView.vue`
+
+---
+
+### Bug 26：任务详情页收藏按钮边框过浅，状态不易识别
+
+**问题现象**
+
+- 任务详情页顶部“收藏”按钮使用弱化样式，边框颜色过浅。
+- 在浅色背景和相邻按钮同时存在时，收藏按钮看起来接近普通文字，用户不容易判断它是可点击操作。
+- 已收藏与未收藏状态的视觉差异不足。
+
+**影响范围**
+
+- 任务详情页普通用户收藏/取消收藏入口。
+
+**修复方案**
+
+- 为收藏按钮增加独立 `favorite-button` 样式。
+- 加深边框颜色并提高边框宽度，补充轻微阴影和 hover 状态。
+- 已收藏状态使用主色实心样式，让“收藏”和“取消收藏”状态更容易区分。
+
+**涉及文件**
+
+- `frontend/src/views/TaskDetailView.vue`
+
+---
+
+### Bug 27：确认接单流程写入订单状态日志时缺少 `fromStatus` 导致 500
+
+**问题现象**
+
+- Demo1 对任务提交接单申请后，Demo2 作为发布者在任务详情页点击“确认接单”。
+- 前端页面顶部显示“服务器内部错误”，确认接单流程无法完成。
+- Demo1 再次提交同一任务申请时显示“已提交过接单申请”，说明申请记录已经存在，错误发生在发布者确认申请阶段。
+
+**影响范围**
+
+- 发布者确认接单申请并生成订单的主流程。
+- `POST /api/applications/{applicationId}/confirm` 接口。
+- 订单状态日志 `order_status_log` 的创建逻辑。
+
+**修复方案**
+
+- 在 `TaskService.confirmApplication` 创建订单状态日志时补充 `fromStatus`。
+- 将确认接单时的状态流明确记录为 `PENDING_CONFIRM -> IN_PROGRESS`。
+- 保持与数据库种子数据中的订单状态日志语义一致，避免 `order_status_log.from_status` 非空约束触发数据库异常。
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/service/TaskService.java`
+
+---
+
+### Bug 28：订单完成后关联任务状态未同步，导致任务大厅与我的订单状态不一致
+
+**问题现象**
+
+- `Print and deliver documents` 在“我的订单”中显示为“已完成”。
+- 同一任务在“任务大厅”中仍显示为“进行中”。
+- 原因是“我的订单”读取 `orders.status`，任务大厅读取 `tasks.status`，订单确认完成时只更新了订单表，未同步更新任务表。
+
+**影响范围**
+
+- 发布者确认订单完成后的状态一致性。
+- 任务大厅、任务详情页与我的订单页之间的状态展示一致性。
+- Mock 环境中的订单状态更新模拟逻辑。
+
+**修复方案**
+
+- 在 `OrderService.confirmCompletion` 中，当订单状态更新为 `COMPLETED` 时，同步将关联任务状态更新为 `COMPLETED`。
+- 复用已查询到的任务对象作为评价通知标题来源，避免重复查询。
+- 在前端 mock 服务中同步补齐订单完成后更新任务状态的逻辑，保证 mock 与真实后端行为一致。
+
+**涉及文件**
+
+- `backend/src/main/java/com/campushub/service/OrderService.java`
+- `frontend/src/services/mock.ts`
+
+---

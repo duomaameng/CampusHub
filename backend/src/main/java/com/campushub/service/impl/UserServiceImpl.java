@@ -181,6 +181,7 @@ public class UserServiceImpl implements UserService {
                         .reviewId(review.getId())
                         .orderId(review.getOrderId())
                         .reviewerId(review.getReviewerId())
+                        .reviewerNickname(findNickname(review.getReviewerId()))
                         .rating(review.getRating())
                         .content(review.getContent())
                         .createdAt(review.getCreatedAt())
@@ -280,5 +281,13 @@ public class UserServiceImpl implements UserService {
         if (userMapper.selectById(userId) == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
+    }
+
+    private String findNickname(Long userId) {
+        UserProfile profile = userProfileMapper.selectOne(
+                new LambdaQueryWrapper<UserProfile>()
+                        .eq(UserProfile::getUserId, userId)
+                        .last("LIMIT 1"));
+        return profile != null ? profile.getNickname() : "CampusHub User";
     }
 }

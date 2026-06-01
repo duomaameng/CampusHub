@@ -503,7 +503,7 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email && item.password === password)
-    if (!user) throw new Error('邮箱或密码错误')
+    if (!user) throw new Error('User not found')
     if (user.status !== 'ACTIVE') throw new Error('账号已被禁用')
 
     db.currentUserId = user.id
@@ -580,7 +580,7 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) throw new Error('邮箱未注册')
+    if (!user) throw new Error('User not found')
 
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'REGISTER')
     if (!record || record.code !== code.trim() || new Date(record.expiresAt).getTime() < Date.now()) {
@@ -599,7 +599,7 @@ export const mockApi = {
 
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) throw new Error('邮箱未注册')
+    if (!user) throw new Error('User not found')
 
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'RESET_PASSWORD')
     if (!record || record.code !== code.trim()) throw new Error('验证码错误或已过期')
@@ -1085,7 +1085,7 @@ export const mockApi = {
     if (admin.role !== 'ADMIN') throw new Error('权限不足')
 
     const user = db.users.find((item) => item.id === userId)
-    if (!user) throw new Error('用户不存在')
+    if (!user) throw new Error('User not found')
     user.status = status
     saveDb(db)
     return { userId, status }
@@ -1235,7 +1235,7 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.id === userId)
-    if (!user) throw new Error('用户不存在')
+    if (!user) throw new Error('User not found')
     return {
       userId: user.id,
       nickname: user.profile.nickname,
@@ -1257,18 +1257,36 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.id === userId)
-    if (!user) throw new Error('用户不存在')
-    const recentReviews = db.reviews
-      .filter((item) => item.revieweeId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
+    if (!user) throw new Error('User not found')
     return {
       userId: user.id,
       score: user.credit.score,
       completedOrders: user.credit.completedOrders,
       praiseRate: user.credit.praiseRate,
-      recentReviews: clone(recentReviews)
+      recentChanges: []
     }
+  },
+
+  async getUserReviews(userId: number) {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.id === userId)
+    if (!user) throw new Error('User not found')
+    return clone(
+      db.reviews
+        .filter((item) => item.revieweeId === userId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map((item) => ({
+          reviewId: item.id,
+          orderId: item.orderId,
+          reviewerId: item.reviewerId,
+          reviewerNickname: item.reviewerNickname,
+          rating: item.rating,
+          content: item.content,
+          createdAt: item.createdAt
+        }))
+    )
   },
 
   reset() {

@@ -257,6 +257,16 @@ export interface ReviewItem {
   createdAt: string
 }
 
+export interface UserReviewItem {
+  reviewId: number
+  orderId: number
+  reviewerId: number
+  reviewerNickname?: string
+  rating: number
+  content: string
+  createdAt: string
+}
+
 export interface PublicProfile {
   userId: number
   nickname: string
@@ -273,12 +283,21 @@ export interface PublicProfile {
   memberSince: string
 }
 
+export interface CreditChangeItem {
+  changeAmount: number
+  scoreBefore: number
+  scoreAfter: number
+  reason: string
+  relatedOrderId?: number
+  createdAt: string
+}
+
 export interface CreditInfo {
   userId: number
   score: number
   completedOrders: number
   praiseRate: number
-  recentReviews: ReviewItem[]
+  recentChanges: CreditChangeItem[]
 }
 
 export interface AdminUserItem {
