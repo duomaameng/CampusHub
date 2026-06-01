@@ -24,6 +24,14 @@ public class NotificationFactory {
         return notification;
     }
 
+    public Notification orderAction(Long receiverId, Long orderId, String title, String content) {
+        Notification notification = base(receiverId, NotificationType.ORDER_STATUS);
+        notification.setTitle(title);
+        notification.setContent(content);
+        notification.setRelatedOrderId(orderId);
+        return notification;
+    }
+
     public Notification orderMessage(Long receiverId, Long orderId, String senderNickname, String preview) {
         Notification notification = base(receiverId, NotificationType.ORDER_MESSAGE);
         notification.setTitle("订单收到新留言");

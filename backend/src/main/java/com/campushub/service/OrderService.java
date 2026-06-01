@@ -80,6 +80,9 @@ public class OrderService {
         if (!OrderStatus.IN_PROGRESS.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
         }
+        if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单有未处理的取消申请，不能提交完成");
+        }
 
         if (request.getProofImageId() != null) {
             FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
@@ -132,10 +135,13 @@ public class OrderService {
         if (OrderStatus.COMPLETED.equals(order.getStatus()) || OrderStatus.REVIEWED.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_ALREADY_COMPLETED);
         }
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单已退回待接单状态，不能重复取消");
+        }
 
         OrderStatus fromStatus = order.getStatus();
-        order.setCancelReason(request.getReason().trim());
         if (Objects.equals(currentUserId, order.getPublisherId())) {
+            order.setCancelReason(request.getReason().trim());
             order.setStatus(OrderStatus.CANCELLED);
             orderMapper.updateById(order);
             saveStatusLog(order.getId(), fromStatus, OrderStatus.CANCELLED, currentUserId, request.getReason().trim());
@@ -144,10 +150,15 @@ public class OrderService {
             return;
         }
 
+        if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "已提交取消申请，请等待发布方处理");
+        }
+
+        order.setCancelReason(request.getReason().trim());
         order.setStatus(OrderStatus.IN_PROGRESS);
         orderMapper.updateById(order);
         saveStatusLog(order.getId(), fromStatus, OrderStatus.IN_PROGRESS, currentUserId, "服务方申请取消：" + request.getReason().trim());
-        notificationService.createOrderStatusNotification(order.getPublisherId(), order.getId(), OrderStatus.IN_PROGRESS);
+        notificationService.createOrderActionNotification(order.getPublisherId(), order.getId(), "服务方申请取消服务", "服务方申请取消订单，原因：" + request.getReason().trim());
     }
 
     @Transactional
@@ -173,7 +184,7 @@ public class OrderService {
                 .set(Application::getStatus, ApplicationStatus.CANCELLED));
 
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
-        notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.PENDING_CONFIRM);
+        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已同意取消申请", "发布方已同意取消申请，订单已退回待接单状态");
     }
 
     @Transactional
@@ -190,7 +201,7 @@ public class OrderService {
         order.setCancelReason(null);
         orderMapper.updateById(order);
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
-        notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.IN_PROGRESS);
+        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已拒绝取消申请", "发布方已拒绝取消申请，订单继续进行");
     }
 
     @Transactional
@@ -350,6 +361,7 @@ public class OrderService {
         vo.setServiceProviderId(order.getServiceProviderId());
         vo.setServiceProviderNickname(findNickname(order.getServiceProviderId()));
         vo.setStatus(order.getStatus());
+        vo.setCancelReason(order.getCancelReason());
         vo.setCreatedAt(order.getCreatedAt());
     }
 

@@ -180,6 +180,19 @@ class OrderServiceTest {
         }
 
         @Test
+        void shouldThrowWhenPendingCancelRequest() {
+            Order order = createOrder(1L, 10L, OTHER_USER_ID, CURRENT_USER_ID, OrderStatus.IN_PROGRESS);
+            order.setCancelReason("Cannot fulfill");
+            when(orderMapper.selectById(1L)).thenReturn(order);
+
+            OrderCompleteRequest request = new OrderCompleteRequest();
+
+            assertThatThrownBy(() -> orderService.completeOrder(1L, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("订单有未处理的取消申请");
+        }
+
+        @Test
         void shouldSetProofUrlWhenProofImageIdProvided() {
             Order order = createOrder(1L, 10L, OTHER_USER_ID, CURRENT_USER_ID, OrderStatus.IN_PROGRESS);
             when(orderMapper.selectById(1L)).thenReturn(order);
@@ -275,7 +288,7 @@ class OrderServiceTest {
             verify(orderStatusLogMapper).insert(logCaptor.capture());
             assertThat(logCaptor.getValue().getFromStatus()).isEqualTo(OrderStatus.IN_PROGRESS.name());
             assertThat(logCaptor.getValue().getToStatus()).isEqualTo(OrderStatus.IN_PROGRESS.name());
-            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.IN_PROGRESS));
+            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), eq("服务方申请取消服务"), eq("服务方申请取消订单，原因：Cannot fulfill"));
         }
 
         @Test
@@ -293,7 +306,7 @@ class OrderServiceTest {
             assertThat(order.getCancelReason()).isNull();
             assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
             verify(applicationMapper).update(isNull(), any());
-            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.PENDING_CONFIRM));
+            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), eq("发布方已同意取消申请"), eq("发布方已同意取消申请，订单已退回待接单状态"));
         }
 
         @Test
@@ -306,7 +319,7 @@ class OrderServiceTest {
 
             assertThat(order.getStatus()).isEqualTo(OrderStatus.IN_PROGRESS);
             assertThat(order.getCancelReason()).isNull();
-            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.IN_PROGRESS));
+            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), eq("发布方已拒绝取消申请"), eq("发布方已拒绝取消申请，订单继续进行"));
         }
 
         @Test
@@ -346,6 +359,33 @@ class OrderServiceTest {
             assertThatThrownBy(() -> orderService.cancelOrder(1L, request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("非订单参与方");
+        }
+
+        @Test
+        void shouldThrowWhenPendingConfirm() {
+            Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.PENDING_CONFIRM);
+            when(orderMapper.selectById(1L)).thenReturn(order);
+
+            OrderCancelRequest request = new OrderCancelRequest();
+            request.setReason("Try again");
+
+            assertThatThrownBy(() -> orderService.cancelOrder(1L, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("订单已退回待接单状态");
+        }
+
+        @Test
+        void shouldThrowWhenDuplicateCancelRequest() {
+            Order order = createOrder(1L, 10L, OTHER_USER_ID, CURRENT_USER_ID, OrderStatus.IN_PROGRESS);
+            order.setCancelReason("Cannot fulfill");
+            when(orderMapper.selectById(1L)).thenReturn(order);
+
+            OrderCancelRequest request = new OrderCancelRequest();
+            request.setReason("Try again");
+
+            assertThatThrownBy(() -> orderService.cancelOrder(1L, request))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("已提交取消申请");
         }
     }
 

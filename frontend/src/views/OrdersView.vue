@@ -39,7 +39,8 @@ const statusClass: Record<string, string> = {
   COMPLETED: 'success',
   CANCELLED: 'danger',
   DISPUTE: 'warning',
-  REVIEWED: 'success'
+  REVIEWED: 'success',
+  PENDING_CONFIRM: 'info'
 }
 
 async function loadOrders() {

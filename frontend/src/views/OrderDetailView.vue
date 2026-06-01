@@ -29,9 +29,9 @@ const uploadedChatImage = ref<UploadedFileItem | null>(null)
 const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
 const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.id)
-const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS')
+const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS' && !order.value?.cancelReason)
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
-const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED'].includes(order.value.status)))
+const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.value.status)))
 const latestStatusLog = computed(() => statusLogs.value[statusLogs.value.length - 1])
 const hasPendingCancelRequest = computed(() => Boolean(
   isPublisher.value &&
@@ -276,10 +276,11 @@ onMounted(load)
               <span>拒绝取消申请</span>
             </button>
           </div>
-          <div class="field">
+          <div v-if="!isProvider || !order?.cancelReason" class="field">
             <input v-model.trim="cancelReason" placeholder="取消原因" />
           </div>
           <button
+            v-if="!isProvider || !order?.cancelReason"
             class="button danger"
             type="button"
             :class="{ 'is-soft-disabled': !cancelReason && !isOrderTerminal }"
@@ -289,6 +290,7 @@ onMounted(load)
             <XCircle class="button-icon" aria-hidden="true" />
             <span>取消订单</span>
           </button>
+          <div v-if="isProvider && order?.cancelReason" class="hint">取消申请已提交，等待发布方处理</div>
         </section>
 
         <section class="panel grid">

@@ -100,6 +100,11 @@ public class NotificationService {
     }
 
     @Transactional
+    public void createOrderActionNotification(Long receiverId, Long orderId, String title, String content) {
+        notificationMapper.insert(notificationFactory.orderAction(receiverId, orderId, title, content));
+    }
+
+    @Transactional
     public void createOrderMessageNotification(Long receiverId, Long orderId, String senderNickname, String preview) {
         notificationMapper.insert(notificationFactory.orderMessage(receiverId, orderId, senderNickname, preview));
     }

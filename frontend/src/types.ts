@@ -190,6 +190,7 @@ export interface OrderItem {
   serviceProviderId: number
   serviceProviderNickname: string
   status: OrderStatus
+  cancelReason?: string
   createdAt: string
 }
 
