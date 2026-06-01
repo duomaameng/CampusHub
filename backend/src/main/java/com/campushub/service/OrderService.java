@@ -186,8 +186,10 @@ public class OrderService {
         ensurePendingCancelRequest(order);
 
         String reason = order.getCancelReason();
+        Long previousServiceProviderId = order.getServiceProviderId();
         order.setStatus(OrderStatus.PENDING_CONFIRM);
         order.setCancelReason(null);
+        order.setServiceProviderId(null);
         orderMapper.updateById(order);
 
         Task task = requireTask(order.getTaskId());
@@ -201,7 +203,7 @@ public class OrderService {
         orderMessageMapper.delete(new LambdaQueryWrapper<OrderMessage>().eq(OrderMessage::getOrderId, orderId));
 
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
-        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
+        notificationService.createOrderActionNotification(previousServiceProviderId, order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
     }
 
     @Transactional
@@ -226,6 +228,9 @@ public class OrderService {
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         ensureParticipant(order);
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
+        }
 
         OrderMessage message = new OrderMessage();
         message.setOrderId(orderId);
@@ -375,8 +380,13 @@ public class OrderService {
         vo.setTaskTitle(task.getTitle());
         vo.setPublisherId(order.getPublisherId());
         vo.setPublisherNickname(findNickname(order.getPublisherId()));
-        vo.setServiceProviderId(order.getServiceProviderId());
-        vo.setServiceProviderNickname(findNickname(order.getServiceProviderId()));
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            vo.setServiceProviderId(null);
+            vo.setServiceProviderNickname("暂无服务方");
+        } else {
+            vo.setServiceProviderId(order.getServiceProviderId());
+            vo.setServiceProviderNickname(findNickname(order.getServiceProviderId()));
+        }
         vo.setStatus(order.getStatus());
         vo.setCancelReason(order.getCancelReason());
         vo.setCreatedAt(order.getCreatedAt());
@@ -436,6 +446,12 @@ public class OrderService {
 
     private void ensureParticipant(Order order) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            if (!Objects.equals(currentUserId, order.getPublisherId())) {
+                throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+            }
+            return;
+        }
         if (!Objects.equals(currentUserId, order.getPublisherId()) && !Objects.equals(currentUserId, order.getServiceProviderId())) {
             throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
         }

@@ -187,8 +187,8 @@ export interface OrderItem {
   taskTitle: string
   publisherId: number
   publisherNickname: string
-  serviceProviderId: number
-  serviceProviderNickname: string
+  serviceProviderId?: number | null
+  serviceProviderNickname?: string
   status: OrderStatus
   cancelReason?: string
   createdAt: string

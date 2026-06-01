@@ -47,13 +47,15 @@ async function loadOrders() {
   error.value = ''
   loading.value = true
   try {
-    page.value = await orderApi.list({
+    const result = await orderApi.list({
       page: 1,
       size: 20,
       role: filters.role || undefined,
       status: (filters.status || undefined) as OrderStatus | undefined,
       keyword: filters.keyword || undefined
     })
+    const records = result.records.filter(shouldShowOrder)
+    page.value = { ...result, total: records.length, records }
     missingPublishedTasks.value = await loadMissingPublishedTasks(page.value.records)
   } catch (err) {
     missingPublishedTasks.value = []
@@ -61,6 +63,11 @@ async function loadOrders() {
   } finally {
     loading.value = false
   }
+}
+
+function shouldShowOrder(order: OrderItem) {
+  if (order.status !== 'PENDING_CONFIRM') return true
+  return order.publisherId === auth.user?.id
 }
 
 async function loadMissingPublishedTasks(orders: OrderItem[]) {
@@ -85,13 +92,13 @@ function setRoleFilter(role: OrderRoleFilter) {
 
 function relationLabel(order: OrderItem) {
   if (order.publisherId === auth.user?.id) return '我发布'
-  if (order.serviceProviderId === auth.user?.id) return '我接单'
+  if (order.status !== 'PENDING_CONFIRM' && order.serviceProviderId === auth.user?.id) return '我接单'
   return '相关订单'
 }
 
 function relationClass(order: OrderItem) {
   if (order.publisherId === auth.user?.id) return 'publisher'
-  if (order.serviceProviderId === auth.user?.id) return 'provider'
+  if (order.status !== 'PENDING_CONFIRM' && order.serviceProviderId === auth.user?.id) return 'provider'
   return ''
 }
 
@@ -172,7 +179,8 @@ onMounted(loadOrders)
           <span>
             <ClipboardList class="meta-icon" aria-hidden="true" />
             服务方
-            <RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">
+            <span v-if="order.status === 'PENDING_CONFIRM' || !order.serviceProviderId" class="hint">暂无服务方</span>
+            <RouterLink v-else :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">
               {{ order.serviceProviderNickname }}
             </RouterLink>
           </span>

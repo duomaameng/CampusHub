@@ -29,6 +29,7 @@ const uploadedChatImage = ref<UploadedFileItem | null>(null)
 const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
 const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.id)
+const isAwaitingNewProvider = computed(() => order.value?.status === 'PENDING_CONFIRM')
 const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS' && !order.value?.cancelReason)
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
 const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.value.status)))
@@ -196,8 +197,14 @@ onMounted(load)
           </div>
           <div class="panel">
             <strong>服务方</strong>
-            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></p>
+            <p v-if="isAwaitingNewProvider" class="hint">暂无服务方，任务已回到待接单</p>
+            <p v-else-if="order.serviceProviderId"><RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">{{ order.serviceProviderNickname }}</RouterLink></p>
           </div>
+        </div>
+
+        <div v-if="isAwaitingNewProvider" class="panel pending-provider-note">
+          <strong>已退回待接单</strong>
+          <p class="hint">原服务方已退出，该任务已重新开放，等待新的服务方申请接单。</p>
         </div>
 
         <section class="grid">
@@ -221,7 +228,7 @@ onMounted(load)
               <span class="hint">{{ new Date(item.createdAt).toLocaleString() }}</span>
             </div>
           </div>
-          <form class="actions" @submit.prevent="sendMessage">
+          <form v-if="!isAwaitingNewProvider" class="actions" @submit.prevent="sendMessage">
             <div class="field" style="flex:1;margin-bottom:0">
               <input v-model.trim="message" placeholder="输入订单留言" />
             </div>
@@ -230,7 +237,7 @@ onMounted(load)
               <span>发送</span>
             </button>
           </form>
-          <div class="grid">
+          <div v-if="!isAwaitingNewProvider" class="grid">
             <label class="button ghost upload-trigger">
               <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleChatImageChange" />
               <span>{{ chatImageUploading ? '上传中...' : '上传聊天图片' }}</span>
@@ -251,7 +258,7 @@ onMounted(load)
       </article>
 
       <aside class="grid">
-        <section class="panel grid">
+        <section v-if="!isAwaitingNewProvider" class="panel grid">
           <h2>订单操作</h2>
           <button
             v-if="isProvider"
@@ -303,7 +310,7 @@ onMounted(load)
           <div v-if="isProvider && order?.cancelReason" class="hint">取消申请已提交，等待发布方处理</div>
         </section>
 
-        <section class="panel grid">
+        <section v-if="!isAwaitingNewProvider" class="panel grid">
           <h2>提交评价</h2>
           <div class="stars" aria-label="评分">
             <button
@@ -325,7 +332,7 @@ onMounted(load)
           </button>
         </section>
 
-        <section class="panel grid">
+        <section v-if="!isAwaitingNewProvider" class="panel grid">
           <h2>评价记录</h2>
           <div v-if="!reviews.length" class="hint">暂无评价</div>
           <div v-for="review in reviews" :key="review.id" class="item-card">
@@ -357,5 +364,10 @@ onMounted(load)
   border: 1px solid rgba(245, 158, 11, 0.24);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.04));
+}
+
+.pending-provider-note {
+  border-color: rgba(59, 130, 246, 0.22);
+  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.04));
 }
 </style>
