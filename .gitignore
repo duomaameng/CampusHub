@@ -10,6 +10,7 @@ frontend/.vite-dev.err
 .vscode/
 *.iml
 
+.claude
 .env
 .env.*
 !.env.example
