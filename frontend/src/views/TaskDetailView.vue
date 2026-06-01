@@ -81,6 +81,11 @@ function toDatetimeLocal(value: string) {
 
 function startEdit() {
   if (!task.value) return
+  if (!canEditTask.value) {
+    error.value = '已有接单或接单申请，不能编辑该需求'
+    success.value = ''
+    return
+  }
   deleteConfirming.value = false
   editForm.category = task.value.category
   editForm.title = task.value.title
@@ -120,6 +125,11 @@ async function saveTask() {
 
 async function deleteTask() {
   if (!task.value) return
+  if (!canEditTask.value) {
+    error.value = '已有接单或接单申请，不能删除该需求'
+    success.value = ''
+    return
+  }
   if (!deleteConfirming.value) {
     deleteConfirming.value = true
     return
@@ -339,8 +349,23 @@ onMounted(load)
             </div>
           </form>
           <div v-else class="actions">
-            <button class="button secondary" type="button" :disabled="!canEditTask" @click="startEdit">编辑</button>
-            <button class="button danger" type="button" :disabled="!canEditTask || deletingTask" @click="deleteTask">
+            <button
+              class="button secondary"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :aria-disabled="!canEditTask"
+              @click="startEdit"
+            >
+              编辑
+            </button>
+            <button
+              class="button danger"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :disabled="deletingTask"
+              :aria-disabled="!canEditTask"
+              @click="deleteTask"
+            >
               {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
             </button>
           </div>
@@ -419,6 +444,17 @@ onMounted(load)
 <style scoped>
 .detail-layout {
   gap: var(--space-8);
+}
+
+.button.is-soft-disabled {
+  opacity: 0.48;
+  filter: grayscale(0.18);
+  box-shadow: none;
+}
+
+.button.is-soft-disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .task-actions {
