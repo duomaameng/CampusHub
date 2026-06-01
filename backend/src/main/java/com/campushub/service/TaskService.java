@@ -229,6 +229,9 @@ public class TaskService {
         order.setPublisherId(task.getPublisherId());
         order.setServiceProviderId(application.getApplicantId());
         order.setStatus(OrderStatus.IN_PROGRESS);
+        orderMapper.delete(new LambdaQueryWrapper<Order>()
+                .eq(Order::getTaskId, task.getId())
+                .in(Order::getStatus, OrderStatus.CANCELLED, OrderStatus.PENDING_CONFIRM));
         orderMapper.insert(order);
 
         OrderStatusLog log = new OrderStatusLog();

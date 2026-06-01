@@ -49,8 +49,14 @@ public class OrderService {
             wrapper.eq(Order::getPublisherId, currentUserId);
         } else if ("PROVIDER".equalsIgnoreCase(role)) {
             wrapper.eq(Order::getServiceProviderId, currentUserId);
+            wrapper.apply("status NOT IN ('CANCELLED', 'PENDING_CONFIRM')");
         } else {
-            wrapper.and(w -> w.eq(Order::getPublisherId, currentUserId).or().eq(Order::getServiceProviderId, currentUserId));
+            wrapper.and(w ->
+                w.eq(Order::getPublisherId, currentUserId)
+                 .or(w2 -> w2.eq(Order::getServiceProviderId, currentUserId)
+                              .ne(Order::getStatus, OrderStatus.CANCELLED)
+                              .ne(Order::getStatus, OrderStatus.PENDING_CONFIRM))
+            );
         }
         if (status != null) {
             wrapper.eq(Order::getStatus, status);
@@ -142,7 +148,7 @@ public class OrderService {
         OrderStatus fromStatus = order.getStatus();
         if (Objects.equals(currentUserId, order.getPublisherId())) {
             order.setCancelReason(request.getReason().trim());
-            order.setStatus(OrderStatus.CANCELLED);
+            order.setStatus(OrderStatus.PENDING_CONFIRM);
             orderMapper.updateById(order);
 
             Task task = requireTask(order.getTaskId());
@@ -153,9 +159,9 @@ public class OrderService {
                     .eq("status", ApplicationStatus.APPROVED.name())
                     .set("status", ApplicationStatus.CANCELLED.name()));
 
-            saveStatusLog(order.getId(), fromStatus, OrderStatus.CANCELLED, currentUserId, request.getReason().trim());
+            saveStatusLog(order.getId(), fromStatus, OrderStatus.PENDING_CONFIRM, currentUserId, request.getReason().trim());
 
-            notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.CANCELLED);
+            notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.PENDING_CONFIRM);
             return;
         }
 
@@ -180,7 +186,7 @@ public class OrderService {
         ensurePendingCancelRequest(order);
 
         String reason = order.getCancelReason();
-        order.setStatus(OrderStatus.CANCELLED);
+        order.setStatus(OrderStatus.PENDING_CONFIRM);
         order.setCancelReason(null);
         orderMapper.updateById(order);
 
@@ -192,8 +198,10 @@ public class OrderService {
                 .eq("status", ApplicationStatus.APPROVED.name())
                 .set("status", ApplicationStatus.CANCELLED.name()));
 
-        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED, currentUserId, "发布方同意取消申请：" + reason);
-        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已同意取消申请", "发布方已同意取消申请，订单已终止");
+        orderMessageMapper.delete(new LambdaQueryWrapper<OrderMessage>().eq(OrderMessage::getOrderId, orderId));
+
+        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
+        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
     }
 
     @Transactional
