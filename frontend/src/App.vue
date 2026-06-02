@@ -185,6 +185,12 @@ async function handleLogout() {
   height: 16px;
 }
 
+@media (max-width: 768px) {
+  .theme-toggle {
+    margin-bottom: 0;
+  }
+}
+
 .page-enter-active {
   transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }

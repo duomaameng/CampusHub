@@ -2279,6 +2279,114 @@ input[type='checkbox']:focus-visible {
 }
 
 @media (max-width: 768px) {
+  .app-shell {
+    padding-bottom: 72px;
+  }
+
+  .sidebar-shell {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    overflow: visible;
+  }
+
+  .brand {
+    min-width: 0;
+    gap: var(--space-2);
+    padding-left: 0;
+  }
+
+  .brand-copy {
+    min-width: 0;
+  }
+
+  .brand-copy strong,
+  .brand-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-shell .nav-links {
+    position: fixed;
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: max(var(--space-3), env(safe-area-inset-bottom));
+    z-index: 80;
+    flex: none;
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    background: color-mix(in srgb, var(--bg-sidebar-solid) 92%, transparent);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 32px rgba(8, 10, 20, 0.28);
+    backdrop-filter: blur(18px);
+  }
+
+  .sidebar-shell .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-shell .nav-links a {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    justify-content: center;
+    padding: 0;
+    border-radius: var(--radius-md);
+    overflow: visible;
+  }
+
+  .sidebar-shell .nav-links a > span:not(.nav-badge) {
+    display: none;
+  }
+
+  .sidebar-shell .nav-links a.router-link-active::after {
+    left: 50%;
+    top: auto;
+    bottom: 5px;
+    width: 18px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: var(--radius-full);
+  }
+
+  .nav-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    margin-left: 0;
+  }
+
+  .sidebar-shell .account-area {
+    margin-left: auto;
+    flex: 0 0 auto;
+    gap: var(--space-2);
+  }
+
+  .sidebar-shell .account-area .button {
+    display: none;
+  }
+
+  .account-name {
+    max-width: 132px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .page-container {
     padding: var(--space-5);
   }
