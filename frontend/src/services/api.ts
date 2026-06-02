@@ -2,6 +2,7 @@ import { mockApi } from './mock'
 import { request } from './http'
 
 import type {
+  AdminReportItem,
   AdminUserItem,
   AnnouncementForm,
   AnnouncementItem,
@@ -18,6 +19,8 @@ import type {
   PageData,
   PublicProfile,
   ReportSubmission,
+  ReportStatus,
+  ReportTargetType,
   ReviewItem,
   TaskForm,
   TaskItem,
@@ -287,6 +290,24 @@ export const adminApi = {
   deleteAnnouncement(announcementId: number) {
     if (useMock) return mockApi.deleteAnnouncement(announcementId)
     return request<null>({ method: 'DELETE', url: `/admin/announcements/${announcementId}` })
+  },
+  reports(params: {
+    page?: number
+    size?: number
+    status?: ReportStatus
+    targetType?: ReportTargetType
+    keyword?: string
+  }): Promise<PageData<AdminReportItem>> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
+    return request<PageData<AdminReportItem>>({ method: 'GET', url: '/admin/reports', params })
+  },
+  processReport(reportId: number, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>, result: string) {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
+    return request<null>({
+      method: 'PATCH',
+      url: `/admin/reports/${reportId}`,
+      data: { status, result }
+    })
   }
 }
 
@@ -322,6 +343,14 @@ export const reportApi = {
     return request<ReportSubmission>({
       method: 'POST',
       url: `/tasks/${taskId}/reports`,
+      data: { reason, evidenceImageIds }
+    })
+  },
+  submitUser(userId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用用户举报'))
+    return request<ReportSubmission>({
+      method: 'POST',
+      url: `/users/${userId}/reports`,
       data: { reason, evidenceImageIds }
     })
   }

@@ -18,6 +18,7 @@ import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.ReportEvidenceMapper;
 import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
+import com.campushub.mapper.UserMapper;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.report.ReportDetailVO;
 import com.campushub.vo.report.ReportItemVO;
@@ -38,6 +39,7 @@ public class ReportService {
     private final ReportMapper reportMapper;
     private final ReportEvidenceMapper reportEvidenceMapper;
     private final TaskMapper taskMapper;
+    private final UserMapper userMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
 
@@ -117,6 +119,43 @@ public class ReportService {
         return new ReportSubmissionVO(
                 report.getId(),
                 taskId,
+                request.getReason().trim(),
+                evidenceImageIds,
+                report.getCreatedAt()
+        );
+    }
+
+    @Transactional
+    public ReportSubmissionVO submitUserReport(Long userId, ReportCreateRequest request) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (currentUserId.equals(userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "You cannot report yourself");
+        }
+        if (userMapper.selectById(userId) == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        Report report = new Report();
+        report.setReporterId(currentUserId);
+        report.setTargetType(ReportTargetType.USER);
+        report.setTargetId(userId);
+        report.setReasonType(guessReasonType(request.getReason()));
+        report.setDescription(request.getReason().trim());
+        report.setStatus(ReportStatus.PENDING);
+        reportMapper.insert(report);
+
+        List<Long> evidenceImageIds = request.getEvidenceImageIds() == null ? List.of() : request.getEvidenceImageIds();
+        for (Long imageId : evidenceImageIds) {
+            FileRecord fileRecord = fileService.requireOwnedFile(imageId, UploadBusinessType.REPORT_EVIDENCE);
+            ReportEvidence evidence = new ReportEvidence();
+            evidence.setReportId(report.getId());
+            evidence.setFileRecordId(fileRecord.getId());
+            reportEvidenceMapper.insert(evidence);
+        }
+
+        return new ReportSubmissionVO(
+                report.getId(),
+                userId,
                 request.getReason().trim(),
                 evidenceImageIds,
                 report.getCreatedAt()

@@ -3,7 +3,7 @@ import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { fileApi, orderApi, taskApi } from '@/services/api'
+import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText, orderStatusText } from '@/types'
 import type { ApplicationItem, OrderDetail, OrderStatusLog, ReviewItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
@@ -28,6 +28,11 @@ const reviewContent = ref('')
 const chatImageUploading = ref(false)
 const chatImageError = ref('')
 const uploadedChatImage = ref<UploadedFileItem | null>(null)
+const reportReason = ref('')
+const reportUploadError = ref('')
+const reportSubmitting = ref(false)
+const reportEvidenceUploading = ref(false)
+const reportEvidenceFiles = ref<UploadedFileItem[]>([])
 const editMode = ref(false)
 const savingTask = ref(false)
 const deletingTask = ref(false)
@@ -48,6 +53,22 @@ const editForm = reactive<TaskUpdatePayload>({
 const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
 const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.id)
+const reportTargetUser = computed(() => {
+  if (!order.value) return null
+  if (isPublisher.value && order.value.serviceProviderId) {
+    return {
+      id: order.value.serviceProviderId,
+      nickname: order.value.serviceProviderNickname || '服务方'
+    }
+  }
+  if (isProvider.value) {
+    return {
+      id: order.value.publisherId,
+      nickname: order.value.publisherNickname
+    }
+  }
+  return null
+})
 const isAwaitingNewProvider = computed(() => order.value?.status === 'PENDING_CONFIRM')
 const canSubmitCompletion = computed(() => (
   isProvider.value &&
@@ -151,6 +172,52 @@ async function sendImageMessage() {
   if (!uploadedChatImage.value) return
   await runAction(() => orderApi.sendImage(orderId.value, uploadedChatImage.value!.id), '图片消息已发送')
   uploadedChatImage.value = null
+}
+
+async function handleReportEvidenceChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+
+  reportUploadError.value = ''
+  reportEvidenceUploading.value = true
+  try {
+    for (const file of files) {
+      const uploaded = await fileApi.upload(file, 'REPORT_EVIDENCE')
+      reportEvidenceFiles.value.push(uploaded)
+    }
+  } catch (err) {
+    reportUploadError.value = err instanceof Error ? err.message : '举报证据上传失败'
+  } finally {
+    reportEvidenceUploading.value = false
+    input.value = ''
+  }
+}
+
+function removeReportEvidence(fileId: number) {
+  reportEvidenceFiles.value = reportEvidenceFiles.value.filter((item) => item.id !== fileId)
+}
+
+async function submitReport() {
+  if (!reportTargetUser.value || !reportReason.value.trim()) return
+
+  error.value = ''
+  success.value = ''
+  reportSubmitting.value = true
+  try {
+    await reportApi.submitUser(
+      reportTargetUser.value.id,
+      reportReason.value.trim(),
+      reportEvidenceFiles.value.map((item) => item.id)
+    )
+    reportReason.value = ''
+    reportEvidenceFiles.value = []
+    success.value = '举报已提交'
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '举报提交失败'
+  } finally {
+    reportSubmitting.value = false
+  }
 }
 
 async function submitReview() {
@@ -563,6 +630,37 @@ onMounted(load)
             <span>{{ isProvider && !isPublisher ? '取消服务' : '取消订单' }}</span>
           </button>
           <div v-if="hasActiveProviderCancelRequest" class="hint">取消申请已提交，等待发布方处理</div>
+        </section>
+
+        <section v-if="auth.isAuthenticated && reportTargetUser" class="panel grid">
+          <h2>举报账号</h2>
+          <p class="hint">
+            举报对象：
+            <RouterLink :to="{ name: 'user-public-profile', params: { id: reportTargetUser.id } }">
+              {{ reportTargetUser.nickname }}
+            </RouterLink>
+          </p>
+          <div class="field">
+            <textarea v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" />
+          </div>
+          <label class="button ghost upload-trigger">
+            <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleReportEvidenceChange" />
+            <span>{{ reportEvidenceUploading ? '上传中...' : '上传举报证据' }}</span>
+          </label>
+          <p class="hint">支持截图或照片证据，每张不超过 5MB。</p>
+          <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
+          <div v-if="reportEvidenceFiles.length" class="upload-grid">
+            <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
+              <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
+              <div class="upload-card-meta">
+                <strong>{{ item.fileName }}</strong>
+                <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
+              </div>
+            </article>
+          </div>
+          <button class="button danger" type="button" :disabled="reportSubmitting || !reportReason" @click="submitReport">
+            {{ reportSubmitting ? '提交中...' : '提交举报' }}
+          </button>
         </section>
 
         <section v-if="canReviewOrder" class="panel grid">

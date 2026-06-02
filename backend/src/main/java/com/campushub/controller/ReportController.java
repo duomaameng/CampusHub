@@ -34,4 +34,9 @@ public class ReportController {
     public ApiResponse<ReportSubmissionVO> submit(@PathVariable Long taskId, @Valid @RequestBody ReportCreateRequest request) {
         return ApiResponse.success(reportService.submitTaskReport(taskId, request));
     }
+
+    @PostMapping("/api/users/{userId}/reports")
+    public ApiResponse<ReportSubmissionVO> submitUserReport(@PathVariable Long userId, @Valid @RequestBody ReportCreateRequest request) {
+        return ApiResponse.success(reportService.submitUserReport(userId, request));
+    }
 }

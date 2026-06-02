@@ -2,10 +2,10 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { fileApi, reportApi, taskApi } from '@/services/api'
+import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
-import type { ApplicationItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
+import type { ApplicationItem, OrderItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
@@ -13,6 +13,7 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const task = ref<TaskItem>()
+const relatedOrder = ref<OrderItem | null>(null)
 const applications = ref<ApplicationItem[]>([])
 const applyMessage = ref('')
 const loading = ref(false)
@@ -45,6 +46,16 @@ const taskId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => Boolean(task.value && auth.user?.id === task.value.publisherId))
 const canApply = computed(() => Boolean(auth.isAuthenticated && auth.user?.verified && applyMessage.value))
 const canEditTask = computed(() => Boolean(isPublisher.value && task.value?.status === 'OPEN' && task.value.applicationCount === 0))
+const canReportTask = computed(() => Boolean(
+  auth.isAuthenticated &&
+  task.value &&
+  ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status) &&
+  relatedOrder.value &&
+  (
+    relatedOrder.value.publisherId === auth.user?.id ||
+    relatedOrder.value.serviceProviderId === auth.user?.id
+  )
+))
 const isFavorited = computed(() => Boolean(task.value?.isFavorited || (task.value as (TaskItem & { favorited?: boolean }) | undefined)?.favorited))
 
 const categoryText: Record<string, string> = {
@@ -63,6 +74,11 @@ async function load() {
   loading.value = true
   try {
     task.value = await taskApi.get(taskId.value)
+    relatedOrder.value = null
+    if (auth.isAuthenticated && ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status)) {
+      const orders = await orderApi.list({ page: 1, size: 100 })
+      relatedOrder.value = orders.records.find((item) => item.taskId === task.value?.id) || null
+    }
     if (isPublisher.value) {
       applications.value = await taskApi.applications(taskId.value)
     }
@@ -381,7 +397,7 @@ onMounted(load)
           <p v-if="success" class="success-message">{{ success }}</p>
         </section>
 
-        <section v-if="auth.isAuthenticated && !isPublisher" class="panel grid">
+        <section v-if="canReportTask" class="panel grid">
           <h2>举报任务</h2>
           <div class="field">
             <textarea v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" />

@@ -312,6 +312,16 @@ export interface AdminUserItem {
   createdAt: string
 }
 
+export interface AdminReportItem {
+  id: number
+  reporterId: number
+  targetType: ReportTargetType
+  targetId: number
+  reason: string
+  status: ReportStatus
+  createdAt: string
+}
+
 export interface AnnouncementItem {
   id: number
   title: string
