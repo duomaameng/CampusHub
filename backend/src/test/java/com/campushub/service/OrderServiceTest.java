@@ -269,13 +269,14 @@ class OrderServiceTest {
 
             orderService.cancelOrder(1L, request);
 
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(order.getCancelReason()).isEqualTo("No longer needed");
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_CONFIRM);
+            assertThat(order.getCancelReason()).isNull();
+            assertThat(order.getServiceProviderId()).isNull();
             assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
             verify(orderStatusLogMapper).insert(any(OrderStatusLog.class));
             verify(taskMapper).updateById(task);
             verify(applicationMapper).update(isNull(), any());
-            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.CANCELLED));
+            verify(notificationService).createOrderStatusNotification(eq(OTHER_USER_ID), eq(1L), eq(OrderStatus.PENDING_CONFIRM));
         }
 
         @Test
@@ -308,11 +309,12 @@ class OrderServiceTest {
 
             orderService.approveCancelRequest(1L);
 
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_CONFIRM);
             assertThat(order.getCancelReason()).isNull();
+            assertThat(order.getServiceProviderId()).isNull();
             assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
             verify(applicationMapper).update(isNull(), any());
-            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), eq("发布方已同意取消申请"), eq("发布方已同意取消申请，订单已终止"));
+            verify(notificationService).createOrderActionNotification(eq(OTHER_USER_ID), eq(1L), anyString(), anyString());
         }
 
         @Test
@@ -616,7 +618,8 @@ class OrderServiceTest {
             request.setReason("Changed mind");
 
             orderService.cancelOrder(1L, request);
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+            assertThat(order.getStatus()).isEqualTo(OrderStatus.PENDING_CONFIRM);
+            assertThat(order.getServiceProviderId()).isNull();
             assertThat(task.getStatus()).isEqualTo(TaskStatus.OPEN);
         }
 

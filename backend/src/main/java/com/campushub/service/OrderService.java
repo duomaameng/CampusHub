@@ -43,24 +43,35 @@ public class OrderService {
     public PageResult<OrderItemVO> listOrders(int page, int size, String role, OrderStatus status, String keyword) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Page<Order> pageQuery = new Page<>(page, size);
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>().orderByDesc(Order::getCreatedAt);
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ne(Order::getStatus, OrderStatus.CANCELLED);
 
         if ("PUBLISHER".equalsIgnoreCase(role)) {
             wrapper.eq(Order::getPublisherId, currentUserId);
         } else if ("PROVIDER".equalsIgnoreCase(role)) {
             wrapper.eq(Order::getServiceProviderId, currentUserId);
-            wrapper.apply("status NOT IN ('CANCELLED', 'PENDING_CONFIRM')");
+            wrapper.ne(Order::getStatus, OrderStatus.PENDING_CONFIRM);
         } else {
             wrapper.and(w ->
                 w.eq(Order::getPublisherId, currentUserId)
                  .or(w2 -> w2.eq(Order::getServiceProviderId, currentUserId)
-                              .ne(Order::getStatus, OrderStatus.CANCELLED)
                               .ne(Order::getStatus, OrderStatus.PENDING_CONFIRM))
             );
         }
         if (status != null) {
             wrapper.eq(Order::getStatus, status);
         }
+        wrapper.last("""
+                ORDER BY CASE status
+                    WHEN 'IN_PROGRESS' THEN 0
+                    WHEN 'PENDING_COMPLETION' THEN 0
+                    WHEN 'PENDING_CONFIRM' THEN 1
+                    WHEN 'DISPUTE' THEN 1
+                    WHEN 'COMPLETED' THEN 2
+                    WHEN 'REVIEWED' THEN 2
+                    ELSE 3
+                END, created_at DESC
+                """);
 
         Page<Order> result = orderMapper.selectPage(pageQuery, wrapper);
         List<OrderItemVO> records = result.getRecords().stream()
@@ -147,8 +158,11 @@ public class OrderService {
 
         OrderStatus fromStatus = order.getStatus();
         if (Objects.equals(currentUserId, order.getPublisherId())) {
-            order.setCancelReason(request.getReason().trim());
+            Long previousServiceProviderId = order.getServiceProviderId();
+            String reason = request.getReason().trim();
+            order.setCancelReason(null);
             order.setStatus(OrderStatus.PENDING_CONFIRM);
+            order.setServiceProviderId(null);
             orderMapper.updateById(order);
 
             Task task = requireTask(order.getTaskId());
@@ -159,9 +173,9 @@ public class OrderService {
                     .eq("status", ApplicationStatus.APPROVED.name())
                     .set("status", ApplicationStatus.CANCELLED.name()));
 
-            saveStatusLog(order.getId(), fromStatus, OrderStatus.PENDING_CONFIRM, currentUserId, request.getReason().trim());
+            saveStatusLog(order.getId(), fromStatus, OrderStatus.PENDING_CONFIRM, currentUserId, reason);
 
-            notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.PENDING_CONFIRM);
+            notificationService.createOrderStatusNotification(previousServiceProviderId, order.getId(), OrderStatus.PENDING_CONFIRM);
             return;
         }
 

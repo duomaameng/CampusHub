@@ -446,6 +446,22 @@ function paginate<T>(records: T[], page = 1, size = 20): PageData<T> {
   }
 }
 
+const orderStatusRank: Record<OrderStatus, number> = {
+  IN_PROGRESS: 0,
+  PENDING_COMPLETION: 0,
+  PENDING_CONFIRM: 1,
+  DISPUTE: 1,
+  COMPLETED: 2,
+  REVIEWED: 2,
+  CANCELLED: 3
+}
+
+function compareOrdersByStatus(a: OrderItem, b: OrderItem) {
+  const rankDiff = orderStatusRank[a.status] - orderStatusRank[b.status]
+  if (rankDiff !== 0) return rankDiff
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+}
+
 function pushNotification(db: MockDatabase, item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) {
   const nextId = Math.max(9000, ...db.notifications.map((notification) => notification.id)) + 1
   db.notifications.unshift({
@@ -884,12 +900,21 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = getCurrentUser(db)
-    let records = db.orders.filter((item) => item.publisherId === user.id || item.serviceProviderId === user.id)
+    let records = db.orders.filter((item) =>
+      item.status !== 'CANCELLED'
+      && (item.publisherId === user.id || item.serviceProviderId === user.id)
+    )
     if (params.role === 'PUBLISHER') records = records.filter((item) => item.publisherId === user.id)
-    if (params.role === 'PROVIDER') records = records.filter((item) => item.serviceProviderId === user.id)
+    if (params.role === 'PROVIDER') records = records.filter((item) => item.serviceProviderId === user.id && item.status !== 'PENDING_CONFIRM')
     if (params.status) records = records.filter((item) => item.status === params.status)
     if (params.keyword) records = records.filter((item) => item.taskTitle.includes(params.keyword || ''))
-    return paginate(records.map(({ messages: _messages, statusLogs: _logs, ...item }) => item), params.page, params.size)
+    return paginate(
+      records
+        .map(({ messages: _messages, statusLogs: _logs, ...item }) => item)
+        .sort(compareOrdersByStatus),
+      params.page,
+      params.size
+    )
   },
 
   async getOrder(orderId: number): Promise<OrderDetail> {
@@ -914,9 +939,14 @@ export const mockApi = {
     const fromStatus = order.status
     const isProviderCancelRequest = status === 'CANCELLED' && order.serviceProviderId === user.id && order.publisherId !== user.id
     const isPublisherCancel = status === 'CANCELLED' && order.publisherId === user.id
-    const nextStatus = isProviderCancelRequest ? 'IN_PROGRESS' : status
+    const nextStatus = isProviderCancelRequest ? 'IN_PROGRESS' : isPublisherCancel ? 'PENDING_CONFIRM' : status
     order.status = nextStatus
     if (isProviderCancelRequest) {
+      ;(order as OrderDetail & { cancelReason?: string }).cancelReason = reason
+    }
+    if (isPublisherCancel) {
+      order.serviceProviderId = null
+      order.serviceProviderNickname = undefined
       ;(order as OrderDetail & { cancelReason?: string }).cancelReason = reason
     }
     const task = db.tasks.find((item) => item.id === order.taskId)
@@ -957,7 +987,9 @@ export const mockApi = {
     const reason = (order as OrderDetail & { cancelReason?: string }).cancelReason
     if (order.status !== 'IN_PROGRESS' || !reason) throw new Error('No pending cancel request')
 
-    order.status = 'CANCELLED'
+    order.status = 'PENDING_CONFIRM'
+    order.serviceProviderId = null
+    order.serviceProviderNickname = undefined
     delete (order as OrderDetail & { cancelReason?: string }).cancelReason
     const task = db.tasks.find((item) => item.id === order.taskId)
     if (task) task.status = 'OPEN'
@@ -969,7 +1001,7 @@ export const mockApi = {
     order.statusLogs.push({
       id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
       fromStatus: 'IN_PROGRESS',
-      toStatus: 'CANCELLED',
+      toStatus: 'PENDING_CONFIRM',
       operatorNickname: user.profile.nickname,
       reason: `发布方同意取消申请：${reason}`,
       createdAt: new Date().toISOString()
@@ -1053,6 +1085,7 @@ export const mockApi = {
     const order = db.orders.find((item) => item.id === orderId)
     if (!order) throw new Error('订单不存在')
     if (order.status !== 'COMPLETED') throw new Error('订单未完成，不能评价')
+    if (!order.serviceProviderId || !order.serviceProviderNickname) throw new Error('Order has no service provider')
     if (db.reviews.some((item) => item.orderId === orderId && item.reviewerId === user.id)) {
       throw new Error('不能重复评价')
     }

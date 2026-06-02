@@ -23,7 +23,7 @@ const success = ref('')
 const loading = ref(false)
 const message = ref('')
 const cancelReason = ref('')
-const reviewRating = ref(5)
+const reviewRating = ref(1)
 const reviewContent = ref('')
 const chatImageUploading = ref(false)
 const chatImageError = ref('')
@@ -51,6 +51,8 @@ const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.
 const isAwaitingNewProvider = computed(() => order.value?.status === 'PENDING_CONFIRM')
 const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS' && !order.value?.cancelReason)
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
+const canReviewOrder = computed(() => order.value?.status === 'COMPLETED')
+const shouldShowReviews = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED'].includes(order.value.status)))
 const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.value.status)))
 const canEditTask = computed(() => Boolean(task.value && task.value.status === 'OPEN' && task.value.applicationCount === 0))
 
@@ -528,8 +530,11 @@ onMounted(load)
             v-if="!isProvider || !order?.cancelReason"
             class="button danger"
             type="button"
-            :class="{ 'is-soft-disabled': !cancelReason && !isOrderTerminal }"
-            :disabled="isOrderTerminal"
+            :class="{
+              'is-soft-disabled': !cancelReason && !isOrderTerminal,
+              'is-cancel-unavailable': isOrderTerminal
+            }"
+            :aria-disabled="isOrderTerminal"
             @click="cancelOrder"
           >
             <XCircle class="button-icon" aria-hidden="true" />
@@ -538,7 +543,7 @@ onMounted(load)
           <div v-if="isProvider && order?.cancelReason" class="hint">取消申请已提交，等待发布方处理</div>
         </section>
 
-        <section v-if="!isAwaitingNewProvider" class="panel grid">
+        <section v-if="canReviewOrder" class="panel grid">
           <h2>提交评价</h2>
           <div class="stars" aria-label="评分">
             <button
@@ -554,13 +559,13 @@ onMounted(load)
           <div class="field">
             <textarea v-model.trim="reviewContent" placeholder="评价内容" maxlength="500" />
           </div>
-          <button class="button primary" type="button" :disabled="order.status !== 'COMPLETED'" @click="submitReview">
+          <button class="button primary" type="button" @click="submitReview">
             <Star class="button-icon" aria-hidden="true" />
             <span>提交评价</span>
           </button>
         </section>
 
-        <section v-if="!isAwaitingNewProvider" class="panel grid">
+        <section v-if="shouldShowReviews" class="panel grid">
           <h2>评价记录</h2>
           <div v-if="!reviews.length" class="hint">暂无评价</div>
           <div v-for="review in reviews" :key="review.id" class="item-card">
@@ -581,6 +586,19 @@ onMounted(load)
 }
 
 .button.is-soft-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.button.is-cancel-unavailable {
+  border-color: rgba(148, 163, 184, 0.24);
+  background: linear-gradient(135deg, #e5e7eb, #cbd5e1);
+  color: #64748b;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.button.is-cancel-unavailable:hover {
   transform: none;
   box-shadow: none;
 }
