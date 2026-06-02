@@ -34,13 +34,13 @@ const loading = ref(false)
 const error = ref('')
 
 const statusClass: Record<string, string> = {
-  IN_PROGRESS: 'success',
+  IN_PROGRESS: 'info',
   PENDING_COMPLETION: 'warning',
-  COMPLETED: 'success',
+  COMPLETED: 'warning',
   CANCELLED: 'danger',
   DISPUTE: 'warning',
-  REVIEWED: 'success',
-  PENDING_CONFIRM: 'info'
+  REVIEWED: 'warning',
+  PENDING_CONFIRM: 'success'
 }
 
 async function loadOrders() {
@@ -202,7 +202,7 @@ onMounted(loadOrders)
             <span class="relation-pill publisher">我发布</span>
             <h2>{{ task.title }}</h2>
           </div>
-          <span class="tag warning">待接单</span>
+          <span class="tag success">待接单</span>
         </div>
         <div class="meta-line">
           <span>

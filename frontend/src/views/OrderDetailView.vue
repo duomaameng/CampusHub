@@ -55,13 +55,13 @@ const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REV
 const canEditTask = computed(() => Boolean(task.value && task.value.status === 'OPEN' && task.value.applicationCount === 0))
 
 const statusClass: Record<string, string> = {
-  IN_PROGRESS: 'success',
+  IN_PROGRESS: 'info',
   PENDING_COMPLETION: 'warning',
-  COMPLETED: 'success',
+  COMPLETED: 'warning',
   CANCELLED: 'danger',
   DISPUTE: 'warning',
-  REVIEWED: 'success',
-  PENDING_CONFIRM: 'info'
+  REVIEWED: 'warning',
+  PENDING_CONFIRM: 'success'
 }
 const latestStatusLog = computed(() => statusLogs.value[statusLogs.value.length - 1])
 const hasPendingCancelRequest = computed(() => Boolean(
