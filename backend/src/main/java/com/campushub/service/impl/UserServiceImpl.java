@@ -36,6 +36,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+    private static final int DEFAULT_CREDIT_SCORE = 100;
+    private static final int MIN_CREDIT_SCORE = 0;
+    private static final int MAX_CREDIT_SCORE = 100;
 
     private final UserMapper userMapper;
     private final UserProfileMapper userProfileMapper;
@@ -252,7 +255,7 @@ public class UserServiceImpl implements UserService {
                         .eq(CreditLog::getUserId, userId)
                         .orderByDesc(CreditLog::getCreatedAt)
                         .last("LIMIT 1"));
-        int score = latestCredit != null ? latestCredit.getScoreAfter() : 100;
+        int score = clampCreditScore(latestCredit != null ? latestCredit.getScoreAfter() : DEFAULT_CREDIT_SCORE);
 
         long completedOrders = orderMapper.selectCount(
                 new LambdaQueryWrapper<Order>()
@@ -281,6 +284,10 @@ public class UserServiceImpl implements UserService {
         if (userMapper.selectById(userId) == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
+    }
+
+    private int clampCreditScore(int score) {
+        return Math.max(MIN_CREDIT_SCORE, Math.min(MAX_CREDIT_SCORE, score));
     }
 
     private String findNickname(Long userId) {

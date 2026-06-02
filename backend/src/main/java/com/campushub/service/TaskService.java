@@ -58,6 +58,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TaskService {
+    private static final int DEFAULT_CREDIT_SCORE = 100;
+    private static final int MIN_CREDIT_SCORE = 0;
+    private static final int MAX_CREDIT_SCORE = 100;
 
     private final TaskMapper taskMapper;
     private final TaskImageMapper taskImageMapper;
@@ -504,7 +507,11 @@ public class TaskService {
                 .eq(CreditLog::getUserId, userId)
                 .orderByDesc(CreditLog::getId)
                 .last("LIMIT 1"));
-        return latest != null ? latest.getScoreAfter() : 100;
+        return clampCreditScore(latest != null ? latest.getScoreAfter() : DEFAULT_CREDIT_SCORE);
+    }
+
+    private int clampCreditScore(int score) {
+        return Math.max(MIN_CREDIT_SCORE, Math.min(MAX_CREDIT_SCORE, score));
     }
 
     private String toJson(Map<String, Object> fields) {

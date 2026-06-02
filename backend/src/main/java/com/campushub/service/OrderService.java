@@ -28,6 +28,9 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+    private static final int DEFAULT_CREDIT_SCORE = 100;
+    private static final int MIN_CREDIT_SCORE = 0;
+    private static final int MAX_CREDIT_SCORE = 100;
 
     private final OrderMapper orderMapper;
     private final TaskMapper taskMapper;
@@ -320,12 +323,13 @@ public class OrderService {
                 .eq(CreditLog::getUserId, review.getRevieweeId())
                 .orderByDesc(CreditLog::getId)
                 .last("LIMIT 1"));
-        int scoreBefore = latest != null ? latest.getScoreAfter() : 100;
+        int scoreBefore = clampCreditScore(latest != null ? latest.getScoreAfter() : DEFAULT_CREDIT_SCORE);
+        int scoreAfter = clampCreditScore(scoreBefore + creditChange);
         CreditLog creditLog = new CreditLog();
         creditLog.setUserId(review.getRevieweeId());
-        creditLog.setChangeAmount(creditChange);
+        creditLog.setChangeAmount(scoreAfter - scoreBefore);
         creditLog.setScoreBefore(scoreBefore);
-        creditLog.setScoreAfter(scoreBefore + creditChange);
+        creditLog.setScoreAfter(scoreAfter);
         creditLog.setReason("Order #" + orderId + " review rating: " + request.getRating());
         creditLog.setRelatedOrderId(orderId);
         creditLogMapper.insert(creditLog);
@@ -461,6 +465,10 @@ public class OrderService {
         log.setOperatorId(operatorId);
         log.setReason(reason);
         orderStatusLogMapper.insert(log);
+    }
+
+    private int clampCreditScore(int score) {
+        return Math.max(MIN_CREDIT_SCORE, Math.min(MAX_CREDIT_SCORE, score));
     }
 
     private String findCompletionNote(List<OrderStatusLog> statusLogs) {
