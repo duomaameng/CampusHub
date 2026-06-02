@@ -162,8 +162,10 @@ public class OrderService {
             String reason = request.getReason().trim();
             order.setCancelReason(null);
             order.setStatus(OrderStatus.PENDING_CONFIRM);
-            order.setServiceProviderId(null);
-            orderMapper.updateById(order);
+            orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
+                    .eq("id", order.getId())
+                    .set("status", OrderStatus.PENDING_CONFIRM.name())
+                    .set("cancel_reason", null));
 
             Task task = requireTask(order.getTaskId());
             task.setStatus(TaskStatus.OPEN);
@@ -181,6 +183,13 @@ public class OrderService {
 
         if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "已提交取消申请，请等待发布方处理");
+        }
+        Long cancelRequestCount = orderStatusLogMapper.selectCount(new LambdaQueryWrapper<OrderStatusLog>()
+                .eq(OrderStatusLog::getOrderId, order.getId())
+                .eq(OrderStatusLog::getOperatorId, currentUserId)
+                .likeRight(OrderStatusLog::getReason, "服务方申请取消："));
+        if (cancelRequestCount != null && cancelRequestCount >= 2) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "取消申请最多只能提交两次");
         }
 
         order.setCancelReason(request.getReason().trim());
@@ -203,8 +212,10 @@ public class OrderService {
         Long previousServiceProviderId = order.getServiceProviderId();
         order.setStatus(OrderStatus.PENDING_CONFIRM);
         order.setCancelReason(null);
-        order.setServiceProviderId(null);
-        orderMapper.updateById(order);
+        orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
+                .eq("id", order.getId())
+                .set("status", OrderStatus.PENDING_CONFIRM.name())
+                .set("cancel_reason", null));
 
         Task task = requireTask(order.getTaskId());
         task.setStatus(TaskStatus.OPEN);
@@ -232,7 +243,10 @@ public class OrderService {
         String reason = order.getCancelReason();
         order.setStatus(OrderStatus.IN_PROGRESS);
         order.setCancelReason(null);
-        orderMapper.updateById(order);
+        orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
+                .eq("id", order.getId())
+                .set("status", OrderStatus.IN_PROGRESS.name())
+                .set("cancel_reason", null));
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
         notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已拒绝取消申请", "发布方已拒绝取消申请，订单继续进行");
     }

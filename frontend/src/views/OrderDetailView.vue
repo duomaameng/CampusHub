@@ -49,7 +49,11 @@ const orderId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
 const isProvider = computed(() => order.value?.serviceProviderId === auth.user?.id)
 const isAwaitingNewProvider = computed(() => order.value?.status === 'PENDING_CONFIRM')
-const canSubmitCompletion = computed(() => isProvider.value && order.value?.status === 'IN_PROGRESS' && !order.value?.cancelReason)
+const canSubmitCompletion = computed(() => (
+  isProvider.value &&
+  order.value?.status === 'IN_PROGRESS' &&
+  (!order.value?.cancelReason || hasRejectedCancelRequest.value)
+))
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
 const canReviewOrder = computed(() => order.value?.status === 'COMPLETED')
 const shouldShowReviews = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED'].includes(order.value.status)))
@@ -66,14 +70,25 @@ const statusClass: Record<string, string> = {
   PENDING_CONFIRM: 'success'
 }
 const latestStatusLog = computed(() => statusLogs.value[statusLogs.value.length - 1])
+const providerCancelRequestLogs = computed(() => statusLogs.value.filter((log) =>
+  log.operatorId === order.value?.serviceProviderId &&
+  log.reason.includes('服务方申请取消')
+))
+const hasRejectedCancelRequest = computed(() => Boolean(
+  isProvider.value &&
+  latestStatusLog.value?.operatorId === order.value?.publisherId &&
+  latestStatusLog.value?.reason.includes('发布方拒绝取消申请')
+))
+const cancelRequestLimitReached = computed(() => isProvider.value && providerCancelRequestLogs.value.length >= 2)
+const hasActiveProviderCancelRequest = computed(() => Boolean(
+  isProvider.value &&
+  order.value?.cancelReason &&
+  !hasRejectedCancelRequest.value
+))
 const hasPendingCancelRequest = computed(() => Boolean(
   isPublisher.value &&
   order.value?.status === 'IN_PROGRESS' &&
-  latestStatusLog.value?.toStatus === 'IN_PROGRESS' &&
-  (
-    latestStatusLog.value?.operatorId === order.value?.serviceProviderId ||
-    latestStatusLog.value?.reason.includes('申请取消')
-  )
+  order.value?.cancelReason
 ))
 
 async function load() {
@@ -175,6 +190,11 @@ async function cancelOrder() {
   if (!order.value) return
   if (isOrderTerminal.value) {
     error.value = '订单已完成、已评价或已取消，不能再取消'
+    success.value = ''
+    return
+  }
+  if (cancelRequestLimitReached.value) {
+    error.value = '取消申请最多只能提交两次'
     success.value = ''
     return
   }
@@ -523,11 +543,13 @@ onMounted(load)
               <span>拒绝取消申请</span>
             </button>
           </div>
-          <div v-if="!isProvider || !order?.cancelReason" class="field">
+          <p v-if="hasRejectedCancelRequest" class="hint">申请已被发布方驳回</p>
+          <p v-if="cancelRequestLimitReached" class="hint">取消申请次数已达上限，不能再次提交</p>
+          <div v-if="(!isProvider || !hasActiveProviderCancelRequest) && !cancelRequestLimitReached" class="field">
             <input v-model.trim="cancelReason" placeholder="取消原因" />
           </div>
           <button
-            v-if="!isProvider || !order?.cancelReason"
+            v-if="(!isProvider || !hasActiveProviderCancelRequest) && !cancelRequestLimitReached"
             class="button danger"
             type="button"
             :class="{
@@ -538,9 +560,9 @@ onMounted(load)
             @click="cancelOrder"
           >
             <XCircle class="button-icon" aria-hidden="true" />
-            <span>取消订单</span>
+            <span>{{ isProvider && !isPublisher ? '取消服务' : '取消订单' }}</span>
           </button>
-          <div v-if="isProvider && order?.cancelReason" class="hint">取消申请已提交，等待发布方处理</div>
+          <div v-if="hasActiveProviderCancelRequest" class="hint">取消申请已提交，等待发布方处理</div>
         </section>
 
         <section v-if="canReviewOrder" class="panel grid">
