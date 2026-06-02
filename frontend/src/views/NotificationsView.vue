@@ -34,6 +34,16 @@ async function readAll() {
   await load()
 }
 
+async function deleteOne(notificationId: number) {
+  await notificationApi.delete(notificationId)
+  await load()
+}
+
+async function deleteAllRead() {
+  await notificationApi.deleteRead()
+  await load()
+}
+
 function targetLink(item: NotificationItem) {
   return item.targetType === 'ORDER' ? `/orders/${item.targetId}` : `/tasks/${item.targetId}`
 }
@@ -48,7 +58,10 @@ onMounted(load)
         <h1>通知中心</h1>
         <p>接单申请、订单状态、评价邀请和举报结果会集中在这里。</p>
       </div>
-      <button class="button secondary" type="button" @click="readAll">全部已读</button>
+      <div class="page-actions">
+        <button class="button secondary" type="button" @click="readAll">全部已读</button>
+        <button class="button secondary" type="button" @click="deleteAllRead">删除已读通知</button>
+      </div>
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
@@ -71,6 +84,7 @@ onMounted(load)
         <div class="actions">
           <RouterLink class="button ghost" :to="targetLink(item)">查看</RouterLink>
           <button class="button secondary" type="button" :disabled="item.read" @click="markRead(item.id)">标记已读</button>
+          <button class="button danger-outline" type="button" @click="deleteOne(item.id)">删除</button>
         </div>
       </article>
     </div>
@@ -93,6 +107,11 @@ onMounted(load)
 .page-title .button.secondary:hover {
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
   transform: translateY(-1px);
+}
+
+.page-actions {
+  display: flex;
+  gap: var(--space-3);
 }
 
 .notification-item {
@@ -176,6 +195,19 @@ onMounted(load)
   border-color: var(--primary-400);
   background: var(--primary-50);
   color: var(--primary-700);
+}
+
+.notification-item .button.danger-outline {
+  padding: 8px 16px;
+  font-weight: 600;
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
+  background: transparent;
+  color: var(--danger);
+}
+
+.notification-item .button.danger-outline:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .empty-state {

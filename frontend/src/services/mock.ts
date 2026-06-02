@@ -1121,6 +1121,20 @@ export const mockApi = {
     saveDb(db)
   },
 
+  async deleteNotification(notificationId: number) {
+    await wait()
+    const db = loadDb()
+    db.notifications = db.notifications.filter((item) => item.id !== notificationId)
+    saveDb(db)
+  },
+
+  async deleteReadNotifications() {
+    await wait()
+    const db = loadDb()
+    db.notifications = db.notifications.filter((item) => !item.read)
+    saveDb(db)
+  },
+
   async adminUsers(params: { page?: number; size?: number; keyword?: string; status?: UserStatus }) {
     await wait()
     const db = loadDb()

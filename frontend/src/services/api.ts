@@ -229,6 +229,14 @@ export const notificationApi = {
   readAll() {
     if (useMock) return mockApi.readAllNotifications()
     return request({ method: 'PATCH', url: '/notifications/read-all' })
+  },
+  delete(notificationId: number) {
+    if (useMock) return mockApi.deleteNotification(notificationId)
+    return request({ method: 'DELETE', url: `/notifications/${notificationId}` })
+  },
+  deleteRead() {
+    if (useMock) return mockApi.deleteReadNotifications()
+    return request({ method: 'DELETE', url: '/notifications/read' })
   }
 }
 
