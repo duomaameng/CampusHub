@@ -15,6 +15,7 @@ import com.campushub.entity.Favorite;
 import com.campushub.entity.FileRecord;
 import com.campushub.entity.Order;
 import com.campushub.entity.OrderStatusLog;
+import com.campushub.entity.Review;
 import com.campushub.entity.Task;
 import com.campushub.entity.TaskImage;
 import com.campushub.entity.User;
@@ -29,6 +30,7 @@ import com.campushub.mapper.CreditLogMapper;
 import com.campushub.mapper.FavoriteMapper;
 import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.OrderStatusLogMapper;
+import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.TaskImageMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
@@ -65,6 +67,7 @@ public class TaskService {
     private final UserProfileMapper userProfileMapper;
     private final FavoriteMapper favoriteMapper;
     private final CreditLogMapper creditLogMapper;
+    private final ReviewMapper reviewMapper;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
@@ -302,6 +305,16 @@ public class TaskService {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
         ensureNoApplications(taskId);
+
+        List<Order> orders = orderMapper.selectList(
+                new LambdaQueryWrapper<Order>().eq(Order::getTaskId, taskId));
+        for (Order order : orders) {
+            reviewMapper.delete(new LambdaQueryWrapper<Review>().eq(Review::getOrderId, order.getId()));
+            orderMapper.deleteById(order.getId());
+        }
+
+        applicationMapper.delete(new LambdaQueryWrapper<Application>().eq(Application::getTaskId, taskId));
+
         taskMapper.deleteById(taskId);
     }
 
@@ -390,7 +403,9 @@ public class TaskService {
 
     private void ensureNoApplications(Long taskId) {
         long applicationCount = applicationMapper.selectCount(
-                new LambdaQueryWrapper<Application>().eq(Application::getTaskId, taskId));
+                new LambdaQueryWrapper<Application>()
+                        .eq(Application::getTaskId, taskId)
+                        .in(Application::getStatus, ApplicationStatus.PENDING, ApplicationStatus.APPROVED));
         if (applicationCount > 0) {
             throw new BusinessException(ErrorCode.TASK_HAS_APPLICATION);
         }
@@ -434,7 +449,10 @@ public class TaskService {
                 .stream()
                 .map(TaskImage::getImageUrl)
                 .toList());
-        vo.setApplicationCount(applicationMapper.selectCount(new LambdaQueryWrapper<Application>().eq(Application::getTaskId, task.getId())));
+        vo.setApplicationCount(applicationMapper.selectCount(
+                new LambdaQueryWrapper<Application>()
+                        .eq(Application::getTaskId, task.getId())
+                        .in(Application::getStatus, ApplicationStatus.PENDING, ApplicationStatus.APPROVED)));
         vo.setFavoriteCount(favoriteMapper.selectCount(new LambdaQueryWrapper<Favorite>().eq(Favorite::getTaskId, task.getId())));
         vo.setFavorited(isFavoritedByCurrentUser(task.getId()));
         vo.setCreatedAt(task.getCreatedAt());
