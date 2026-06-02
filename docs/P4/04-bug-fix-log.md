@@ -19,7 +19,7 @@
 
 ## 2. 修复概览
 
-本阶段目前已修复 Bug 共 **30** 项，主要集中在：
+本阶段目前已修复 Bug 共 **31** 项，主要集中在：
 
 - 认证与验证码流程
 - 任务、订单、举报主链
@@ -947,4 +947,45 @@
 **涉及文件**
 
 - `backend/src/main/java/com/campushub/service/OrderService.java`
+- `backend/src/main/java/com/campushub/service/TaskService.java`
+
+---
+
+### Bug 31：取消订单后发布方无法删除处于待接单状态的需求
+
+**问题现象**
+
+- 服务方申请取消服务，发布方同意后，订单状态回到 `PENDING_CONFIRM`（待接单），需求状态回到 `OPEN`。
+- 此时发布方尝试删除该需求，前端始终显示"服务器内部错误"，操作失败。
+- 同时，即使已有接单申请被拒绝或取消，发布方也无法编辑或删除需求。
+
+**影响范围**
+
+- 需求编辑与删除（`PATCH /api/tasks/{taskId}` 和 `DELETE /api/tasks/{taskId}`）
+- 需求详情页发布者操作入口
+
+**问题根因**
+
+两个独立问题导致：
+
+1. **`ensureNoApplications` 统计所有申请记录，未区分状态**
+   - `TaskService.ensureNoApplications()` 原实现统计该需求下全部 `application` 记录，含 `REJECTED` 和 `CANCELLED`。
+   - 当申请已被拒绝或取消后，这些记录仍会阻止编辑/删除。
+
+2. **`deleteTask` 直接删除 task 触发外键约束违反**
+   - `application` 和 `orders` 表对 `task` 的外键未设置 `ON DELETE CASCADE`。
+   - 直接调用 `taskMapper.deleteById(taskId)` 时，MySQL 因存在关联的 `application` 和 `orders` 记录而抛出外键约束错误，最终被全局异常处理为 500。
+
+**修复方案**
+
+- `ensureNoApplications` 增加状态过滤，只统计 `PENDING` 和 `APPROVED` 的活跃申请。
+- `toTaskItemVO` 中的 `applicationCount` 同步过滤，确保前端 `canEditTask` 判断与后端一致。
+- `deleteTask` 在删除 task 前按正确顺序清理关联数据：
+  1. 删除关联订单的 `review` 记录（`review` 对 `orders` 无 CASCADE）
+  2. 删除关联的 `orders` 记录（自动级联删除 `order_status_log`、`order_message`）
+  3. 删除关联的 `application` 记录
+  4. 最后删除 `task`（自动级联删除 `task_image`、`favorite`）
+
+**涉及文件**
+
 - `backend/src/main/java/com/campushub/service/TaskService.java`
