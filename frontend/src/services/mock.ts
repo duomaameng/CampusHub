@@ -25,6 +25,7 @@ import type {
   UserProfile,
   UserStatus
 } from '@/types'
+import { compareOrdersByStatus } from '@/utils/orderStatus'
 
 interface MockUser {
   id: number
@@ -444,22 +445,6 @@ function paginate<T>(records: T[], page = 1, size = 20): PageData<T> {
     pages: Math.max(1, Math.ceil(records.length / size)),
     records: records.slice(start, start + size)
   }
-}
-
-const orderStatusRank: Record<OrderStatus, number> = {
-  IN_PROGRESS: 0,
-  PENDING_COMPLETION: 0,
-  PENDING_CONFIRM: 1,
-  DISPUTE: 1,
-  COMPLETED: 2,
-  REVIEWED: 2,
-  CANCELLED: 3
-}
-
-function compareOrdersByStatus(a: OrderItem, b: OrderItem) {
-  const rankDiff = orderStatusRank[a.status] - orderStatusRank[b.status]
-  if (rankDiff !== 0) return rankDiff
-  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
 }
 
 function pushNotification(db: MockDatabase, item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) {
