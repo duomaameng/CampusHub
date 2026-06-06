@@ -165,10 +165,12 @@ public class OrderService {
             String reason = request.getReason().trim();
             order.setCancelReason(null);
             order.setStatus(OrderStatus.PENDING_CONFIRM);
+            order.setServiceProviderId(null);
             orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
                     .eq("id", order.getId())
                     .set("status", OrderStatus.PENDING_CONFIRM.name())
-                    .set("cancel_reason", null));
+                    .set("cancel_reason", null)
+                    .set("service_provider_id", null));
 
             Task task = requireTask(order.getTaskId());
             task.setStatus(TaskStatus.OPEN);
@@ -215,10 +217,12 @@ public class OrderService {
         Long previousServiceProviderId = order.getServiceProviderId();
         order.setStatus(OrderStatus.PENDING_CONFIRM);
         order.setCancelReason(null);
+        order.setServiceProviderId(null);
         orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
                 .eq("id", order.getId())
                 .set("status", OrderStatus.PENDING_CONFIRM.name())
-                .set("cancel_reason", null));
+                .set("cancel_reason", null)
+                .set("service_provider_id", null));
 
         Task task = requireTask(order.getTaskId());
         task.setStatus(TaskStatus.OPEN);

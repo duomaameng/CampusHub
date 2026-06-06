@@ -8,102 +8,102 @@
 
 ## 1. 文档目的
 
-本文档用于说明 P4 阶段已经补充的单元测试代码、覆盖的核心业务规则、运行方式和当前不足。
-
-本项目的单元测试主要集中在后端服务层。测试通过 Mockito 隔离 Mapper、通知服务、文件服务和当前登录用户上下文，重点验证业务逻辑本身，而不是依赖真实数据库或 HTTP 请求链路。
+本文档记录 P4 阶段补充的单元测试代码、覆盖范围和运行结果。测试重点不平均铺开，而是围绕 `P4-04 Bug 修复日志` 中出现过的真实问题补防回归测试。
 
 ---
 
-## 2. 单元测试文件清单
+## 2. 后端单元测试文件
 
-| 文件 | 测试对象 | 类型 | 说明 |
-|------|----------|------|------|
-| `backend/src/test/java/com/campushub/service/OrderServiceTest.java` | `OrderService` | 服务层单元测试 | 覆盖订单详情、完成订单、确认完成、取消订单、订单消息、评价、订单列表和状态机规则 |
-| `backend/src/test/java/com/campushub/service/AdminServiceTest.java` | `AdminService` | 服务层单元测试 | 覆盖管理员用户、任务、订单、举报等后台管理逻辑 |
-
-说明：`CoreFlowIntegrationTest.java` 使用 Spring Boot、MockMvc 和测试数据库上下文，属于集成测试，不归入本文件的单元测试统计。
-
----
-
-## 3. 测试覆盖范围
-
-### 3.1 订单服务单元测试
-
-`OrderServiceTest` 覆盖以下核心场景：
-
-| 模块 | 测试点 | 覆盖意图 |
-|------|--------|----------|
-| 订单详情 | 订单参与方可查看，非参与方不可查看，订单不存在时报错 | 验证权限边界和异常处理 |
-| 提交完成 | 只有服务方可提交完成，订单必须处于进行中状态 | 防止越权和非法状态跳转 |
-| 确认完成 | 只有发布方可确认完成，确认后订单进入已完成状态 | 验证订单闭环规则 |
-| 取消订单 | 发布方取消、服务方申请取消、发布方同意/拒绝取消申请 | 验证 P4 阶段重点修复的取消流程 |
-| 订单消息 | 订单双方可发送文字消息，空消息和非参与方消息被拒绝 | 验证订单内沟通边界 |
-| 双向评价 | 完成后可评价，重复评价、未完成评价、非参与方评价被拒绝 | 验证评价与信用入口规则 |
-| 订单列表 | 按角色、状态筛选订单 | 验证列表查询结果组装 |
-| 状态机 | 正常完成链路、取消链路、禁止跳过状态 | 验证订单状态转换一致性 |
-
-### 3.2 管理员服务单元测试
-
-`AdminServiceTest` 覆盖以下核心场景：
-
-| 模块 | 测试点 | 覆盖意图 |
-|------|--------|----------|
-| 用户管理 | 用户列表、用户状态更新、非法状态处理 | 验证后台用户治理能力 |
-| 后台任务管理 | 任务列表、任务状态调整 | 验证管理员对任务内容的处理能力 |
-| 后台订单管理 | 订单列表、订单状态处理 | 验证争议订单和异常订单处理入口 |
-| 举报处理 | 举报列表与处理结果更新 | 验证平台治理闭环 |
+| 文件 | 测试对象 | 重点覆盖的 P4 Bug 类型 |
+|------|----------|------------------------|
+| `OrderServiceTest.java` | `OrderService` | 订单状态流转、服务方取消申请、发布方同意后退回待接单、评价重复提交、信用分边界 |
+| `AdminServiceTest.java` | `AdminService` | 用户状态管理、后台任务/订单/举报处理 |
+| `AuthServiceImplTest.java` | `AuthServiceImpl` | 注册验证码发送场景区分，避免已注册邮箱再次走注册发码流程 |
+| `EmailServiceTest.java` | `EmailService` | 验证码邮件 `log/smtp` 模式，避免本地无 SMTP 时阻塞开发联调 |
+| `FileServiceTest.java` | `FileService` | 上传文件归属和用途校验，防止任务图、聊天图、举报证据互相复用 |
+| `NotificationFactoryTest.java` | `NotificationFactory` | 订单取消申请/处理结果通知内容生成 |
+| `NotificationServiceTest.java` | `NotificationService` | 订单动作通知持久化 |
+| `ReportServiceTest.java` | `ReportService` | 举报证据与举报记录持久化关联 |
+| `TaskServiceTest.java` | `TaskService` | 非法任务分类返回业务错误而不是 500 |
+| `UserServiceImplTest.java` | `UserServiceImpl` | 信用分读取时限制在 `0-100` |
 
 ---
 
-## 4. 运行方式
+## 3. 前端单元测试文件
 
-在项目根目录执行：
+| 文件 | 测试对象 | 重点覆盖的 P4 Bug 类型 |
+|------|----------|------------------------|
+| `frontend/src/utils/assets.test.ts` | `resolveAssetUrl` | 上传图片返回 `/uploads/...`、`blob:`、`data:`、绝对 URL 时的资源地址处理 |
+| `frontend/src/utils/orderStatus.test.ts` | `compareOrdersByStatus` | “我的订单”和任务状态排序，进行中优先，已取消最后 |
+
+前端测试使用 Vitest，配置文件为：
+
+```text
+frontend/vitest.config.ts
+```
+
+---
+
+## 4. 本次测试发现并修复的问题
+
+补充单元测试时发现一个与 P4-04 订单取消流程相关的真实回归点：
+
+```text
+发布方取消订单或同意服务方取消申请后，订单状态退回 PENDING_CONFIRM，
+但后端未同步清空 service_provider_id。
+```
+
+已修复位置：
+
+```text
+backend/src/main/java/com/campushub/service/OrderService.java
+```
+
+修复内容：
+
+1. 发布方直接取消时，内存对象和数据库更新同时清空 `serviceProviderId`。
+2. 发布方同意服务方取消申请时，内存对象和数据库更新同时清空 `serviceProviderId`。
+3. 保留订单状态日志，继续用于审计和问题追踪。
+
+---
+
+## 5. 运行命令
+
+后端单元测试：
 
 ```bash
 cd backend
-mvn -Dtest=OrderServiceTest,AdminServiceTest test
+mvn -q -Dtest=AdminServiceTest,OrderServiceTest,AuthServiceImplTest,EmailServiceTest,FileServiceTest,NotificationFactoryTest,NotificationServiceTest,ReportServiceTest,TaskServiceTest,UserServiceImplTest test
 ```
 
-GitLab CI 中后端单元测试任务使用以下命令：
+前端单元测试：
 
 ```bash
-cd backend
-mvn -B -q -Dtest=OrderServiceTest,AdminServiceTest test
+cd frontend
+npm run test
 ```
 
-对应配置文件：
+---
 
-- `.gitlab-ci.yml`
-- `.gitlab/backend.yml`
+## 6. 本地验证结果
+
+| 范围 | 命令 | 结果 |
+|------|------|------|
+| 后端单元测试 | `mvn -q -Dtest=... test` | 已通过 |
+| 前端单元测试 | `npm run test` | 已通过，2 个测试文件、3 个用例 |
+
+说明：本地后端首次运行需要 Maven 下载依赖；前端首次运行需要 `npm install` 同步 `package-lock.json`。
 
 ---
 
-## 5. 测试结果记录
+## 7. 覆盖率说明
 
-| 检查项 | 记录 |
-|------|------|
-| 单元测试框架 | JUnit 5 + Mockito + AssertJ |
-| 测试运行入口 | Maven Surefire |
-| CI 任务 | `backend-unit-test` |
-| 测试报告产物 | `backend/target/surefire-reports` |
-| 当前覆盖重点 | 订单状态流转、权限校验、评价规则、后台治理规则 |
-| 当前不足 | 未接入 JaCoCo 等覆盖率统计插件，覆盖率目标暂以核心业务规则覆盖情况进行人工核对 |
+当前已经为每个后端 Service 相关类补充了至少一个单元测试，并为前端关键防回归逻辑补充 Vitest 测试。  
+但项目尚未接入 JaCoCo，因此仍不能自动给出精确覆盖率百分比。
 
----
+后续如需严格证明“核心模块覆盖率 >= 60%”，建议：
 
-## 6. 覆盖率目标说明
+1. 在后端 `pom.xml` 接入 JaCoCo。
+2. 在 GitLab CI 中生成覆盖率报告。
+3. 继续补充 `AuthServiceImpl`、`TaskService`、`ReportService` 的更多异常分支测试。
 
-P4 阶段验收要求核心模块单元测试覆盖率目标为 `>= 60%`。当前仓库已经对订单状态机和后台管理等高风险业务逻辑补充了服务层单元测试，但尚未配置自动覆盖率统计工具。
-
-因此本阶段的处理方式为：
-
-1. 优先覆盖 P0/P1 主流程中风险最高的业务规则。
-2. 在 CI 中稳定运行服务层单元测试。
-3. 后续如需给出精确覆盖率，应在 `backend/pom.xml` 中接入 JaCoCo，并在 CI 中生成覆盖率报告。
-
----
-
-## 7. 人工审查结论
-
-单元测试已经覆盖 P4 阶段最容易出现回归的订单状态流转、订单取消、评价提交和后台管理规则。  
-不足之处是覆盖率目前没有自动量化，且认证、任务发布、文件上传等模块的服务层单元测试仍有继续补充空间。
