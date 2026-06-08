@@ -165,19 +165,21 @@ async function handleLogout() {
 .theme-toggle {
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-md);
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-on-sidebar);
+  background: #f3f3f3;
+  color: #191a23;
+  border: 2px solid #000000;
   transition: all var(--transition-fast);
   margin-bottom: var(--space-2);
   align-self: center;
 }
 
 .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-on-sidebar-active);
+  background: #b9ff66;
+  color: #000000;
+  transform: translateY(-1px);
 }
 
 .theme-toggle-icon {

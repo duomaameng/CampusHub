@@ -193,7 +193,7 @@ async function submit() {
   font-family: var(--font-display);
   font-size: clamp(40px, 5vw, 60px);
   font-weight: 800;
-  line-height: 1.18;
+  line-height: 1.24;
   letter-spacing: 0;
   color: #000000;
 }

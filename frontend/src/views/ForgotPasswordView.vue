@@ -50,7 +50,7 @@ async function resetPassword() {
 </script>
 
 <template>
-  <section class="form-panel auth-panel">
+  <section class="form-panel auth-panel forgot-password-view">
     <div class="page-title">
       <div>
         <h1>重置密码</h1>
@@ -106,3 +106,150 @@ async function resetPassword() {
     </form>
   </section>
 </template>
+
+<style scoped>
+.forgot-password-view {
+  --reset-green: #b9ff66;
+  --reset-dark: #191a23;
+  --reset-grey: #f3f3f3;
+  --reset-line: #000000;
+  max-width: 760px;
+  border: 2px solid var(--reset-line);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(185, 255, 102, 0.82) 0 58px, transparent 60px),
+    #ffffff;
+  box-shadow: 0 7px 0 var(--reset-line);
+}
+
+.forgot-password-view::before,
+.forgot-password-view::after {
+  display: none;
+}
+
+.forgot-password-view :deep(.page-title) {
+  margin-bottom: var(--space-6);
+}
+
+.forgot-password-view :deep(.page-title h1) {
+  width: max-content;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 24px;
+  background: var(--reset-green);
+  background-clip: border-box;
+  -webkit-background-clip: border-box;
+  color: #000000;
+  -webkit-text-fill-color: #000000;
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.forgot-password-view :deep(.page-title p) {
+  color: #2b2d35;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.forgot-password-view .grid {
+  gap: 20px;
+}
+
+.forgot-password-view .field {
+  gap: 9px;
+  margin-bottom: 0;
+}
+
+.forgot-password-view .field label {
+  color: #000000;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.forgot-password-view .label-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--reset-dark);
+}
+
+.forgot-password-view .field input,
+.forgot-password-view :deep(.password-input-wrapper input) {
+  min-height: 58px;
+  padding: 16px 18px;
+  border: 2px solid var(--reset-line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 16px;
+  box-shadow: none;
+}
+
+.forgot-password-view .field input:focus,
+.forgot-password-view :deep(.password-input-wrapper input:focus) {
+  border-color: var(--reset-line);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+}
+
+.forgot-password-view :deep(.password-visibility-button) {
+  right: 10px;
+  color: var(--reset-dark);
+}
+
+.forgot-password-view :deep(.password-visibility-button:hover) {
+  background: var(--reset-green);
+  color: #000000;
+}
+
+.forgot-password-view .button {
+  min-height: 52px;
+  border: 2px solid var(--reset-line);
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: none;
+}
+
+.forgot-password-view .button.primary {
+  background: var(--reset-dark);
+  color: #ffffff;
+}
+
+.forgot-password-view .button.primary:hover:not(:disabled) {
+  background: #000000;
+  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  transform: translateY(-1px);
+}
+
+.forgot-password-view .button.ghost {
+  background: #ffffff;
+  color: #000000;
+}
+
+.forgot-password-view .button.ghost:hover:not(:disabled) {
+  background: var(--reset-green);
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.forgot-password-view .button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.forgot-password-view .error-message,
+.forgot-password-view .success-message {
+  border-width: 2px;
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+@media (max-width: 768px) {
+  .forgot-password-view {
+    margin: var(--space-4);
+    padding: 26px;
+    border-radius: 22px;
+  }
+}
+</style>
