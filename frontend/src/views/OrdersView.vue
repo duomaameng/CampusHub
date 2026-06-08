@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarClock, ClipboardList, UserRound } from '@lucide/vue'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { orderApi, taskApi } from '@/services/api'
@@ -9,6 +9,21 @@ import { orderStatusText } from '@/types'
 import type { OrderItem, OrderStatus, PageData, TaskItem } from '@/types'
 
 type OrderRoleFilter = '' | 'PUBLISHER' | 'PROVIDER'
+type OrderListCard = {
+  key: string
+  route: string
+  relationLabel: string
+  relationClass: string
+  title: string
+  status: OrderStatus
+  publisherId: number
+  publisherNickname: string
+  serviceProviderId?: number | null
+  serviceProviderNickname?: string
+  serviceProviderHint: string
+  numberLabel: string
+  createdAt: string
+}
 
 const auth = useAuthStore()
 
@@ -34,25 +49,71 @@ const loading = ref(false)
 const error = ref('')
 
 const statusClass: Record<string, string> = {
-  IN_PROGRESS: 'success',
+  IN_PROGRESS: 'info',
   PENDING_COMPLETION: 'warning',
-  COMPLETED: 'success',
-  CANCELLED: 'danger',
+  COMPLETED: 'warning',
   DISPUTE: 'warning',
-  REVIEWED: 'success'
+  REVIEWED: 'warning',
+  PENDING_CONFIRM: 'success'
 }
+
+const statusRank: Record<OrderStatus, number> = {
+  IN_PROGRESS: 0,
+  PENDING_COMPLETION: 0,
+  PENDING_CONFIRM: 1,
+  DISPUTE: 1,
+  COMPLETED: 2,
+  REVIEWED: 2,
+  CANCELLED: 3
+}
+
+const orderCards = computed<OrderListCard[]>(() => {
+  const orderItems = (page.value?.records || []).map<OrderListCard>((order) => ({
+    key: `order-${order.id}`,
+    route: `/orders/${order.id}`,
+    relationLabel: relationLabel(order),
+    relationClass: relationClass(order),
+    title: order.taskTitle,
+    status: order.status,
+    publisherId: order.publisherId,
+    publisherNickname: order.publisherNickname,
+    serviceProviderId: order.serviceProviderId,
+    serviceProviderNickname: order.serviceProviderNickname,
+    serviceProviderHint: '暂无服务方',
+    numberLabel: `订单号 ${order.id}`,
+    createdAt: order.createdAt
+  }))
+
+  const taskItems = missingPublishedTasks.value.map<OrderListCard>((task) => ({
+    key: `task-${task.id}`,
+    route: `/tasks/${task.id}`,
+    relationLabel: '我发布',
+    relationClass: 'publisher',
+    title: task.title,
+    status: 'PENDING_CONFIRM',
+    publisherId: task.publisherId,
+    publisherNickname: task.publisherNickname,
+    serviceProviderHint: '尚未接单',
+    numberLabel: `任务号 ${task.id}`,
+    createdAt: task.createdAt
+  }))
+
+  return [...orderItems, ...taskItems].sort(compareOrderCards)
+})
 
 async function loadOrders() {
   error.value = ''
   loading.value = true
   try {
-    page.value = await orderApi.list({
+    const result = await orderApi.list({
       page: 1,
       size: 20,
       role: filters.role || undefined,
       status: (filters.status || undefined) as OrderStatus | undefined,
       keyword: filters.keyword || undefined
     })
+    const records = result.records.filter(shouldShowOrder).sort(compareOrders)
+    page.value = { ...result, total: records.length, records }
     missingPublishedTasks.value = await loadMissingPublishedTasks(page.value.records)
   } catch (err) {
     missingPublishedTasks.value = []
@@ -60,6 +121,26 @@ async function loadOrders() {
   } finally {
     loading.value = false
   }
+}
+
+function shouldShowOrder(order: OrderItem) {
+  if (order.status === 'CANCELLED') return false
+  if (order.status !== 'PENDING_CONFIRM') return true
+  return order.publisherId === auth.user?.id
+}
+
+function compareOrders(a: OrderItem, b: OrderItem) {
+  return compareByStatusAndTime(a.status, a.createdAt, b.status, b.createdAt)
+}
+
+function compareOrderCards(a: OrderListCard, b: OrderListCard) {
+  return compareByStatusAndTime(a.status, a.createdAt, b.status, b.createdAt)
+}
+
+function compareByStatusAndTime(aStatus: OrderStatus, aCreatedAt: string, bStatus: OrderStatus, bCreatedAt: string) {
+  const rankDiff = statusRank[aStatus] - statusRank[bStatus]
+  if (rankDiff !== 0) return rankDiff
+  return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime()
 }
 
 async function loadMissingPublishedTasks(orders: OrderItem[]) {
@@ -84,13 +165,13 @@ function setRoleFilter(role: OrderRoleFilter) {
 
 function relationLabel(order: OrderItem) {
   if (order.publisherId === auth.user?.id) return '我发布'
-  if (order.serviceProviderId === auth.user?.id) return '我接单'
+  if (order.status !== 'PENDING_CONFIRM' && order.serviceProviderId === auth.user?.id) return '我接单'
   return '相关订单'
 }
 
 function relationClass(order: OrderItem) {
   if (order.publisherId === auth.user?.id) return 'publisher'
-  if (order.serviceProviderId === auth.user?.id) return 'provider'
+  if (order.status !== 'PENDING_CONFIRM' && order.serviceProviderId === auth.user?.id) return 'provider'
   return ''
 }
 
@@ -126,8 +207,8 @@ onMounted(loadOrders)
           <option value="PENDING_COMPLETION">待确认完成</option>
           <option value="COMPLETED">已完成</option>
           <option value="REVIEWED">已评价</option>
-          <option value="CANCELLED">已取消</option>
           <option value="DISPUTE">争议处理中</option>
+          <option value="PENDING_CONFIRM">待接单</option>
         </select>
       </div>
       <div class="field">
@@ -142,74 +223,43 @@ onMounted(loadOrders)
 
     <p v-if="error" class="error-message">{{ error }}</p>
     <div v-if="loading" class="empty-state">正在加载订单</div>
-    <div v-else-if="!page?.records.length && !missingPublishedTasks.length" class="empty-state">暂无符合条件的订单</div>
+    <div v-else-if="!orderCards.length" class="empty-state">暂无符合条件的订单</div>
 
     <div v-else class="cards-grid">
       <RouterLink
-        v-for="(order, index) in page?.records || []"
-        :key="order.id"
+        v-for="(card, index) in orderCards"
+        :key="card.key"
         class="item-card"
-        :to="`/orders/${order.id}`"
+        :to="card.route"
         :style="{ '--i': index }"
       >
         <div class="item-title">
           <div>
-            <span :class="['relation-pill', relationClass(order)]">{{ relationLabel(order) }}</span>
-            <h2>{{ order.taskTitle }}</h2>
+            <span :class="['relation-pill', card.relationClass]">{{ card.relationLabel }}</span>
+            <h2>{{ card.title }}</h2>
           </div>
-          <span :class="['tag', statusClass[order.status]]">{{ orderStatusText[order.status] }}</span>
+          <span :class="['tag', statusClass[card.status]]">{{ orderStatusText[card.status] }}</span>
         </div>
         <div class="meta-line">
           <span>
             <UserRound class="meta-icon" aria-hidden="true" />
             发布者
-            <RouterLink :to="{ name: 'user-public-profile', params: { id: order.publisherId } }">
-              {{ order.publisherNickname }}
+            <RouterLink :to="{ name: 'user-public-profile', params: { id: card.publisherId } }">
+              {{ card.publisherNickname }}
             </RouterLink>
           </span>
           <span>
             <ClipboardList class="meta-icon" aria-hidden="true" />
             服务方
-            <RouterLink :to="{ name: 'user-public-profile', params: { id: order.serviceProviderId } }">
-              {{ order.serviceProviderNickname }}
+            <span v-if="card.status === 'PENDING_CONFIRM' || !card.serviceProviderId" class="hint">{{ card.serviceProviderHint }}</span>
+            <RouterLink v-else :to="{ name: 'user-public-profile', params: { id: card.serviceProviderId } }">
+              {{ card.serviceProviderNickname }}
             </RouterLink>
           </span>
         </div>
         <p class="hint">
           <CalendarClock class="meta-icon" aria-hidden="true" />
-          订单号 {{ order.id }} · {{ new Date(order.createdAt).toLocaleString() }}
-        </p>
-      </RouterLink>
-      <RouterLink
-        v-for="(task, index) in missingPublishedTasks"
-        :key="`task-${task.id}`"
-        class="item-card"
-        :to="`/tasks/${task.id}`"
-        :style="{ '--i': (page?.records.length || 0) + index }"
-      >
-        <div class="item-title">
-          <div>
-            <span class="relation-pill publisher">我发布</span>
-            <h2>{{ task.title }}</h2>
-          </div>
-          <span class="tag warning">待接单</span>
-        </div>
-        <div class="meta-line">
-          <span>
-            <UserRound class="meta-icon" aria-hidden="true" />
-            发布者
-            <RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">
-              {{ task.publisherNickname }}
-            </RouterLink>
-          </span>
-          <span>
-            <ClipboardList class="meta-icon" aria-hidden="true" />
-            尚未接单
-          </span>
-        </div>
-        <p class="hint">
-          <CalendarClock class="meta-icon" aria-hidden="true" />
-          任务号 {{ task.id }} · {{ new Date(task.createdAt).toLocaleString() }}
+          {{ card.numberLabel }} · {{ new Date(card.createdAt).toLocaleString() }}
         </p>
       </RouterLink>
     </div>

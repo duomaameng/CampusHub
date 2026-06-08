@@ -13,6 +13,7 @@ public class OrderStatusLogVO {
     private Long id;
     private OrderStatus fromStatus;
     private OrderStatus toStatus;
+    private Long operatorId;
     private String operatorNickname;
     private String reason;
     private LocalDateTime createdAt;

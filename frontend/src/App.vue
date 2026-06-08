@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   Bell,
+  Bookmark,
   ClipboardList,
   GraduationCap,
   Home,
@@ -100,6 +101,10 @@ async function handleLogout() {
           <PlusCircle class="nav-icon" aria-hidden="true" />
           <span>发布需求</span>
         </RouterLink>
+        <RouterLink v-if="auth.isAuthenticated" to="/tasks/favorites">
+          <Bookmark class="nav-icon" aria-hidden="true" />
+          <span>我的收藏</span>
+        </RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/orders">
           <ClipboardList class="nav-icon" aria-hidden="true" />
           <span>我的订单</span>
@@ -178,6 +183,12 @@ async function handleLogout() {
 .theme-toggle-icon {
   width: 16px;
   height: 16px;
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    margin-bottom: 0;
+  }
 }
 
 .page-enter-active {

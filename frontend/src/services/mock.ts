@@ -19,11 +19,13 @@ import type {
   ReviewItem,
   TaskForm,
   TaskItem,
+  TaskUpdatePayload,
   UploadedFileItem,
   UploadBusinessType,
   UserProfile,
   UserStatus
 } from '@/types'
+import { compareOrdersByStatus } from '@/utils/orderStatus'
 
 interface MockUser {
   id: number
@@ -59,6 +61,7 @@ interface MockDatabase {
 }
 
 const dbKey = 'campus-hub-mock-db'
+const sessionDbKey = 'campus-hub-mock-db-session'
 const mockVerificationCode = '123456'
 const wait = () => new Promise((resolve) => window.setTimeout(resolve, 180))
 let volatileUploadedFiles: UploadedFileItem[] = []
@@ -368,10 +371,11 @@ function clone<T>(value: T): T {
 }
 
 function loadDb(): MockDatabase {
-  const raw = localStorage.getItem(dbKey)
+  const raw = sessionStorage.getItem(sessionDbKey) || localStorage.getItem(dbKey)
   if (!raw) {
-    localStorage.setItem(dbKey, JSON.stringify(initialDb))
-    return clone(initialDb)
+    const initial = clone(initialDb)
+    localStorage.setItem(dbKey, JSON.stringify(initial))
+    return initial
   }
 
   const db = JSON.parse(raw) as MockDatabase
@@ -383,6 +387,7 @@ function loadDb(): MockDatabase {
 }
 
 function saveDb(db: MockDatabase) {
+  sessionStorage.setItem(sessionDbKey, JSON.stringify(db))
   localStorage.setItem(dbKey, JSON.stringify(db))
 }
 
@@ -502,7 +507,7 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email && item.password === password)
-    if (!user) throw new Error('邮箱或密码错误')
+    if (!user) throw new Error('User not found')
     if (user.status !== 'ACTIVE') throw new Error('账号已被禁用')
 
     db.currentUserId = user.id
@@ -579,7 +584,7 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) throw new Error('邮箱未注册')
+    if (!user) throw new Error('User not found')
 
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'REGISTER')
     if (!record || record.code !== code.trim() || new Date(record.expiresAt).getTime() < Date.now()) {
@@ -598,7 +603,7 @@ export const mockApi = {
 
     const db = loadDb()
     const user = db.users.find((item) => item.email === email)
-    if (!user) throw new Error('邮箱未注册')
+    if (!user) throw new Error('User not found')
 
     const record = db.verificationCodes.find((item) => item.email === email && item.purpose === 'RESET_PASSWORD')
     if (!record || record.code !== code.trim()) throw new Error('验证码错误或已过期')
@@ -698,6 +703,64 @@ export const mockApi = {
     })
     saveDb(db)
     return { id, status: 'OPEN', createdAt }
+  },
+
+  async updateTask(taskId: number, payload: TaskUpdatePayload): Promise<TaskItem> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('只能编辑自己发布的需求')
+    if (task.status !== 'OPEN') throw new Error('需求当前状态不可编辑')
+    if (db.applications.some((item) => item.taskId === taskId)) throw new Error('需求已有接单申请，不可编辑')
+
+    const imageUrls = payload.imageIds
+      ? payload.imageIds
+          .map((imageId) => getUploadedFileById(db, imageId, 'TASK_IMAGE')?.url)
+          .filter((url): url is string => Boolean(url))
+      : task.imageUrls
+
+    Object.assign(task, {
+      ...payload,
+      imageUrls,
+      updatedAt: new Date().toISOString()
+    })
+    saveDb(db)
+    return clone(task)
+  },
+
+  async deleteTask(taskId: number): Promise<null> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('只能删除自己发布的需求')
+    if (task.status !== 'OPEN') throw new Error('需求当前状态不可删除')
+    if (db.applications.some((item) => item.taskId === taskId)) throw new Error('需求已有接单申请，不可删除')
+    db.tasks = db.tasks.filter((item) => item.id !== taskId)
+    saveDb(db)
+    return null
+  },
+
+  async toggleTaskFavorite(taskId: number): Promise<{ favorited: boolean }> {
+    await wait()
+    const db = loadDb()
+    getCurrentUser(db)
+    const task = db.tasks.find((item) => item.id === taskId)
+    if (!task) throw new Error('需求不存在')
+    task.isFavorited = !task.isFavorited
+    task.favoriteCount = Math.max(0, task.favoriteCount + (task.isFavorited ? 1 : -1))
+    saveDb(db)
+    return { favorited: task.isFavorited }
+  },
+
+  async listFavoriteTasks(params: { page?: number; size?: number }): Promise<PageData<TaskItem>> {
+    await wait()
+    const db = loadDb()
+    getCurrentUser(db)
+    return paginate(clone(db.tasks.filter((item) => item.isFavorited)), params.page, params.size)
   },
 
   async applyTask(taskId: number, message: string) {
@@ -803,16 +866,40 @@ export const mockApi = {
     return { orderId, taskId: task.id, status: 'IN_PROGRESS', createdAt }
   },
 
+  async rejectApplication(applicationId: number): Promise<null> {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const application = db.applications.find((item) => item.id === applicationId)
+    if (!application) throw new Error('接单申请不存在')
+    const task = db.tasks.find((item) => item.id === application.taskId)
+    if (!task) throw new Error('需求不存在')
+    if (task.publisherId !== user.id) throw new Error('无权拒绝该申请')
+    if (application.status !== 'PENDING') throw new Error('接单申请已被处理')
+    application.status = 'REJECTED'
+    saveDb(db)
+    return null
+  },
+
   async listOrders(params: { page?: number; size?: number; role?: string; status?: OrderStatus; keyword?: string }): Promise<PageData<OrderItem>> {
     await wait()
     const db = loadDb()
     const user = getCurrentUser(db)
-    let records = db.orders.filter((item) => item.publisherId === user.id || item.serviceProviderId === user.id)
+    let records = db.orders.filter((item) =>
+      item.status !== 'CANCELLED'
+      && (item.publisherId === user.id || item.serviceProviderId === user.id)
+    )
     if (params.role === 'PUBLISHER') records = records.filter((item) => item.publisherId === user.id)
-    if (params.role === 'PROVIDER') records = records.filter((item) => item.serviceProviderId === user.id)
+    if (params.role === 'PROVIDER') records = records.filter((item) => item.serviceProviderId === user.id && item.status !== 'PENDING_CONFIRM')
     if (params.status) records = records.filter((item) => item.status === params.status)
     if (params.keyword) records = records.filter((item) => item.taskTitle.includes(params.keyword || ''))
-    return paginate(records.map(({ messages: _messages, statusLogs: _logs, ...item }) => item), params.page, params.size)
+    return paginate(
+      records
+        .map(({ messages: _messages, statusLogs: _logs, ...item }) => item)
+        .sort(compareOrdersByStatus),
+      params.page,
+      params.size
+    )
   },
 
   async getOrder(orderId: number): Promise<OrderDetail> {
@@ -835,21 +922,96 @@ export const mockApi = {
     if (!order) throw new Error('订单不存在')
 
     const fromStatus = order.status
-    order.status = status
+    const isProviderCancelRequest = status === 'CANCELLED' && order.serviceProviderId === user.id && order.publisherId !== user.id
+    const isPublisherCancel = status === 'CANCELLED' && order.publisherId === user.id
+    const nextStatus = isProviderCancelRequest ? 'IN_PROGRESS' : isPublisherCancel ? 'PENDING_CONFIRM' : status
+    order.status = nextStatus
+    if (isProviderCancelRequest) {
+      ;(order as OrderDetail & { cancelReason?: string }).cancelReason = reason
+    }
+    if (isPublisherCancel) {
+      order.serviceProviderId = null
+      order.serviceProviderNickname = undefined
+      ;(order as OrderDetail & { cancelReason?: string }).cancelReason = reason
+    }
+    const task = db.tasks.find((item) => item.id === order.taskId)
+    if (task && nextStatus === 'COMPLETED') {
+      task.status = 'COMPLETED'
+    }
+    if (task && isPublisherCancel) {
+      task.status = 'OPEN'
+      db.applications
+        .filter((item) => item.taskId === order.taskId && item.status === 'APPROVED')
+        .forEach((item) => { item.status = 'CANCELLED' })
+    }
     order.statusLogs.push({
       id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
       fromStatus,
-      toStatus: status,
+      toStatus: nextStatus,
       operatorNickname: user.profile.nickname,
-      reason,
+      reason: isProviderCancelRequest ? `服务方申请取消：${reason}` : reason,
       createdAt: new Date().toISOString()
     })
     pushNotification(db, {
-      type: status === 'COMPLETED' ? 'REVIEW_REQUEST' : 'ORDER_STATUS',
-      title: status === 'COMPLETED' ? '订单已完成' : '订单状态已更新',
-      content: `${order.taskTitle} 的状态变更为 ${status}`,
+      type: nextStatus === 'COMPLETED' ? 'REVIEW_REQUEST' : 'ORDER_STATUS',
+      title: nextStatus === 'COMPLETED' ? 'Order completed' : 'Order status updated',
+      content: `${order.taskTitle} status changed to ${nextStatus}`,
       targetType: 'ORDER',
       targetId: order.id
+    })
+    saveDb(db)
+  },
+
+  async approveCancelRequest(orderId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('Order not found')
+    if (order.publisherId !== user.id) throw new Error('Only publisher can approve cancel request')
+    const reason = (order as OrderDetail & { cancelReason?: string }).cancelReason
+    if (order.status !== 'IN_PROGRESS' || !reason) throw new Error('No pending cancel request')
+
+    order.status = 'PENDING_CONFIRM'
+    order.serviceProviderId = null
+    order.serviceProviderNickname = undefined
+    delete (order as OrderDetail & { cancelReason?: string }).cancelReason
+    const task = db.tasks.find((item) => item.id === order.taskId)
+    if (task) task.status = 'OPEN'
+    db.applications
+      .filter((item) => item.taskId === order.taskId && item.status === 'APPROVED')
+      .forEach((item) => {
+        item.status = 'CANCELLED'
+      })
+    order.statusLogs.push({
+      id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
+      fromStatus: 'IN_PROGRESS',
+      toStatus: 'PENDING_CONFIRM',
+      operatorNickname: user.profile.nickname,
+      reason: `发布方同意取消申请：${reason}`,
+      createdAt: new Date().toISOString()
+    })
+    saveDb(db)
+  },
+
+  async rejectCancelRequest(orderId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('Order not found')
+    if (order.publisherId !== user.id) throw new Error('Only publisher can reject cancel request')
+    const reason = (order as OrderDetail & { cancelReason?: string }).cancelReason
+    if (order.status !== 'IN_PROGRESS' || !reason) throw new Error('No pending cancel request')
+
+    delete (order as OrderDetail & { cancelReason?: string }).cancelReason
+    order.statusLogs.push({
+      id: Math.max(1, ...db.orders.flatMap((item) => item.statusLogs.map((log) => log.id))) + 1,
+      fromStatus: 'IN_PROGRESS',
+      toStatus: 'IN_PROGRESS',
+      operatorNickname: user.profile.nickname,
+      reason: `发布方拒绝取消申请：${reason}`,
+      createdAt: new Date().toISOString()
     })
     saveDb(db)
   },
@@ -908,6 +1070,7 @@ export const mockApi = {
     const order = db.orders.find((item) => item.id === orderId)
     if (!order) throw new Error('订单不存在')
     if (order.status !== 'COMPLETED') throw new Error('订单未完成，不能评价')
+    if (!order.serviceProviderId || !order.serviceProviderNickname) throw new Error('Order has no service provider')
     if (db.reviews.some((item) => item.orderId === orderId && item.reviewerId === user.id)) {
       throw new Error('不能重复评价')
     }
@@ -933,6 +1096,18 @@ export const mockApi = {
   async getOrderReviews(orderId: number): Promise<ReviewItem[]> {
     await wait()
     return clone(loadDb().reviews.filter((item) => item.orderId === orderId))
+  },
+
+  async getOrderStatusLogs(orderId: number) {
+    await wait()
+    const db = loadDb()
+    const user = getCurrentUser(db)
+    const order = db.orders.find((item) => item.id === orderId)
+    if (!order) throw new Error('订单不存在')
+    if (order.publisherId !== user.id && order.serviceProviderId !== user.id && user.role !== 'ADMIN') {
+      throw new Error('无权查看该订单')
+    }
+    return clone(order.statusLogs)
   },
 
   async listNotifications(params: { page?: number; size?: number; read?: boolean }) {
@@ -961,6 +1136,20 @@ export const mockApi = {
     db.notifications.forEach((item) => {
       item.read = true
     })
+    saveDb(db)
+  },
+
+  async deleteNotification(notificationId: number) {
+    await wait()
+    const db = loadDb()
+    db.notifications = db.notifications.filter((item) => item.id !== notificationId)
+    saveDb(db)
+  },
+
+  async deleteReadNotifications() {
+    await wait()
+    const db = loadDb()
+    db.notifications = db.notifications.filter((item) => !item.read)
     saveDb(db)
   },
 
@@ -995,7 +1184,7 @@ export const mockApi = {
     if (admin.role !== 'ADMIN') throw new Error('权限不足')
 
     const user = db.users.find((item) => item.id === userId)
-    if (!user) throw new Error('用户不存在')
+    if (!user) throw new Error('User not found')
     user.status = status
     saveDb(db)
     return { userId, status }
@@ -1145,7 +1334,7 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.id === userId)
-    if (!user) throw new Error('用户不存在')
+    if (!user) throw new Error('User not found')
     return {
       userId: user.id,
       nickname: user.profile.nickname,
@@ -1167,22 +1356,41 @@ export const mockApi = {
     await wait()
     const db = loadDb()
     const user = db.users.find((item) => item.id === userId)
-    if (!user) throw new Error('用户不存在')
-    const recentReviews = db.reviews
-      .filter((item) => item.revieweeId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
+    if (!user) throw new Error('User not found')
     return {
       userId: user.id,
       score: user.credit.score,
       completedOrders: user.credit.completedOrders,
       praiseRate: user.credit.praiseRate,
-      recentReviews: clone(recentReviews)
+      recentChanges: []
     }
+  },
+
+  async getUserReviews(userId: number) {
+    await wait()
+    const db = loadDb()
+    const user = db.users.find((item) => item.id === userId)
+    if (!user) throw new Error('User not found')
+    return clone(
+      db.reviews
+        .filter((item) => item.revieweeId === userId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5)
+        .map((item) => ({
+          reviewId: item.id,
+          orderId: item.orderId,
+          reviewerId: item.reviewerId,
+          reviewerNickname: item.reviewerNickname,
+          rating: item.rating,
+          content: item.content,
+          createdAt: item.createdAt
+        }))
+    )
   },
 
   reset() {
     volatileUploadedFiles = []
+    sessionStorage.removeItem(sessionDbKey)
     localStorage.setItem(dbKey, JSON.stringify(initialDb))
   }
 }

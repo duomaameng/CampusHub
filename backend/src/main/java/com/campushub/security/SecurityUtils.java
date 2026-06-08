@@ -1,5 +1,7 @@
 package com.campushub.security;
 
+import com.campushub.common.BusinessException;
+import com.campushub.common.ErrorCode;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -20,7 +22,7 @@ public final class SecurityUtils {
 
     public static Long requireCurrentUserId() {
         return getCurrentUserId()
-                .orElseThrow(() -> new RuntimeException("User not authenticated"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
     }
 
     public static Optional<String> getCurrentUserRole() {

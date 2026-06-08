@@ -2,25 +2,32 @@ import { mockApi } from './mock'
 import { request } from './http'
 
 import type {
+  AdminReportItem,
   AdminUserItem,
   AnnouncementForm,
   AnnouncementItem,
   AnnouncementPublishResult,
   ApplicationItem,
   CreditInfo,
+  FavoriteToggleResult,
   LoginResult,
   NotificationItem,
   OrderDetail,
   OrderItem,
+  OrderStatusLog,
   OrderStatus,
   PageData,
   PublicProfile,
   ReportSubmission,
+  ReportStatus,
+  ReportTargetType,
   ReviewItem,
   TaskForm,
   TaskItem,
+  TaskUpdatePayload,
   UploadedFileItem,
   UploadBusinessType,
+  UserReviewItem,
   UserProfile,
   UserStatus
 } from '@/types'
@@ -80,10 +87,16 @@ export const userApi = {
     return request<UserProfile>({ method: 'PATCH', url: '/users/me', data: payload })
   },
   getPublicProfile(userId: number): Promise<PublicProfile> {
+    if (useMock) return mockApi.getPublicProfile(userId)
     return request<PublicProfile>({ method: 'GET', url: `/users/${userId}/profile` })
   },
   getUserCredit(userId: number): Promise<CreditInfo> {
+    if (useMock) return mockApi.getUserCredit(userId)
     return request<CreditInfo>({ method: 'GET', url: `/users/${userId}/credit` })
+  },
+  getUserReviews(userId: number): Promise<UserReviewItem[]> {
+    if (useMock) return mockApi.getUserReviews(userId)
+    return request<UserReviewItem[]>({ method: 'GET', url: `/users/${userId}/reviews` })
   }
 }
 
@@ -107,6 +120,22 @@ export const taskApi = {
     if (useMock) return mockApi.createTask(payload)
     return request<{ id: number; status: string; createdAt: string }>({ method: 'POST', url: '/tasks', data: payload })
   },
+  update(taskId: number, payload: TaskUpdatePayload): Promise<TaskItem> {
+    if (useMock) return mockApi.updateTask(taskId, payload)
+    return request<TaskItem>({ method: 'PATCH', url: `/tasks/${taskId}`, data: payload })
+  },
+  remove(taskId: number): Promise<null> {
+    if (useMock) return mockApi.deleteTask(taskId)
+    return request<null>({ method: 'DELETE', url: `/tasks/${taskId}` })
+  },
+  toggleFavorite(taskId: number): Promise<FavoriteToggleResult> {
+    if (useMock) return mockApi.toggleTaskFavorite(taskId)
+    return request<FavoriteToggleResult>({ method: 'POST', url: `/tasks/${taskId}/favorite` })
+  },
+  favorites(params: { page?: number; size?: number }): Promise<PageData<TaskItem>> {
+    if (useMock) return mockApi.listFavoriteTasks(params)
+    return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/favorites', params })
+  },
   apply(taskId: number, message: string) {
     if (useMock) return mockApi.applyTask(taskId, message)
     return request<{ applicationId: number; taskId: number; status: string; createdAt: string }>({
@@ -125,6 +154,10 @@ export const taskApi = {
       method: 'POST',
       url: `/applications/${applicationId}/confirm`
     })
+  },
+  rejectApplication(applicationId: number): Promise<null> {
+    if (useMock) return mockApi.rejectApplication(applicationId)
+    return request<null>({ method: 'POST', url: `/applications/${applicationId}/reject` })
   }
 }
 
@@ -149,6 +182,14 @@ export const orderApi = {
     if (useMock) return mockApi.updateOrderStatus(orderId, 'CANCELLED', reason)
     return request({ method: 'POST', url: `/orders/${orderId}/cancel`, data: { reason } })
   },
+  approveCancelRequest(orderId: number) {
+    if (useMock) return mockApi.approveCancelRequest(orderId)
+    return request({ method: 'POST', url: `/orders/${orderId}/cancel-request/approve` })
+  },
+  rejectCancelRequest(orderId: number) {
+    if (useMock) return mockApi.rejectCancelRequest(orderId)
+    return request({ method: 'POST', url: `/orders/${orderId}/cancel-request/reject` })
+  },
   sendMessage(orderId: number, content: string) {
     if (useMock) return mockApi.sendMessage(orderId, content)
     return request({ method: 'POST', url: `/orders/${orderId}/messages`, data: { messageType: 'TEXT', content } })
@@ -168,6 +209,10 @@ export const orderApi = {
   reviews(orderId: number): Promise<ReviewItem[]> {
     if (useMock) return mockApi.getOrderReviews(orderId)
     return request<ReviewItem[]>({ method: 'GET', url: `/orders/${orderId}/reviews` })
+  },
+  statusLogs(orderId: number): Promise<OrderStatusLog[]> {
+    if (useMock) return mockApi.getOrderStatusLogs(orderId)
+    return request<OrderStatusLog[]>({ method: 'GET', url: `/orders/${orderId}/status-logs` })
   }
 }
 
@@ -187,6 +232,14 @@ export const notificationApi = {
   readAll() {
     if (useMock) return mockApi.readAllNotifications()
     return request({ method: 'PATCH', url: '/notifications/read-all' })
+  },
+  delete(notificationId: number) {
+    if (useMock) return mockApi.deleteNotification(notificationId)
+    return request({ method: 'DELETE', url: `/notifications/${notificationId}` })
+  },
+  deleteRead() {
+    if (useMock) return mockApi.deleteReadNotifications()
+    return request({ method: 'DELETE', url: '/notifications/read' })
   }
 }
 
@@ -237,6 +290,24 @@ export const adminApi = {
   deleteAnnouncement(announcementId: number) {
     if (useMock) return mockApi.deleteAnnouncement(announcementId)
     return request<null>({ method: 'DELETE', url: `/admin/announcements/${announcementId}` })
+  },
+  reports(params: {
+    page?: number
+    size?: number
+    status?: ReportStatus
+    targetType?: ReportTargetType
+    keyword?: string
+  }): Promise<PageData<AdminReportItem>> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
+    return request<PageData<AdminReportItem>>({ method: 'GET', url: '/admin/reports', params })
+  },
+  processReport(reportId: number, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>, result: string) {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
+    return request<null>({
+      method: 'PATCH',
+      url: `/admin/reports/${reportId}`,
+      data: { status, result }
+    })
   }
 }
 
@@ -272,6 +343,14 @@ export const reportApi = {
     return request<ReportSubmission>({
       method: 'POST',
       url: `/tasks/${taskId}/reports`,
+      data: { reason, evidenceImageIds }
+    })
+  },
+  submitUser(userId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用用户举报'))
+    return request<ReportSubmission>({
+      method: 'POST',
+      url: `/users/${userId}/reports`,
       data: { reason, evidenceImageIds }
     })
   }

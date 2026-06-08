@@ -54,7 +54,7 @@ INSERT INTO `review` (`id`, `order_id`, `reviewer_id`, `reviewee_id`, `rating`, 
 (1, 1, 2, 3, 5, 'Good communication and fast response.', DATE_SUB(NOW(), INTERVAL 1 DAY));
 
 INSERT INTO `credit_log` (`id`, `user_id`, `change_amount`, `score_before`, `score_after`, `reason`, `related_order_id`) VALUES
-(1, 3, 5, 500, 505, 'Order completion reward', 1);
+(1, 3, 0, 100, 100, 'Order completion reward', 1);
 
 INSERT INTO `report` (`id`, `reporter_id`, `target_type`, `target_id`, `reason_type`, `description`, `status`, `result`, `processed_by`, `processed_at`) VALUES
 (1, 2, 'USER', 3, 'OTHER', 'Sample report for admin workflow testing.', 'RESOLVED', 'Reviewed and closed as a test record.', 1, NOW());

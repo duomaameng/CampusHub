@@ -55,6 +55,9 @@ import java.util.stream.Collectors;
 public class AdminService {
 
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int DEFAULT_CREDIT_SCORE = 100;
+    private static final int MIN_CREDIT_SCORE = 0;
+    private static final int MAX_CREDIT_SCORE = 100;
 
     private final UserMapper userMapper;
     private final UserProfileMapper userProfileMapper;
@@ -455,7 +458,11 @@ public class AdminService {
                 .eq(CreditLog::getUserId, userId)
                 .orderByDesc(CreditLog::getId)
                 .last("LIMIT 1"));
-        return latest != null ? latest.getScoreAfter() : 100;
+        return clampCreditScore(latest != null ? latest.getScoreAfter() : DEFAULT_CREDIT_SCORE);
+    }
+
+    private int clampCreditScore(int score) {
+        return Math.max(MIN_CREDIT_SCORE, Math.min(MAX_CREDIT_SCORE, score));
     }
 
     private void recordUserStatusOperation(Long userId, UserStatus status, String reason) {

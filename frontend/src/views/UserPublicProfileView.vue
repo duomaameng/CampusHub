@@ -3,12 +3,13 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { userApi } from '@/services/api'
-import type { CreditInfo, PublicProfile } from '@/types'
+import type { CreditInfo, PublicProfile, UserReviewItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
 const profile = ref<PublicProfile>()
 const credit = ref<CreditInfo>()
+const reviews = ref<UserReviewItem[]>([])
 const loading = ref(false)
 const error = ref('')
 
@@ -20,12 +21,14 @@ async function load() {
     if (Number.isNaN(userId)) {
       throw new Error('无效的用户ID')
     }
-    const [profileData, creditData] = await Promise.all([
+    const [profileData, creditData, reviewData] = await Promise.all([
       userApi.getPublicProfile(userId),
-      userApi.getUserCredit(userId)
+      userApi.getUserCredit(userId),
+      userApi.getUserReviews(userId)
     ])
     profile.value = profileData
     credit.value = creditData
+    reviews.value = reviewData
   } catch (err) {
     error.value = err instanceof Error ? err.message : '资料加载失败'
   } finally {
@@ -100,12 +103,12 @@ onMounted(load)
         </div>
         <p>好评率 {{ Math.round((credit?.praiseRate ?? profile.praiseRate) * 100) }}%</p>
 
-        <template v-if="credit && credit.recentReviews.length > 0">
+        <template v-if="reviews.length > 0">
           <h3>最近评价</h3>
           <ul class="review-list">
-            <li v-for="review in credit.recentReviews" :key="review.id" class="review-item">
+            <li v-for="review in reviews" :key="review.reviewId" class="review-item">
               <div class="review-header">
-                <span class="reviewer">{{ review.reviewerNickname }}</span>
+                <span class="reviewer">{{ review.reviewerNickname || `用户 ${review.reviewerId}` }}</span>
                 <span class="rating">{{ review.rating }} 星</span>
               </div>
               <p class="review-content">{{ review.content }}</p>

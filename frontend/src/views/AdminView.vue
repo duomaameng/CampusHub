@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { Edit3, Megaphone, RefreshCcw, Search, Trash2, UserRoundCog, UsersRound } from '@lucide/vue'
+import { Edit3, Megaphone, RefreshCcw, Search, ShieldAlert, Trash2, UserRoundCog, UsersRound } from '@lucide/vue'
 import { onMounted, reactive, ref } from 'vue'
 
 import { adminApi } from '@/services/api'
-import { announcementPriorityText, userStatusText } from '@/types'
-import type { AdminUserItem, AnnouncementForm, AnnouncementItem, PageData, UserStatus } from '@/types'
+import { announcementPriorityText, reportStatusText, reportTargetTypeText, userStatusText } from '@/types'
+import type {
+  AdminReportItem,
+  AdminUserItem,
+  AnnouncementForm,
+  AnnouncementItem,
+  PageData,
+  ReportStatus,
+  ReportTargetType,
+  UserStatus
+} from '@/types'
 
-type AdminTab = 'users' | 'announcements'
+type AdminTab = 'users' | 'reports' | 'announcements'
 
 const activeTab = ref<AdminTab>('users')
 
@@ -18,6 +27,19 @@ const userPage = ref<PageData<AdminUserItem>>()
 const usersLoading = ref(false)
 const usersError = ref('')
 const usersSuccess = ref('')
+
+const reportFilters = reactive({
+  keyword: '',
+  status: 'PENDING' as '' | ReportStatus,
+  targetType: '' as '' | ReportTargetType
+})
+const reportPageNumber = ref(1)
+const reportPage = ref<PageData<AdminReportItem>>()
+const reportsLoading = ref(false)
+const reportsError = ref('')
+const reportsSuccess = ref('')
+const reportProcessingId = ref<number | null>(null)
+const reportResults = ref<Record<number, string>>({})
 
 const announcementPageNumber = ref(1)
 const announcementPage = ref<PageData<AnnouncementItem>>()
@@ -64,6 +86,57 @@ async function updateStatus(userId: number, status: UserStatus) {
   } catch (err) {
     usersError.value = err instanceof Error ? err.message : '状态更新失败'
   }
+}
+
+async function loadReports() {
+  reportsLoading.value = true
+  reportsError.value = ''
+  try {
+    reportPage.value = await adminApi.reports({
+      page: reportPageNumber.value,
+      size: 10,
+      keyword: reportFilters.keyword || undefined,
+      status: reportFilters.status || undefined,
+      targetType: reportFilters.targetType || undefined
+    })
+  } catch (err) {
+    reportsError.value = err instanceof Error ? err.message : '举报列表加载失败'
+  } finally {
+    reportsLoading.value = false
+  }
+}
+
+async function searchReports() {
+  reportPageNumber.value = 1
+  await loadReports()
+}
+
+async function processReport(item: AdminReportItem, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>) {
+  const result = reportResults.value[item.id]?.trim()
+  reportsError.value = ''
+  reportsSuccess.value = ''
+  if (!result) {
+    reportsError.value = '请先填写处理结果'
+    return
+  }
+
+  reportProcessingId.value = item.id
+  try {
+    await adminApi.processReport(item.id, status, result)
+    reportsSuccess.value = '举报已处理'
+    reportResults.value[item.id] = ''
+    await loadReports()
+  } catch (err) {
+    reportsError.value = err instanceof Error ? err.message : '举报处理失败'
+  } finally {
+    reportProcessingId.value = null
+  }
+}
+
+async function goReportPage(nextPage: number) {
+  if (nextPage < 1 || (reportPage.value && nextPage > reportPage.value.pages)) return
+  reportPageNumber.value = nextPage
+  await loadReports()
 }
 
 async function loadAnnouncements() {
@@ -163,7 +236,7 @@ async function goAnnouncementPage(nextPage: number) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadUsers(), loadAnnouncements()])
+  await Promise.all([loadUsers(), loadReports(), loadAnnouncements()])
 })
 </script>
 
@@ -180,6 +253,10 @@ onMounted(async () => {
       <button :class="['admin-tab', activeTab === 'users' ? 'active' : '']" type="button" @click="activeTab = 'users'">
         <UsersRound class="button-icon" aria-hidden="true" />
         <span>用户管理</span>
+      </button>
+      <button :class="['admin-tab', activeTab === 'reports' ? 'active' : '']" type="button" @click="activeTab = 'reports'">
+        <ShieldAlert class="button-icon" aria-hidden="true" />
+        <span>举报处理</span>
       </button>
       <button
         :class="['admin-tab', activeTab === 'announcements' ? 'active' : '']"
@@ -260,6 +337,111 @@ onMounted(async () => {
             </tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <section v-show="activeTab === 'reports'">
+      <form class="toolbar" @submit.prevent="searchReports">
+        <div class="field">
+          <label for="report-keyword">
+            <Search class="label-icon" aria-hidden="true" />
+            关键词
+          </label>
+          <input id="report-keyword" v-model.trim="reportFilters.keyword" type="search" placeholder="搜索举报原因" />
+        </div>
+        <div class="field">
+          <label for="report-status">状态</label>
+          <select id="report-status" v-model="reportFilters.status">
+            <option value="">全部</option>
+            <option value="PENDING">待处理</option>
+            <option value="PROCESSING">处理中</option>
+            <option value="RESOLVED">已处理</option>
+            <option value="REJECTED">已驳回</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="report-target">对象</label>
+          <select id="report-target" v-model="reportFilters.targetType">
+            <option value="">全部</option>
+            <option value="TASK">任务</option>
+            <option value="ORDER_MESSAGE">订单消息</option>
+            <option value="REVIEW">评价</option>
+            <option value="USER">用户</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="button secondary" type="submit">查询</button>
+        </div>
+      </form>
+
+      <p v-if="reportsError" class="error-message">{{ reportsError }}</p>
+      <p v-if="reportsSuccess" class="success-message">{{ reportsSuccess }}</p>
+      <div v-if="reportsLoading" class="empty-state">正在加载举报</div>
+      <div v-else-if="!reportPage?.records.length" class="empty-state">暂无举报记录</div>
+
+      <div v-else class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>举报人</th>
+              <th>对象</th>
+              <th>原因</th>
+              <th>状态</th>
+              <th>时间</th>
+              <th>处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="report in reportPage.records" :key="report.id">
+              <td>{{ report.id }}</td>
+              <td>{{ report.reporterId }}</td>
+              <td>{{ reportTargetTypeText[report.targetType] }} #{{ report.targetId }}</td>
+              <td class="report-reason">{{ report.reason }}</td>
+              <td>
+                <span :class="['tag', report.status === 'PENDING' || report.status === 'PROCESSING' ? 'warning' : report.status === 'RESOLVED' ? 'success' : 'danger']">
+                  {{ reportStatusText[report.status] }}
+                </span>
+              </td>
+              <td>{{ formatDate(report.createdAt) }}</td>
+              <td>
+                <div v-if="report.status === 'PENDING' || report.status === 'PROCESSING'" class="report-actions">
+                  <textarea v-model.trim="reportResults[report.id]" maxlength="500" placeholder="填写处理结果" />
+                  <div class="actions">
+                    <button
+                      class="button secondary"
+                      type="button"
+                      :disabled="reportProcessingId === report.id"
+                      @click="processReport(report, 'RESOLVED')"
+                    >
+                      标记已处理
+                    </button>
+                    <button
+                      class="button danger"
+                      type="button"
+                      :disabled="reportProcessingId === report.id"
+                      @click="processReport(report, 'REJECTED')"
+                    >
+                      驳回举报
+                    </button>
+                  </div>
+                </div>
+                <span v-else class="hint">已处理</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="reportPage && reportPage.pages > 1" class="pagination">
+        <button class="button ghost" type="button" :disabled="reportPage.page <= 1" @click="goReportPage(reportPage.page - 1)">
+          上一页
+        </button>
+        <span class="hint">第 {{ reportPage.page }} / {{ reportPage.pages }} 页</span>
+        <button class="button ghost" type="button" :disabled="reportPage.page >= reportPage.pages" @click="goReportPage(reportPage.page + 1)">
+          下一页
+        </button>
       </div>
     </section>
 
@@ -465,6 +647,23 @@ onMounted(async () => {
 
 .announcement-summary {
   max-width: 360px;
+}
+
+.report-reason {
+  max-width: 260px;
+  white-space: normal;
+}
+
+.report-actions {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 260px;
+}
+
+.report-actions textarea {
+  min-height: 72px;
+  padding: 10px 12px;
+  resize: vertical;
 }
 
 .announcement-summary strong,

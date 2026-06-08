@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { fileApi, reportApi, taskApi } from '@/services/api'
+import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
-import type { ApplicationItem, TaskItem, UploadedFileItem } from '@/types'
+import type { ApplicationItem, OrderItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
@@ -13,6 +13,7 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const task = ref<TaskItem>()
+const relatedOrder = ref<OrderItem | null>(null)
 const applications = ref<ApplicationItem[]>([])
 const applyMessage = ref('')
 const loading = ref(false)
@@ -23,10 +24,39 @@ const reportUploadError = ref('')
 const reportSubmitting = ref(false)
 const reportEvidenceUploading = ref(false)
 const reportEvidenceFiles = ref<UploadedFileItem[]>([])
+const editMode = ref(false)
+const savingTask = ref(false)
+const deletingTask = ref(false)
+const deleteConfirming = ref(false)
+const favoriteLoading = ref(false)
+const actionLoadingApplicationId = ref<number | null>(null)
+const editForm = reactive<TaskUpdatePayload>({
+  category: 'EXPRESS',
+  title: '',
+  description: '',
+  campus: '',
+  rewardType: 'NEGOTIABLE',
+  deadline: '',
+  anonymous: false,
+  imageIds: [],
+  categoryFields: {}
+})
 
 const taskId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => Boolean(task.value && auth.user?.id === task.value.publisherId))
 const canApply = computed(() => Boolean(auth.isAuthenticated && auth.user?.verified && applyMessage.value))
+const canEditTask = computed(() => Boolean(isPublisher.value && task.value?.status === 'OPEN' && task.value.applicationCount === 0))
+const canReportTask = computed(() => Boolean(
+  auth.isAuthenticated &&
+  task.value &&
+  ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status) &&
+  relatedOrder.value &&
+  (
+    relatedOrder.value.publisherId === auth.user?.id ||
+    relatedOrder.value.serviceProviderId === auth.user?.id
+  )
+))
+const isFavorited = computed(() => Boolean(task.value?.isFavorited || (task.value as (TaskItem & { favorited?: boolean }) | undefined)?.favorited))
 
 const categoryText: Record<string, string> = {
   EXPRESS: '快递代取',
@@ -44,6 +74,11 @@ async function load() {
   loading.value = true
   try {
     task.value = await taskApi.get(taskId.value)
+    relatedOrder.value = null
+    if (auth.isAuthenticated && ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status)) {
+      const orders = await orderApi.list({ page: 1, size: 100 })
+      relatedOrder.value = orders.records.find((item) => item.taskId === task.value?.id) || null
+    }
     if (isPublisher.value) {
       applications.value = await taskApi.applications(taskId.value)
     }
@@ -51,6 +86,98 @@ async function load() {
     error.value = err instanceof Error ? err.message : '需求加载失败'
   } finally {
     loading.value = false
+  }
+}
+
+function toDatetimeLocal(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000).toISOString().slice(0, 16)
+}
+
+function startEdit() {
+  if (!task.value) return
+  if (!canEditTask.value) {
+    error.value = '已有接单或接单申请，不能编辑该需求'
+    success.value = ''
+    return
+  }
+  deleteConfirming.value = false
+  editForm.category = task.value.category
+  editForm.title = task.value.title
+  editForm.description = task.value.description
+  editForm.campus = task.value.campus
+  editForm.rewardType = task.value.rewardType
+  editForm.deadline = toDatetimeLocal(task.value.deadline)
+  editForm.anonymous = task.value.anonymous
+  editForm.categoryFields = task.value.categoryFields || {}
+  editMode.value = true
+}
+
+async function saveTask() {
+  if (!task.value) return
+  error.value = ''
+  success.value = ''
+  savingTask.value = true
+  try {
+    task.value = await taskApi.update(task.value.id, {
+      category: editForm.category,
+      title: editForm.title,
+      description: editForm.description,
+      campus: editForm.campus,
+      rewardType: editForm.rewardType,
+      deadline: editForm.deadline,
+      anonymous: editForm.anonymous,
+      categoryFields: editForm.categoryFields
+    })
+    editMode.value = false
+    success.value = '需求已更新'
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '需求更新失败'
+  } finally {
+    savingTask.value = false
+  }
+}
+
+async function deleteTask() {
+  if (!task.value) return
+  if (!canEditTask.value) {
+    error.value = '已有接单或接单申请，不能删除该需求'
+    success.value = ''
+    return
+  }
+  if (!deleteConfirming.value) {
+    deleteConfirming.value = true
+    return
+  }
+  error.value = ''
+  deletingTask.value = true
+  try {
+    await taskApi.remove(task.value.id)
+    router.push('/tasks')
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '需求删除失败'
+  } finally {
+    deletingTask.value = false
+    deleteConfirming.value = false
+  }
+}
+
+async function toggleFavorite() {
+  if (!task.value) return
+  error.value = ''
+  favoriteLoading.value = true
+  try {
+    const result = await taskApi.toggleFavorite(task.value.id)
+    task.value = {
+      ...task.value,
+      isFavorited: result.favorited,
+      favoriteCount: Math.max(0, task.value.favoriteCount + (result.favorited ? 1 : -1))
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '收藏操作失败'
+  } finally {
+    favoriteLoading.value = false
   }
 }
 
@@ -69,11 +196,29 @@ async function applyTask() {
 
 async function confirmApplication(applicationId: number) {
   error.value = ''
+  actionLoadingApplicationId.value = applicationId
   try {
     const result = await taskApi.confirmApplication(applicationId)
     router.push(`/orders/${result.orderId}`)
   } catch (err) {
     error.value = err instanceof Error ? err.message : '确认接单失败'
+  } finally {
+    actionLoadingApplicationId.value = null
+  }
+}
+
+async function rejectApplication(applicationId: number) {
+  error.value = ''
+  success.value = ''
+  actionLoadingApplicationId.value = applicationId
+  try {
+    await taskApi.rejectApplication(applicationId)
+    success.value = '已拒绝接单申请'
+    await load()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '拒绝申请失败'
+  } finally {
+    actionLoadingApplicationId.value = null
   }
 }
 
@@ -138,7 +283,18 @@ onMounted(load)
             <h1>{{ task.title }}</h1>
             <p><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
-          <span class="tag">{{ categoryText[task.category] }}</span>
+          <div class="task-actions">
+            <span class="tag">{{ categoryText[task.category] }}</span>
+            <button
+              v-if="auth.isAuthenticated && !isPublisher"
+              :class="['button', 'favorite-button', isFavorited ? 'active' : '']"
+              type="button"
+              :disabled="favoriteLoading"
+              @click="toggleFavorite"
+            >
+              {{ favoriteLoading ? '处理中...' : isFavorited ? '取消收藏' : '收藏' }}
+            </button>
+          </div>
         </div>
 
         <p>{{ task.description }}</p>
@@ -169,6 +325,67 @@ onMounted(load)
       </article>
 
       <aside class="grid">
+        <section v-if="isPublisher" class="panel grid">
+          <h2>需求管理</h2>
+          <p v-if="!canEditTask" class="hint">只有未接单、且没有接单申请的开放需求可以编辑或删除。</p>
+          <form v-if="editMode" class="grid" @submit.prevent="saveTask">
+            <div class="field">
+              <label for="edit-title">标题</label>
+              <input id="edit-title" v-model.trim="editForm.title" required maxlength="100" />
+            </div>
+            <div class="field">
+              <label for="edit-description">描述</label>
+              <textarea id="edit-description" v-model.trim="editForm.description" required maxlength="2000" />
+            </div>
+            <div class="grid two">
+              <div class="field">
+                <label for="edit-campus">校区</label>
+                <input id="edit-campus" v-model.trim="editForm.campus" required />
+              </div>
+              <div class="field">
+                <label for="edit-reward">报酬类型</label>
+                <select id="edit-reward" v-model="editForm.rewardType" required>
+                  <option value="CASH">现金</option>
+                  <option value="NEGOTIABLE">面议</option>
+                  <option value="CREDIT_INTENT">积分意向</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="edit-deadline">截止时间</label>
+              <input id="edit-deadline" v-model="editForm.deadline" type="datetime-local" required />
+            </div>
+            <label class="checkbox-label">
+              <input v-model="editForm.anonymous" type="checkbox" />
+              <span>匿名发布</span>
+            </label>
+            <div class="actions">
+              <button class="button primary" type="submit" :disabled="savingTask">{{ savingTask ? '保存中...' : '保存修改' }}</button>
+              <button class="button ghost" type="button" @click="editMode = false">取消</button>
+            </div>
+          </form>
+          <div v-else class="actions">
+            <button
+              class="button secondary"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :aria-disabled="!canEditTask"
+              @click="startEdit"
+            >
+              编辑
+            </button>
+            <button
+              class="button danger"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :disabled="deletingTask"
+              :aria-disabled="!canEditTask"
+              @click="deleteTask"
+            >
+              {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
+            </button>
+          </div>
+        </section>
         <section v-if="!isPublisher" class="panel grid">
           <h2>申请接单</h2>
           <div class="field">
@@ -180,7 +397,7 @@ onMounted(load)
           <p v-if="success" class="success-message">{{ success }}</p>
         </section>
 
-        <section v-if="auth.isAuthenticated && !isPublisher" class="panel grid">
+        <section v-if="canReportTask" class="panel grid">
           <h2>举报任务</h2>
           <div class="field">
             <textarea v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" />
@@ -216,12 +433,22 @@ onMounted(load)
             <p>{{ application.message }}</p>
             <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
             <button
+              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
               class="button secondary"
               type="button"
-              :disabled="application.status !== 'PENDING'"
+              :disabled="actionLoadingApplicationId === application.id"
               @click="confirmApplication(application.id)"
             >
               确认接单
+            </button>
+            <button
+              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
+              class="button danger"
+              type="button"
+              :disabled="actionLoadingApplicationId === application.id"
+              @click="rejectApplication(application.id)"
+            >
+              拒绝申请
             </button>
           </div>
         </section>
@@ -233,6 +460,46 @@ onMounted(load)
 <style scoped>
 .detail-layout {
   gap: var(--space-8);
+}
+
+.button.is-soft-disabled {
+  opacity: 0.48;
+  filter: grayscale(0.18);
+  box-shadow: none;
+}
+
+.button.is-soft-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.favorite-button {
+  min-width: 86px;
+  border: 1.5px solid rgba(79, 70, 229, 0.38);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--primary-700);
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.favorite-button:hover:not(:disabled) {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  color: var(--primary-700);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.15);
+}
+
+.favorite-button.active {
+  border-color: rgba(79, 70, 229, 0.72);
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: white;
+  box-shadow: 0 5px 18px rgba(79, 70, 229, 0.28);
 }
 
 .panel {

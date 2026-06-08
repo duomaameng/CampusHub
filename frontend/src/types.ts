@@ -43,7 +43,7 @@ export const applicationStatusText: Record<ApplicationStatus, string> = {
 }
 
 export const orderStatusText: Record<OrderStatus, string> = {
-  PENDING_CONFIRM: '待确认',
+  PENDING_CONFIRM: '待接单',
   IN_PROGRESS: '进行中',
   PENDING_COMPLETION: '待确认完成',
   COMPLETED: '已完成',
@@ -163,6 +163,12 @@ export interface TaskForm {
   categoryFields: Record<string, string | number | boolean>
 }
 
+export type TaskUpdatePayload = Partial<TaskForm>
+
+export interface FavoriteToggleResult {
+  favorited: boolean
+}
+
 export interface ApplicationItem {
   id: number
   taskId: number
@@ -181,9 +187,10 @@ export interface OrderItem {
   taskTitle: string
   publisherId: number
   publisherNickname: string
-  serviceProviderId: number
-  serviceProviderNickname: string
+  serviceProviderId?: number | null
+  serviceProviderNickname?: string
   status: OrderStatus
+  cancelReason?: string
   createdAt: string
 }
 
@@ -193,15 +200,18 @@ export interface OrderDetail extends OrderItem {
   rewardType: RewardType
   proofImageUrl?: string
   completionNote?: string
-  statusLogs: Array<{
-    id: number
-    fromStatus?: OrderStatus
-    toStatus: OrderStatus
-    operatorNickname: string
-    reason: string
-    createdAt: string
-  }>
+  statusLogs: OrderStatusLog[]
   messages: OrderMessage[]
+}
+
+export interface OrderStatusLog {
+  id: number
+  fromStatus?: OrderStatus
+  toStatus: OrderStatus
+  operatorId?: number
+  operatorNickname: string
+  reason: string
+  createdAt: string
 }
 
 export interface OrderMessage {
@@ -248,6 +258,16 @@ export interface ReviewItem {
   createdAt: string
 }
 
+export interface UserReviewItem {
+  reviewId: number
+  orderId: number
+  reviewerId: number
+  reviewerNickname?: string
+  rating: number
+  content: string
+  createdAt: string
+}
+
 export interface PublicProfile {
   userId: number
   nickname: string
@@ -264,12 +284,21 @@ export interface PublicProfile {
   memberSince: string
 }
 
+export interface CreditChangeItem {
+  changeAmount: number
+  scoreBefore: number
+  scoreAfter: number
+  reason: string
+  relatedOrderId?: number
+  createdAt: string
+}
+
 export interface CreditInfo {
   userId: number
   score: number
   completedOrders: number
   praiseRate: number
-  recentReviews: ReviewItem[]
+  recentChanges: CreditChangeItem[]
 }
 
 export interface AdminUserItem {
@@ -280,6 +309,16 @@ export interface AdminUserItem {
   status: UserStatus
   verified: boolean
   creditScore: number
+  createdAt: string
+}
+
+export interface AdminReportItem {
+  id: number
+  reporterId: number
+  targetType: ReportTargetType
+  targetId: number
+  reason: string
+  status: ReportStatus
   createdAt: string
 }
 

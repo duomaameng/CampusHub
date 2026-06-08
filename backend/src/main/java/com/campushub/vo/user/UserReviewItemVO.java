@@ -15,6 +15,7 @@ public class UserReviewItemVO {
     private Long reviewId;
     private Long orderId;
     private Long reviewerId;
+    private String reviewerNickname;
     private Integer rating;
     private String content;
     private LocalDateTime createdAt;

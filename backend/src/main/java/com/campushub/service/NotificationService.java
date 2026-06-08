@@ -90,6 +90,19 @@ public class NotificationService {
     }
 
     @Transactional
+    public void deleteReadNotifications() {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        notificationMapper.update(
+                null,
+                new LambdaUpdateWrapper<Notification>()
+                        .eq(Notification::getReceiverId, currentUserId)
+                        .eq(Notification::getIsDeleted, false)
+                        .eq(Notification::getIsRead, true)
+                        .set(Notification::getIsDeleted, true)
+        );
+    }
+
+    @Transactional
     public void createApplicationNotification(Long receiverId, Long taskId, String applicantNickname, String taskTitle) {
         notificationMapper.insert(notificationFactory.application(receiverId, taskId, applicantNickname, taskTitle));
     }
@@ -97,6 +110,11 @@ public class NotificationService {
     @Transactional
     public void createOrderStatusNotification(Long receiverId, Long orderId, OrderStatus orderStatus) {
         notificationMapper.insert(notificationFactory.orderStatus(receiverId, orderId, orderStatus));
+    }
+
+    @Transactional
+    public void createOrderActionNotification(Long receiverId, Long orderId, String title, String content) {
+        notificationMapper.insert(notificationFactory.orderAction(receiverId, orderId, title, content));
     }
 
     @Transactional
