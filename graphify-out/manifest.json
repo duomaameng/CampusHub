@@ -1,0 +1,1217 @@
+{
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\.codex\\hooks.json": {
+    "mtime": 1780289186.4918995,
+    "ast_hash": "54e95ede9c7a94caee10c8fc17675f5f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\CampusHubApplication.java": {
+    "mtime": 1779272245.8917809,
+    "ast_hash": "3ccf611d3d955154f86bd294b3e6f67e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\common\\ApiResponse.java": {
+    "mtime": 1779272245.8927782,
+    "ast_hash": "80ad8ba5cf099cbe762dd6cd06fe9c6b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\common\\BusinessException.java": {
+    "mtime": 1779272245.8937774,
+    "ast_hash": "295ae1d1bbec984a312a00be9fee2764",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\common\\ErrorCode.java": {
+    "mtime": 1780039374.7520537,
+    "ast_hash": "84ad942e15f2a1c58f2a8d0c3e8b2907",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\common\\PageResult.java": {
+    "mtime": 1779272245.8957782,
+    "ast_hash": "dcffb0be504496a37e5f408049494d9c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\config\\CorsConfig.java": {
+    "mtime": 1779272245.8975246,
+    "ast_hash": "fefe59db4c437cb3bd3599c763a8aeb3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\config\\MyBatisPlusConfig.java": {
+    "mtime": 1779272245.8985293,
+    "ast_hash": "379708ecdd8d11f764b8dbe9e13d6711",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\config\\OpenApiConfig.java": {
+    "mtime": 1780039374.7536042,
+    "ast_hash": "d43bbda446e4c9da6219cf31761c1b18",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\config\\SecurityConfig.java": {
+    "mtime": 1780220444.053008,
+    "ast_hash": "511bb061204d5860315081ebaabcfd81",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\config\\WebMvcConfig.java": {
+    "mtime": 1780208930.8189554,
+    "ast_hash": "b4b6745f8807c1a66dff42e1a785697d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\AdminController.java": {
+    "mtime": 1780039374.7551537,
+    "ast_hash": "f235a1d726f1523b3422b9a50572d6aa",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\AnnouncementController.java": {
+    "mtime": 1780039374.7567039,
+    "ast_hash": "e99e7a5e59154d80091a560caf55967a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\AuthController.java": {
+    "mtime": 1780039374.7567039,
+    "ast_hash": "eea887351db63b4cac99ef32a24653ff",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\FileController.java": {
+    "mtime": 1780208930.81996,
+    "ast_hash": "db844d9d5d1dc0e55f454134ad520ca8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\NotificationController.java": {
+    "mtime": 1780039374.7582333,
+    "ast_hash": "f88939bdec1e8803bc9296f1fb1f3fa6",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\OrderController.java": {
+    "mtime": 1780299379.1643767,
+    "ast_hash": "5532af7e291316d9c1f82bdbb702c394",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\ReportController.java": {
+    "mtime": 1780039374.7597442,
+    "ast_hash": "a52daca3d4d881f3569df8acb8b11757",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\TaskController.java": {
+    "mtime": 1780220429.7534654,
+    "ast_hash": "72fc52e5540fd932b635d521b66b78ef",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\controller\\UserController.java": {
+    "mtime": 1780039374.762816,
+    "ast_hash": "3aa0e3ddd0198fcc9727f4aee2c59995",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\admin\\AdminAnnouncementCreateRequest.java": {
+    "mtime": 1780039374.762816,
+    "ast_hash": "e52392e80ee0e4ff05a8fa91578788a4",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\admin\\AdminAnnouncementUpdateRequest.java": {
+    "mtime": 1780039374.7643437,
+    "ast_hash": "85d4c2c5050fb919ce804e086ca004eb",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\admin\\AdminOrderStatusUpdateRequest.java": {
+    "mtime": 1780039374.76589,
+    "ast_hash": "46c9bc402c84aa7f8c5c9f721918fc2b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\admin\\AdminReportQueryRequest.java": {
+    "mtime": 1780039374.7674735,
+    "ast_hash": "35e8f337189a9dc794522103c5ba6e32",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\admin\\AdminTaskStatusUpdateRequest.java": {
+    "mtime": 1780039374.7674735,
+    "ast_hash": "9c122bcb543c5284fb01c74ab21b0778",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\admin\\AdminUserStatusRequest.java": {
+    "mtime": 1780039374.7690134,
+    "ast_hash": "803e9b6e9961c8fa5a575369e132e47c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\order\\OrderCancelRequest.java": {
+    "mtime": 1780039374.770528,
+    "ast_hash": "316e1457f0baf32d6d978687cfd5aee2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\order\\OrderCompleteRequest.java": {
+    "mtime": 1780039374.770528,
+    "ast_hash": "8ec3cc379c502d13f14c698eb5ee835c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\order\\OrderMessageRequest.java": {
+    "mtime": 1780039374.7720838,
+    "ast_hash": "8776edb27f7d283d2d5f0980cbe0d32d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\order\\ReviewCreateRequest.java": {
+    "mtime": 1780039374.7720838,
+    "ast_hash": "de104fdf47d83261c7f3cc9019639141",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\report\\ReportCreateRequest.java": {
+    "mtime": 1780039374.773616,
+    "ast_hash": "1b0c7e86e6f650f2beb4e9af5d616c92",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\report\\ReportProcessRequest.java": {
+    "mtime": 1780039374.7751544,
+    "ast_hash": "d9944885384567f0834af529c538a292",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\request\\LoginRequest.java": {
+    "mtime": 1779282914.9130638,
+    "ast_hash": "6d889f0742c7278b3ffe5f5f4df147d2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\request\\RegisterRequest.java": {
+    "mtime": 1779354717.0099287,
+    "ast_hash": "1afc120f69c6e2df7063b70b68f661ef",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\request\\ResetPasswordRequest.java": {
+    "mtime": 1779282914.914597,
+    "ast_hash": "c428413c202ee17c215f97d0b31783a9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\request\\SendVerificationCodeRequest.java": {
+    "mtime": 1779282914.914597,
+    "ast_hash": "0022dae23675d9db576b2121c8e05026",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\request\\UpdateProfileRequest.java": {
+    "mtime": 1779282914.916647,
+    "ast_hash": "7b805c6be8f306f4e9cf0af18f1f2f8c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\request\\VerifyEmailRequest.java": {
+    "mtime": 1779282914.916647,
+    "ast_hash": "14bcf2ac72ed1757db03fb4e22ab1a44",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\task\\TaskApplyRequest.java": {
+    "mtime": 1780039374.7767031,
+    "ast_hash": "634af11640afc2ccbd631300c553caa9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\task\\TaskCreateRequest.java": {
+    "mtime": 1780039374.7767031,
+    "ast_hash": "cce27e7121de3ead95122ca85fa4c291",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\dto\\task\\TaskUpdateRequest.java": {
+    "mtime": 1780220429.4061756,
+    "ast_hash": "70e014c33a1e8609a502f8fcecfbd426",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\AdminOperationLog.java": {
+    "mtime": 1779272245.9015293,
+    "ast_hash": "95fbdad50b5471cb147207aeb3596237",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Announcement.java": {
+    "mtime": 1779272245.9015293,
+    "ast_hash": "f39082efec2c9073dcc1742011969e2a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Application.java": {
+    "mtime": 1779272245.9025302,
+    "ast_hash": "2d651316b884cd75241cf380fbe38886",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\CreditLog.java": {
+    "mtime": 1779272245.9035301,
+    "ast_hash": "183b2645b2a0183dc0e2c60de01f9b9c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Favorite.java": {
+    "mtime": 1779272245.9045303,
+    "ast_hash": "acbba452d202c8ab1454d88a6a4da9c7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\FileRecord.java": {
+    "mtime": 1779272245.9055295,
+    "ast_hash": "4c8a04279523cb21b515b6814a96eeb3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Notification.java": {
+    "mtime": 1779272245.9055295,
+    "ast_hash": "2b99944fd74be7e28c5ad594c659bdcd",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Order.java": {
+    "mtime": 1779272245.9066403,
+    "ast_hash": "29e830d696152ff089b7a3bbec5e793a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\OrderMessage.java": {
+    "mtime": 1779272245.9076414,
+    "ast_hash": "3e35d4247ab118887f353bcec4c945ba",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\OrderStatusLog.java": {
+    "mtime": 1779272245.908641,
+    "ast_hash": "18336ce789677cc4cd09293961226b52",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Report.java": {
+    "mtime": 1779272245.9097445,
+    "ast_hash": "eabe3c7b7b7a7caba560890b46fb1c30",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\ReportEvidence.java": {
+    "mtime": 1779285529.5405684,
+    "ast_hash": "ecf278f957cee1140049e25bab943697",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Review.java": {
+    "mtime": 1779272245.9097445,
+    "ast_hash": "53ee85fa1f6ca3c47df1ba347ec4ec27",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\Task.java": {
+    "mtime": 1779272245.9107525,
+    "ast_hash": "2629ff9f5f64f6c942ca0117e04722ad",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\TaskImage.java": {
+    "mtime": 1779272245.9117436,
+    "ast_hash": "a1eb5263431313bb082808eb5a88e5c8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\User.java": {
+    "mtime": 1779272245.9127445,
+    "ast_hash": "8a203b25e0610ef4a2d194e04711a512",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\UserProfile.java": {
+    "mtime": 1779272245.9137425,
+    "ast_hash": "9f694d040a92f61f36c10a034b0a9d3f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\entity\\VerificationCode.java": {
+    "mtime": 1779272245.9137425,
+    "ast_hash": "4fbd33b3a2bbf260ebb7f07ec39055d7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\ApplicationStatus.java": {
+    "mtime": 1779272245.9157434,
+    "ast_hash": "95bf085d5578127915cce1405346c4b8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\MessageType.java": {
+    "mtime": 1779272245.916847,
+    "ast_hash": "43924d0ee873e7695112749180161040",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\NotificationType.java": {
+    "mtime": 1780208930.8215215,
+    "ast_hash": "6bc8908563e58615a7cbbe12e551694e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\OrderStatus.java": {
+    "mtime": 1779272245.917847,
+    "ast_hash": "5c6cb9c5d14497a8d6c09ed5f5511567",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\ReportReasonType.java": {
+    "mtime": 1779272245.9188473,
+    "ast_hash": "ef1e1e0dad49c72de71eecf9aa27510a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\ReportStatus.java": {
+    "mtime": 1779272245.9198487,
+    "ast_hash": "0053b3d0a7ba9a96e8e4f71cfcfe661a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\ReportTargetType.java": {
+    "mtime": 1779272245.920849,
+    "ast_hash": "e55c3be0046756de6dba658cb2204345",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\RewardType.java": {
+    "mtime": 1779272245.920849,
+    "ast_hash": "827c14757d7932b164649610746485a6",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\TaskCategory.java": {
+    "mtime": 1779272245.9218483,
+    "ast_hash": "06972115026879553df0f8b58054f2fc",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\TaskStatus.java": {
+    "mtime": 1779272245.9228485,
+    "ast_hash": "3da1acda1590e27bb342ee2ba0e27670",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\UploadBusinessType.java": {
+    "mtime": 1780039374.7782352,
+    "ast_hash": "a2675163f1616d493701385048bfcabf",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\UserRole.java": {
+    "mtime": 1779272245.923848,
+    "ast_hash": "27588c65c78d52936c1fa2e637f9d12d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\enums\\UserStatus.java": {
+    "mtime": 1779272245.923848,
+    "ast_hash": "e0c9200e64527aefeba77a86b17b6f16",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\exception\\GlobalExceptionHandler.java": {
+    "mtime": 1780039374.779745,
+    "ast_hash": "01603a15aa96f94b06ba80a4224df4d3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\AdminOperationLogMapper.java": {
+    "mtime": 1779272245.9270318,
+    "ast_hash": "63ab9835c2ff2881e59496ba9f668d06",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\AnnouncementMapper.java": {
+    "mtime": 1779272245.9280326,
+    "ast_hash": "75123ac4585309b3eeba8b52b0828361",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\ApplicationMapper.java": {
+    "mtime": 1779272245.9290323,
+    "ast_hash": "665324d0cc82f23d9586fd02235b2012",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\CreditLogMapper.java": {
+    "mtime": 1779272245.930091,
+    "ast_hash": "add61d2a6a0796e6d1fddcd90260b6f1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\FavoriteMapper.java": {
+    "mtime": 1779272245.930091,
+    "ast_hash": "312e908f4bb026de1b38babce7b9d30a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\FileRecordMapper.java": {
+    "mtime": 1779272245.9310915,
+    "ast_hash": "07f8e65191927fea15efcb2c9d0b489b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\NotificationMapper.java": {
+    "mtime": 1779273818.4273329,
+    "ast_hash": "95f64eb12bbe5eff7db4e3705730f30d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\OrderMapper.java": {
+    "mtime": 1779272245.9330914,
+    "ast_hash": "07ef9b0439551a9e4bed1e22939768b2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\OrderMessageMapper.java": {
+    "mtime": 1779272245.9340923,
+    "ast_hash": "806a35e495e78e44402807959fa6e946",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\OrderStatusLogMapper.java": {
+    "mtime": 1779272245.9340923,
+    "ast_hash": "77e8e7dcf9ac7d038fb26445e63df55c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\ReportEvidenceMapper.java": {
+    "mtime": 1779285546.2560806,
+    "ast_hash": "0f4f1f8081bf5953d7bf5ed1dad4cb2b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\ReportMapper.java": {
+    "mtime": 1779272245.935596,
+    "ast_hash": "3c3a1fe3fa223063fd01d1706a7f3341",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\ReviewMapper.java": {
+    "mtime": 1779272245.9366004,
+    "ast_hash": "e48ba6fdc86d8fd4cc9e9d979411284e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\TaskImageMapper.java": {
+    "mtime": 1779272245.9376018,
+    "ast_hash": "9c0bb6d379c87c1e50689673870dcd0a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\TaskMapper.java": {
+    "mtime": 1780039374.7812805,
+    "ast_hash": "7d1153880f3aa31ec4d60b9f69bd35aa",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\UserMapper.java": {
+    "mtime": 1779272245.9385996,
+    "ast_hash": "3440a9e6801051434c36cb4deabf9c63",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\UserProfileMapper.java": {
+    "mtime": 1779272245.9396,
+    "ast_hash": "c8555fe20a1f1ce6cee92334dd923bef",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\mapper\\VerificationCodeMapper.java": {
+    "mtime": 1779272245.9406025,
+    "ast_hash": "804fb7f2866e7b783f67bc1d98597f63",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\security\\CampusHubUserDetails.java": {
+    "mtime": 1779272245.9421425,
+    "ast_hash": "719956747bb9e868b427b65e5368c198",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\security\\JwtAuthenticationFilter.java": {
+    "mtime": 1780039374.7812805,
+    "ast_hash": "ef93d974da42316d212a9f51bb020b2f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\security\\JwtTokenProvider.java": {
+    "mtime": 1780039374.7828834,
+    "ast_hash": "b3bc026e2f7ac290f37d523c4a5fe6c4",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\security\\SecurityUtils.java": {
+    "mtime": 1780220430.1042187,
+    "ast_hash": "6308e04cb6c5fc949d431f5b68372d43",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\security\\TokenBlacklistService.java": {
+    "mtime": 1780039374.7828834,
+    "ast_hash": "cf1a879349ab0c108d72b90181fcb226",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\AdminService.java": {
+    "mtime": 1780039374.7844174,
+    "ast_hash": "a4d328b547d1be9c401672431aa5e49f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\AuthService.java": {
+    "mtime": 1780039374.7859485,
+    "ast_hash": "c5a6e0af0495c6f14f4cf0d271c398d3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\EmailService.java": {
+    "mtime": 1780039374.7859485,
+    "ast_hash": "641d33527bc11c27a26ff27ad8d18d49",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\FileService.java": {
+    "mtime": 1780208930.82316,
+    "ast_hash": "c4f6eb26cf4829d35ba72cd865880272",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\NotificationFactory.java": {
+    "mtime": 1780208930.8263822,
+    "ast_hash": "a3dbe4d51f74b8724ec72d1a0b89bbd9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\NotificationService.java": {
+    "mtime": 1780208930.8278992,
+    "ast_hash": "67b9d7a9ebb3e18f8e4127a1a70b4a1b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\OrderService.java": {
+    "mtime": 1780299799.86869,
+    "ast_hash": "bf785aabe566e95b8a340010783cee74",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\ReportService.java": {
+    "mtime": 1780039374.7905593,
+    "ast_hash": "3109bf3fe29c04b417b54d94c48d6a45",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\TaskService.java": {
+    "mtime": 1780293272.5470855,
+    "ast_hash": "ca6c7e8ad509cd77e9abf74faed6ec22",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\UserService.java": {
+    "mtime": 1780039374.7920754,
+    "ast_hash": "20b3dd9098b3dee1f7c5ce2e187decc9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\impl\\AuthServiceImpl.java": {
+    "mtime": 1780039374.793617,
+    "ast_hash": "522a463050ba05091dbbd0c54f1c259e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\service\\impl\\UserServiceImpl.java": {
+    "mtime": 1780294849.8657362,
+    "ast_hash": "8ca02d2b33cef016b3f3cad015fb61ef",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\NotificationItemVO.java": {
+    "mtime": 1779273818.7027533,
+    "ast_hash": "b7652002c857ac87fe0485d6b6f4d910",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\UnreadCountVO.java": {
+    "mtime": 1779273818.8579295,
+    "ast_hash": "499498e33ff997834bad36244fd710a6",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminDashboardVO.java": {
+    "mtime": 1780039374.7951567,
+    "ast_hash": "4966651dead6aea9921f4909a0d6ca21",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminOrderItemVO.java": {
+    "mtime": 1780039374.7951567,
+    "ast_hash": "812722088891d43d9d36c8ea0979a821",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminReportItemVO.java": {
+    "mtime": 1780039374.7966943,
+    "ast_hash": "c9c44a361947f9fa64918c6fe603adf0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminTaskItemVO.java": {
+    "mtime": 1780039374.7983491,
+    "ast_hash": "07f30f8c850c7d7fac7354f6c3a29874",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminUserDetailVO.java": {
+    "mtime": 1780039374.799354,
+    "ast_hash": "da18abcc36a2b635b6f26d2b54de907d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminUserItemVO.java": {
+    "mtime": 1780039374.7998588,
+    "ast_hash": "25472b3b0548b95249cfa3d855c3ed77",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\admin\\AdminUserStatusVO.java": {
+    "mtime": 1780039374.7998588,
+    "ast_hash": "217e591387a2af98d5ef6565d43710c9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\announcement\\AnnouncementItemVO.java": {
+    "mtime": 1780039374.8013697,
+    "ast_hash": "cc7531b98ac2d6a0c700ea01b9d93689",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\announcement\\AnnouncementPublishVO.java": {
+    "mtime": 1780039374.8013697,
+    "ast_hash": "a6301029ce4ba13013ef52e322cd261d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\auth\\LoginVO.java": {
+    "mtime": 1780039374.802898,
+    "ast_hash": "ece0c57e658bf4ffc4032ee34895415f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\auth\\RegisterVO.java": {
+    "mtime": 1780039374.802898,
+    "ast_hash": "18640432a585050c845bc4f3eb6b929f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\auth\\VerifyEmailVO.java": {
+    "mtime": 1780039374.8044264,
+    "ast_hash": "7283587c57d7df6b6d603bb86c9c2107",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\file\\UploadedFileVO.java": {
+    "mtime": 1780039374.805967,
+    "ast_hash": "ba8c600fce6d758c274e7ae07c4614e5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\order\\OrderDetailVO.java": {
+    "mtime": 1779279878.7503116,
+    "ast_hash": "265b612e1456b62aee8f6af024b139f7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\order\\OrderItemVO.java": {
+    "mtime": 1780039374.805967,
+    "ast_hash": "2453b545a731750918676aafd44c8e1d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\order\\OrderMessageVO.java": {
+    "mtime": 1780039374.8075075,
+    "ast_hash": "86e129ed86d7c56ae0897daab6dd3b6a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\order\\OrderStatusLogVO.java": {
+    "mtime": 1780220430.4336786,
+    "ast_hash": "6b52af8c2438e6d90cf531e8fc3fd1b7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\order\\ReviewItemVO.java": {
+    "mtime": 1780039374.8095608,
+    "ast_hash": "840156d9ad78e0ed408d0f38b0d53e94",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\report\\ReportDetailVO.java": {
+    "mtime": 1780039374.8105674,
+    "ast_hash": "c6cdaa6c230bc4fd3ff727071379267b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\report\\ReportItemVO.java": {
+    "mtime": 1780039374.8105674,
+    "ast_hash": "dbadc914d50d167b5570f8344394801b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\report\\ReportSubmissionVO.java": {
+    "mtime": 1780039374.812101,
+    "ast_hash": "f5591533ec1e7f8a82e4d9b22a5ba07b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\task\\ApplicationConfirmVO.java": {
+    "mtime": 1780039374.812101,
+    "ast_hash": "9c286f2c4fd2dc44e406ab42db0da5f7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\task\\ApplicationItemVO.java": {
+    "mtime": 1780039374.8138165,
+    "ast_hash": "aa3481c2bc25e35063b7308c3074f1c7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\task\\FavoriteToggleVO.java": {
+    "mtime": 1780220429.5826137,
+    "ast_hash": "ffef4781526e8dd573839139b863daed",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\task\\TaskApplyVO.java": {
+    "mtime": 1780039374.815369,
+    "ast_hash": "8a3178f70d6320b4320be8cb7be6b662",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\task\\TaskCreateVO.java": {
+    "mtime": 1780039374.815369,
+    "ast_hash": "572c48baf6140dfa35dd1917c8913531",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\task\\TaskItemVO.java": {
+    "mtime": 1780039374.8169088,
+    "ast_hash": "a6b35125c9b714d3a60fd2d725756362",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\user\\PublicProfileVO.java": {
+    "mtime": 1780039374.818447,
+    "ast_hash": "f6dc66e4cd2a02fded4c09fbac36fb31",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\user\\UserCreditVO.java": {
+    "mtime": 1780039374.818447,
+    "ast_hash": "17de9752e8ec1b82124634bb59852da0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\user\\UserProfileVO.java": {
+    "mtime": 1780039374.8199573,
+    "ast_hash": "c547834b36cea3e32f2917b2e75f079e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\java\\com\\campushub\\vo\\user\\UserReviewItemVO.java": {
+    "mtime": 1780294831.5846374,
+    "ast_hash": "43215053a3f35c3606c9075f8573dff1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\test\\java\\com\\campushub\\integration\\CoreFlowIntegrationTest.java": {
+    "mtime": 1780039374.8245375,
+    "ast_hash": "976c793cd6f3dfe8e01ee1e033443933",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\test\\java\\com\\campushub\\service\\AdminServiceTest.java": {
+    "mtime": 1780039374.8260715,
+    "ast_hash": "d3bf29bf52758fae6cd16c96ae12cbea",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\test\\java\\com\\campushub\\service\\OrderServiceTest.java": {
+    "mtime": 1780300078.5330925,
+    "ast_hash": "d3725bf51ca41eeeabed8324c213380e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\test\\resources\\schema-test.sql": {
+    "mtime": 1780039374.8292923,
+    "ast_hash": "968b743549746e8a145ad91150b731e2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\database\\01-schema.sql": {
+    "mtime": 1779285693.1875331,
+    "ast_hash": "f5fd13242f26e7f79e90331104917d69",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\database\\02-seed.sql": {
+    "mtime": 1780039374.8308134,
+    "ast_hash": "8fe4d358fc9f61f4fea8fa54e37316ab",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\database\\03-reset-dev-data.sql": {
+    "mtime": 1779285722.6162772,
+    "ast_hash": "7ff0d056a69038991b56172b92198e0c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\04-database-ddl.sql": {
+    "mtime": 1778994988.036744,
+    "ast_hash": "9c5bd609af473469077d41909acfe31c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\package.json": {
+    "mtime": 1780143524.4827435,
+    "ast_hash": "05861fdf7050ff8340c6a2f0d6842a8e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\tsconfig.json": {
+    "mtime": 1779192174.1481454,
+    "ast_hash": "69650aa30939a727038395d56deaf133",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\tsconfig.node.json": {
+    "mtime": 1779192174.1481454,
+    "ast_hash": "86f6954f29a2071d1fefa0422b15dae8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\vite.config.ts": {
+    "mtime": 1780208930.9287095,
+    "ast_hash": "c8d6dadd3c6d08f61f2e958499be845e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\App.vue": {
+    "mtime": 1780226516.0437987,
+    "ast_hash": "c4e6eded9ed9397761d0d97336fdedd1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\env.d.ts": {
+    "mtime": 1780039374.8415122,
+    "ast_hash": "dac9299b0b1214b9f3f6232d370ac431",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\main.ts": {
+    "mtime": 1779192174.1271107,
+    "ast_hash": "12ccc8776684c50d6d425dfc0b60efd7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\types.ts": {
+    "mtime": 1780299908.339575,
+    "ast_hash": "2725110351e6644e6f1853582476a78a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\components\\PasswordInput.vue": {
+    "mtime": 1780039374.8415122,
+    "ast_hash": "45aebd26394712e88ffc1bdbe8194f82",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\router\\index.ts": {
+    "mtime": 1780226474.2394102,
+    "ast_hash": "bc0a3a3f53e46569ef49976f2a72c662",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\services\\api.ts": {
+    "mtime": 1780299460.334599,
+    "ast_hash": "e9c41fee5bdc3166315cacecb2cda9f5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\services\\http.ts": {
+    "mtime": 1780208930.9147923,
+    "ast_hash": "8d67887622432364ff2aa81fbad083ab",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\services\\mock.ts": {
+    "mtime": 1780299832.0095928,
+    "ast_hash": "1f7d3ed134435e9dc7ac3a1ecf923e18",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\stores\\auth.ts": {
+    "mtime": 1780039374.8462682,
+    "ast_hash": "2c3844b43ca60d81f7f50f6be69a9ca7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\utils\\assets.ts": {
+    "mtime": 1780039374.8493197,
+    "ast_hash": "33219868e31b6de8c41be22f8da7a231",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\AdminView.vue": {
+    "mtime": 1780039374.84983,
+    "ast_hash": "3ad7fa6d972750780918f7435799e143",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\AnnouncementsView.vue": {
+    "mtime": 1780039374.8508344,
+    "ast_hash": "e7dc7506d95fc6777fe8026a13914eb0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\ForgotPasswordView.vue": {
+    "mtime": 1780039374.851338,
+    "ast_hash": "d570891390eb99d77216b7cb597475df",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\LandingView.vue": {
+    "mtime": 1780208930.9213662,
+    "ast_hash": "ac677139173173b9f765e09fadffc68f",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\LoginView.vue": {
+    "mtime": 1780039374.8523414,
+    "ast_hash": "d0340eb9383883500baadcdf6a3b57f7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\NotificationsView.vue": {
+    "mtime": 1780039374.8538733,
+    "ast_hash": "6ff23b0006a0ae4a6db4aaf7d6d5c1a1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\OrderDetailView.vue": {
+    "mtime": 1780299702.944902,
+    "ast_hash": "ce80c376138ba28418351adf7a7ecfc2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\OrdersView.vue": {
+    "mtime": 1780208930.923956,
+    "ast_hash": "7bf8dec3f1f5e3a5702e1d101e9257e0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\ProfileView.vue": {
+    "mtime": 1780039374.856932,
+    "ast_hash": "7342f000436ccb3c948abf03de8d4964",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\RegisterView.vue": {
+    "mtime": 1780039374.856932,
+    "ast_hash": "817eae9df2ade88555cc06286f948281",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\TaskDetailView.vue": {
+    "mtime": 1780227491.7844546,
+    "ast_hash": "ae4c6baaaffee93cc4f28413e798c135",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\TaskFavoritesView.vue": {
+    "mtime": 1780226465.7090466,
+    "ast_hash": "5e88ac79a414a56a1efa648c1fc5d8a1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\TaskHallView.vue": {
+    "mtime": 1780298119.5107334,
+    "ast_hash": "6d228b57068166529dce7e0b66c46787",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\TaskPublishView.vue": {
+    "mtime": 1780208930.9270978,
+    "ast_hash": "1d876cbb0d5b774674a677ca788fcdc6",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\UserPublicProfileView.vue": {
+    "mtime": 1780294736.9204502,
+    "ast_hash": "3c4d7cbaa387a0aba7139441fca3c958",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\src\\views\\VerifyEmailView.vue": {
+    "mtime": 1780039374.8615098,
+    "ast_hash": "d597a9ec86ef208586893453e3a0ae3b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\scripts\\init-db.ps1": {
+    "mtime": 1779176186.4350603,
+    "ast_hash": "c4ffbdb0becd8d8df089c41ca6878d61",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\.gitlab-ci.yml": {
+    "mtime": 1776763093.1696992,
+    "ast_hash": "d10a722dc89ffc4a01be2d4e4efdf109",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\AGENTS.md": {
+    "mtime": 1780291682.0103061,
+    "ast_hash": "89e3023744facae9bcfc2dd0e67a4a73",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\DATABASE-SETUP.md": {
+    "mtime": 1779271865.2114034,
+    "ast_hash": "aa3b5701ebc4f35e135f1b51fc183f5d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\README.md": {
+    "mtime": 1780039374.750418,
+    "ast_hash": "0af6d73f912f5593aed0e0d300be288d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\.gitlab\\backend.yml": {
+    "mtime": 1780039374.7489038,
+    "ast_hash": "00e44207b1742571d959dc0ca95373cd",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\.gitlab\\frontend.yml": {
+    "mtime": 1780039374.749413,
+    "ast_hash": "d4f0f9688b6183176ffc49cdee92d71e",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\README.md": {
+    "mtime": 1779277323.1278028,
+    "ast_hash": "79210e7c43e0f99e821a28b0a18c75c4",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\main\\resources\\application.yml": {
+    "mtime": 1780039374.821496,
+    "ast_hash": "836ee48365a4d1eafa39f812a96baa42",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\backend\\src\\test\\resources\\application-test.yml": {
+    "mtime": 1780039374.8276048,
+    "ast_hash": "06e6055495aaf16d80ef4eecce2f0168",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\database\\README.md": {
+    "mtime": 1780039374.8308134,
+    "ast_hash": "bc819e8a1d1ed400ff9e455699b2641b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P0\\ai-collaboration-contract.md": {
+    "mtime": 1776580144.6894898,
+    "ast_hash": "ba0a355e03b8b739006611defa701fef",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P0\\team-charter.md": {
+    "mtime": 1776583684.9066975,
+    "ast_hash": "a6faea7e8983219c08d6ac20d71101d8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\01-research-plan.md": {
+    "mtime": 1776587378.1211696,
+    "ast_hash": "9098e3f067f36ff2919631698dd0db24",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\02-raw-research-data.md": {
+    "mtime": 1776588734.4840808,
+    "ast_hash": "5a10dceae37bfc39ed566a958849d4ea",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\03-ai-blindspot-comparison.md": {
+    "mtime": 1776591455.3441033,
+    "ast_hash": "ab67e162bb147905350bd4544b31de3a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\04-requirements-specification.md": {
+    "mtime": 1776607637.1271665,
+    "ast_hash": "1a813d7f86fb424a1fb4cbf4db220eec",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\05-usecase-diagram-and-descriptions.md": {
+    "mtime": 1776596170.7404418,
+    "ast_hash": "138c3db53a3f9120b3e6efd9d1e6fedf",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\06-user-story.md": {
+    "mtime": 1776760405.197373,
+    "ast_hash": "220f66fe03763a1d6ed075e6a06d0ca7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\07-ai-collaboration-reflection-log1.md": {
+    "mtime": 1776760405.197373,
+    "ast_hash": "b03a30c967505f7cbdbbc522d6cbd389",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\08-prompt-log.md": {
+    "mtime": 1776760405.1983688,
+    "ast_hash": "16bc3573b20da4f30cdbb5e9a908a726",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\01-architecture-candidate-comparison.md": {
+    "mtime": 1777898147.1728945,
+    "ast_hash": "af7a92b83062e4e4bc5639528a0eaa63",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\02-architecture-debate-record.md": {
+    "mtime": 1777898147.1774912,
+    "ast_hash": "8979b64052c06f1dd6d51c9341de4956",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\03-architecture-design.md": {
+    "mtime": 1777898147.1805143,
+    "ast_hash": "630b1c5128450aa8b630259bb4d7e50c",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\04-architecture-decision-records.md": {
+    "mtime": 1777898147.1850255,
+    "ast_hash": "f8d2fd9550ccc751de39a18438a85f81",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\05-ai-collaboration-reflection-log2.md": {
+    "mtime": 1777898147.1885366,
+    "ast_hash": "7069056b48f283380985f3fae2e7d60d",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\01-class-diagram.md": {
+    "mtime": 1778995241.5961223,
+    "ast_hash": "220192688fe02101fc45ea156e71bebe",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\02-solid-checklist.md": {
+    "mtime": 1778986831.3916056,
+    "ast_hash": "76cad55ca05ecf1a0639584e2fa4b097",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\03-api-specification.md": {
+    "mtime": 1779006924.207009,
+    "ast_hash": "012931d9eb9f3ae4db6f5e6b96b6e6f9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\03-api-specification.yaml": {
+    "mtime": 1778994988.0352175,
+    "ast_hash": "b9e664910ff4ced64d5e158e03639936",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\04-er-diagram.md": {
+    "mtime": 1779007043.2707427,
+    "ast_hash": "c801aee68a35e59408c6fd5e167719e8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\05-detailed-design.md": {
+    "mtime": 1779005053.3083937,
+    "ast_hash": "7eefbb8eed3db4b09b2bd2becdb7ac08",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\06-ai-collaboration-reflection-log3.md": {
+    "mtime": 1779005053.310441,
+    "ast_hash": "f83efc5f22c440173b546b7120b43863",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P4\\01-sprint-merged-task-board.md": {
+    "mtime": 1780039374.8323693,
+    "ast_hash": "3a629a8ee71e1fa75dfe562e34c78111",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P4\\02-development-sequence-and-parallel-plan.md": {
+    "mtime": 1779173359.6910305,
+    "ast_hash": "adf127f30e0e45b8e811704113d86660",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P4\\03-api-task-list.md": {
+    "mtime": 1780220749.4703352,
+    "ast_hash": "09d5727405e5de8492e77213f9b56539",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P4\\04-bug-fix-log.md": {
+    "mtime": 1780292917.1335182,
+    "ast_hash": "2a1c5dad6d66ff96e8c0c79135f8221b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\index.html": {
+    "mtime": 1780039374.8354354,
+    "ast_hash": "98ecaeb506e74cd7eba1456cc08f9762",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P0\\ai-collaboration-contract.pdf": {
+    "mtime": 1776772942.848245,
+    "ast_hash": "e2c1ea88a078af0d6636c1db6ef06ccc",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P0\\team-charter.pdf": {
+    "mtime": 1776772942.8502524,
+    "ast_hash": "71e4d71d20f5fa5eadfd378b4eaf5628",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\01-research-plan.pdf": {
+    "mtime": 1776772942.8522556,
+    "ast_hash": "8fe59673dbe888b47979b00d053aeca8",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\02-raw-research-data.pdf": {
+    "mtime": 1776772942.8572562,
+    "ast_hash": "50948a6a6e331b033e68fc139acad7c9",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\03-ai-blindspot-comparison.pdf": {
+    "mtime": 1776772942.8600597,
+    "ast_hash": "aaf64e01dbffe00f970457862fc827c1",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\04-requirements-specification.pdf": {
+    "mtime": 1776772942.8650627,
+    "ast_hash": "0241d45174dd795908f1f49768feb753",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\05-usecase-diagram-and-descriptions.pdf": {
+    "mtime": 1776772942.8685305,
+    "ast_hash": "517a0b00ed8830bb8c420b198f42ad61",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\06-user-story.pdf": {
+    "mtime": 1776772942.8733852,
+    "ast_hash": "55edc6f87169ffebb593754834e7b24a",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\07-ai-collaboration-reflection-log1.pdf": {
+    "mtime": 1776772942.8763888,
+    "ast_hash": "819e8134559965a610a701d020fb13b0",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\08-prompt-log.pdf": {
+    "mtime": 1776772942.8793883,
+    "ast_hash": "8de028a64b18264a496435b2930fdde5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\01-architecture-candidate-comparison.pdf": {
+    "mtime": 1777898147.1763985,
+    "ast_hash": "103c8dba44c58002e71ecd890b1ff181",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\02-architecture-debate-record.pdf": {
+    "mtime": 1777898147.179513,
+    "ast_hash": "c7f4e589e33b1cd036b9aa87e657f7c5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\03-architecture-design.pdf": {
+    "mtime": 1777898147.1840236,
+    "ast_hash": "b1dca2e244be63195e08d8091023e4e7",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\04-architecture-decision-records.pdf": {
+    "mtime": 1777898147.1875334,
+    "ast_hash": "367a2bf14d7a810dffeeb1fe42af05d3",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P2\\05-ai-collaboration-reflection-log2.pdf": {
+    "mtime": 1777898147.192534,
+    "ast_hash": "e32fc0c0bf48a90bb6220ce5c5911adf",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\01-class-diagram.pdf": {
+    "mtime": 1779007850.522383,
+    "ast_hash": "3b6fed01300a886fdf01a740ab39bc62",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\02-solid-checklist.pdf": {
+    "mtime": 1779007850.526975,
+    "ast_hash": "757e67350c93f6ca1b94ec5f47011ec5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\03-api-specification.pdf": {
+    "mtime": 1779007850.5327742,
+    "ast_hash": "977f77af2f1b1342abda0a4e2b9f64c5",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\04-er-diagram.pdf": {
+    "mtime": 1779007850.537323,
+    "ast_hash": "0fbb55540f52f1bbb76e21bb4ddf51dc",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\05-detailed-design.pdf": {
+    "mtime": 1779007850.5428886,
+    "ast_hash": "90de2700d023391606fd32217c887931",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P3\\06-ai-collaboration-reflection-log3.pdf": {
+    "mtime": 1779007850.5484047,
+    "ast_hash": "34e659579980d804f2ac336a71e06c11",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\docs\\P1\\usecase.png": {
+    "mtime": 1776593025.354726,
+    "ast_hash": "14c722e0c74dc4eef089c702523edc2b",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\public\\favicon.svg": {
+    "mtime": 1780039374.8400054,
+    "ast_hash": "213f21add73c6d82b875fce0062a1ff2",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\public\\bg\\dark-bg.jpg": {
+    "mtime": 1780039374.8369627,
+    "ast_hash": "b0a898539ccfb3567c94f9da3b4d0201",
+    "semantic_hash": ""
+  },
+  "C:\\Users\\duoma\\java\\\u8f6f\u5de52\u9879\u76ee\\CampusHub\\frontend\\public\\bg\\light-bg.jpg": {
+    "mtime": 1780039374.8384898,
+    "ast_hash": "d140728c875a40566b121f862634996a",
+    "semantic_hash": ""
+  }
+}
