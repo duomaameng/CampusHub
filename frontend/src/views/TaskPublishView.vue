@@ -150,7 +150,7 @@ async function removeUploadedImage(imageId: number) {
 </script>
 
 <template>
-  <section class="form-panel">
+  <section class="form-panel task-publish-view">
     <div class="page-title">
       <div>
         <h1>发布需求</h1>
@@ -279,3 +279,253 @@ async function removeUploadedImage(imageId: number) {
     </form>
   </section>
 </template>
+
+<style scoped>
+.task-publish-view {
+  --publish-green: #b9ff66;
+  --publish-dark: #191a23;
+  --publish-grey: #f3f3f3;
+  position: relative;
+  padding: 34px;
+  border: 2px solid #000000;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 96% 4%, var(--publish-green) 0 78px, transparent 79px),
+    #ffffff;
+  box-shadow: 0 8px 0 #000000;
+  overflow: hidden;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.task-publish-view::before,
+.task-publish-view::after,
+.panel::before,
+.panel::after {
+  display: none;
+}
+
+.page-title {
+  margin-bottom: 28px;
+}
+
+.page-title h1 {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 14px;
+  border-radius: 18px;
+  background: var(--publish-green);
+  color: #000000;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0;
+  -webkit-text-fill-color: #000000;
+}
+
+.page-title p {
+  margin-top: 12px;
+  max-width: 680px;
+  color: #3f4350;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.panel {
+  position: relative;
+  padding: 24px;
+  border: 2px solid #000000;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 96% 0%, var(--publish-green) 0 58px, transparent 59px),
+    var(--publish-grey);
+  box-shadow: 0 5px 0 #000000;
+  overflow: hidden;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.panel h2 {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--publish-green);
+  color: #000000;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+.field label {
+  color: #4a4e5b;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-height: 50px;
+  padding: 11px 15px;
+  color: #000000;
+  font-size: 14px;
+  font-weight: 800;
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background-color: #ffffff;
+  box-shadow: none;
+  transition: all var(--transition-fast);
+}
+
+.field textarea {
+  min-height: 132px;
+  line-height: 1.6;
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+  background-color: #f8ffe8;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #000000;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+}
+
+.button {
+  border: 2px solid #000000;
+  border-radius: 14px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #000000;
+}
+
+.button.primary,
+.button.secondary {
+  color: #ffffff;
+  background: var(--publish-dark);
+}
+
+.button.primary:hover:not(:disabled),
+.button.secondary:hover:not(:disabled) {
+  color: #000000;
+  background: var(--publish-green);
+  box-shadow: 0 5px 0 #000000;
+  transform: translateY(-2px);
+}
+
+.button.ghost {
+  color: #000000;
+  background: #ffffff;
+}
+
+.button.ghost:hover:not(:disabled) {
+  background: var(--publish-green);
+  box-shadow: 0 5px 0 #000000;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.upload-trigger {
+  width: max-content;
+  max-width: 100%;
+  padding: 11px 20px;
+}
+
+.upload-grid {
+  gap: var(--space-3);
+}
+
+.upload-card {
+  border: 2px solid #000000;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 0 #000000;
+  transition: all var(--transition-fast);
+}
+
+.upload-card:hover {
+  border-color: #000000;
+  box-shadow: 0 5px 0 #000000;
+  transform: translateY(-2px);
+}
+
+.upload-card-meta strong {
+  color: #000000;
+  font-weight: 900;
+}
+
+.hint {
+  color: #6f7485;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.checkbox-label {
+  color: #343743;
+  font-size: 13.5px;
+  font-weight: 800;
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 2px 0 #000000;
+  appearance: none;
+  cursor: pointer;
+}
+
+.checkbox-label input[type='checkbox']:checked {
+  background: var(--publish-green);
+}
+
+.checkbox-label input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid #000000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-label input[type='checkbox']:focus-visible {
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48), 0 2px 0 #000000;
+}
+
+.error-message {
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 #000000;
+  font-weight: 800;
+}
+
+.actions .button.primary {
+  min-width: 160px;
+}
+
+@media (max-width: 768px) {
+  .task-publish-view {
+    padding: 24px;
+  }
+}
+</style>
