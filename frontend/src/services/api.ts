@@ -170,9 +170,13 @@ export const orderApi = {
     if (useMock) return mockApi.getOrder(orderId)
     return request<OrderDetail>({ method: 'GET', url: `/orders/${orderId}` })
   },
-  complete(orderId: number) {
+  complete(orderId: number, proofImageId?: number) {
     if (useMock) return mockApi.updateOrderStatus(orderId, 'PENDING_COMPLETION', '服务方提交完成凭证')
-    return request({ method: 'POST', url: `/orders/${orderId}/complete`, data: { note: '任务已完成' } })
+    return request({
+      method: 'POST',
+      url: `/orders/${orderId}/complete`,
+      data: { note: '任务已完成', proofImageId }
+    })
   },
   confirmCompletion(orderId: number) {
     if (useMock) return mockApi.updateOrderStatus(orderId, 'COMPLETED', '发布者确认完成')

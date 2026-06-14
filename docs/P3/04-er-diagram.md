@@ -14,7 +14,7 @@
 - M:N 关系（如收藏）通过中间表实现
 - 枚举类型映射为 VARCHAR 约束
 
-另外，根据 API 规范中实际需要的功能，补充类图中标记为"扩展"但 MVP 必需的表：`verification_code`、`favorite`、`credit_log`、`file_record`、`announcement`、`admin_operation_log`。
+另外，根据 API 规范和当前实现中实际需要的功能，补充类图中标记为"扩展"但 MVP 必需的表：`verification_code`、`favorite`、`credit_log`、`file_record`、`report_evidence`、`announcement`、`admin_operation_log`。
 
 ## 2. ER 图
 
@@ -48,7 +48,7 @@ erDiagram
     Order ||--o{ Review : receives
     Order ||--|| Task : "created from"
     Order }o--|| User : publisher
-    Order }o--|| User : "service provider"
+    Order }o--o| User : "service provider"
 
     OrderMessage }o--|| Order : belongs
     OrderMessage }o--|| User : sender
@@ -61,10 +61,11 @@ erDiagram
 
     Report }o--|| User : reporter
     Report }o--o| User : "processed by"
+    Report ||--o{ ReportEvidence : has
 
     CreditLog }o--|| User : belongs
 
-    Announcement }o--|| User : publisher
+    Announcement }o--|| User : "admin publisher"
 
     AdminOperationLog }o--|| User : admin
 
@@ -72,6 +73,9 @@ erDiagram
     Favorite }o--|| User : user
     Favorite }o--|| Task : task
     FileRecord }o--|| User : uploader
+    FileRecord ||--o{ ReportEvidence : evidence_file
+    ReportEvidence }o--|| Report : report
+    ReportEvidence }o--|| FileRecord : file_record
 ```
 
 ## 3. 表结构说明
@@ -95,7 +99,7 @@ erDiagram
 | `task_image` | TaskImage | 需求配图，1:N |
 | `favorite` | —（扩展） | 用户收藏需求关联表 |
 
-**分类差异化字段处理：** 采用 JSON 列 `category_fields` 存储各分类的专属字段，避免宽表大量 NULL 列，保持主体结构稳定。MV P 阶段不需对 JSON 内部字段建索引。
+**分类差异化字段处理：** 采用 JSON 列 `category_fields` 存储各分类的专属字段，避免宽表大量 NULL 列，保持主体结构稳定。MVP 阶段不需对 JSON 内部字段建索引。
 
 ### 3.3 订单相关
 
@@ -117,6 +121,7 @@ erDiagram
 | 表名 | 对应类 | 说明 |
 |------|--------|------|
 | `report` | Report | 用户举报 |
+| `report_evidence` | ReportEvidence | 举报证据关联表，连接举报记录和上传文件 |
 | `notification` | Notification | 系统通知 |
 
 ### 3.6 基础设施
@@ -124,7 +129,7 @@ erDiagram
 | 表名 | 对应类 | 说明 |
 |------|--------|------|
 | `file_record` | —（扩展） | 文件上传记录 |
-| `announcement` | —（扩展） | 系统公告 |
+| `announcement` | —（扩展） | 系统公告，`publisher_id` 指向发布该公告的管理员用户 |
 | `admin_operation_log` | —（扩展） | 管理员操作审计 |
 
 ## 4. 索引设计

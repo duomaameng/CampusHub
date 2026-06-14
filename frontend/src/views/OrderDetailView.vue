@@ -28,6 +28,9 @@ const reviewContent = ref('')
 const chatImageUploading = ref(false)
 const chatImageError = ref('')
 const uploadedChatImage = ref<UploadedFileItem | null>(null)
+const completionProofUploading = ref(false)
+const completionProofError = ref('')
+const uploadedCompletionProof = ref<UploadedFileItem | null>(null)
 const reportReason = ref('')
 const reportUploadError = ref('')
 const reportSubmitting = ref(false)
@@ -174,6 +177,23 @@ async function sendImageMessage() {
   uploadedChatImage.value = null
 }
 
+async function handleCompletionProofChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  completionProofError.value = ''
+  completionProofUploading.value = true
+  try {
+    uploadedCompletionProof.value = await fileApi.upload(file, 'ORDER_PROOF')
+  } catch (err) {
+    completionProofError.value = err instanceof Error ? err.message : '完成凭证上传失败'
+  } finally {
+    completionProofUploading.value = false
+    input.value = ''
+  }
+}
+
 async function handleReportEvidenceChange(event: Event) {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files || [])
@@ -227,7 +247,8 @@ async function submitReview() {
 
 async function completeOrder() {
   if (!order.value) return
-  await runAction(() => orderApi.complete(order.value!.id), '已提交完成')
+  await runAction(() => orderApi.complete(order.value!.id, uploadedCompletionProof.value?.id), '已提交完成')
+  uploadedCompletionProof.value = null
 }
 
 async function handleCompleteOrderClick() {
@@ -577,9 +598,23 @@ onMounted(load)
 
         <section v-if="!isAwaitingNewProvider" class="panel grid">
           <h2>订单操作</h2>
+          <div v-if="isProvider && canSubmitCompletion" class="field">
+            <label class="button ghost upload-trigger">
+              <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleCompletionProofChange" />
+              <span>{{ completionProofUploading ? '上传中...' : '上传完成凭证' }}</span>
+            </label>
+            <p v-if="completionProofError" class="error-message">{{ completionProofError }}</p>
+            <div v-if="uploadedCompletionProof" class="upload-card">
+              <img :src="resolveAssetUrl(uploadedCompletionProof.url)" :alt="uploadedCompletionProof.fileName" />
+              <div class="upload-card-meta">
+                <strong>{{ uploadedCompletionProof.fileName }}</strong>
+                <button class="button ghost" type="button" @click="uploadedCompletionProof = null">移除</button>
+              </div>
+            </div>
+          </div>
           <button
-            v-if="isProvider"
-            class="button secondary"
+              v-if="isProvider"
+              class="button secondary"
             :class="{ 'is-soft-disabled': !canSubmitCompletion }"
             :aria-disabled="!canSubmitCompletion"
             type="button"

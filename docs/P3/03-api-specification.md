@@ -86,7 +86,7 @@
 **ReportReasonType：** `FRAUD`（诈骗）、`ABUSE`（辱骂）、`SPAM`（垃圾信息）、`ILLEGAL`（违法内容）、`OTHER`（其他）  
 **ReportStatus：** `PENDING`（待处理）、`PROCESSING`（处理中）、`RESOLVED`（已处理）、`REJECTED`（已驳回）  
 **MessageType：** `TEXT`（文字）、`IMAGE`（图片）  
-**NotificationType：** `APPLICATION`（接单申请）、`ORDER_STATUS`（订单状态变更）、`REVIEW_REQUEST`（评价邀请）、`REPORT_RESULT`（举报结果）
+**NotificationType：** `APPLICATION`（接单申请）、`ORDER_STATUS`（订单状态变更）、`ORDER_MESSAGE`（订单消息）、`REVIEW_REQUEST`（评价邀请）、`REPORT_RESULT`（举报结果）
 
 ---
 
@@ -1421,25 +1421,23 @@
 
 ### 7.1 提交举报
 
-**POST** `/api/reports` | 认证：认证
+**POST** `/api/tasks/{taskId}/reports` | 认证：认证
+
+提交任务举报。当前实现另提供 **POST** `/api/users/{userId}/reports` 用于举报用户账号；订单消息和评价举报属于预留目标类型，当前前后端入口尚未开放。
 
 **请求体：**
 
 ```json
 {
-  "targetType": "TASK",
-  "targetId": 3001,
-  "reasonType": "SPAM",
-  "description": "该需求重复发布，已发布过完全相同的快递代取需求"
+  "reason": "该需求重复发布，已发布过完全相同的快递代取需求",
+  "evidenceImageIds": [9001, 9002]
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| targetType | string | 是 | 举报对象类型：TASK / ORDER_MESSAGE / REVIEW / USER |
-| targetId | long | 是 | 被举报对象ID |
-| reasonType | string | 是 | 举报类型：FRAUD / ABUSE / SPAM / ILLEGAL / OTHER |
-| description | string | 是 | 详细描述，10-1000字符 |
+| reason | string | 是 | 举报原因或补充说明 |
+| evidenceImageIds | long[] | 否 | 已上传的举报证据图片文件 ID |
 
 **成功响应：**
 
@@ -1449,7 +1447,9 @@
   "message": "举报已提交",
   "data": {
     "reportId": 14001,
-    "status": "PENDING",
+    "taskId": 3001,
+    "reason": "该需求重复发布，已发布过完全相同的快递代取需求",
+    "evidenceImageIds": [9001, 9002],
     "createdAt": "2026-05-17T16:00:00"
   }
 }
@@ -1533,7 +1533,7 @@
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | file | file | 是 | 图片文件，最大 10MB，格式 jpg/png/gif/webp |
-| purpose | string | 是 | 用途：`AVATAR` / `TASK_IMAGE` / `COMPLETION_PROOF` / `MESSAGE_IMAGE` / `REPORT_EVIDENCE` |
+| businessType | string | 是 | 用途：`AVATAR` / `TASK_IMAGE` / `ORDER_PROOF` / `CHAT_IMAGE` / `REPORT_EVIDENCE` |
 
 **成功响应：**
 
@@ -1777,34 +1777,29 @@
 
 ### 9.10 处理举报
 
-**POST** `/api/admin/reports/{reportId}/handle` | 认证：管理员
+**PATCH** `/api/admin/reports/{reportId}` | 认证：管理员
 
 **请求体：**
 
 ```json
 {
-  "action": "APPROVE",
-  "result": "举报成立，已下架该需求并警告发布者",
-  "penalties": ["REMOVE_TASK", "WARN_USER"]
+  "status": "RESOLVED",
+  "result": "举报成立，已下架该需求并警告发布者"
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| action | string | 是 | `APPROVE`（举报成立）/ `REJECT`（驳回举报） |
+| status | string | 是 | `RESOLVED`（处理完成）/ `REJECTED`（驳回举报） |
 | result | string | 是 | 处理说明，1-500字符 |
-| penalties | string[] | 否 | 处罚措施：`REMOVE_TASK`、`WARN_USER`、`DISABLE_USER`、`DEDUCT_CREDIT` |
 
 **成功响应：**
 
 ```json
 {
   "code": 0,
-  "message": "举报已处理",
-  "data": {
-    "reportId": 14001,
-    "status": "RESOLVED"
-  }
+  "message": "success",
+  "data": null
 }
 ```
 
@@ -2026,22 +2021,23 @@
 | 39 | POST | `/api/orders/{orderId}/reviews` | 认证 | 提交评价 |
 | 40 | GET | `/api/orders/{orderId}/reviews` | 登录 | 查看订单评价 |
 | 41 | GET | `/api/users/{userId}/credit` | 登录 | 查看信用信息 |
-| 42 | POST | `/api/reports` | 认证 | 提交举报 |
-| 43 | GET | `/api/reports` | 登录 | 我的举报列表 |
-| 44 | GET | `/api/reports/{reportId}` | 认证 | 举报详情 |
-| 45 | POST | `/api/files/upload` | 认证 | 上传图片 |
-| 46 | GET | `/api/admin/dashboard` | 管理员 | 后台概览 |
-| 47 | GET | `/api/admin/users` | 管理员 | 用户管理列表 |
-| 48 | GET | `/api/admin/users/{userId}` | 管理员 | 用户详情 |
-| 49 | PATCH | `/api/admin/users/{userId}/status` | 管理员 | 禁用/解禁用户 |
-| 50 | GET | `/api/admin/tasks` | 管理员 | 需求管理列表 |
-| 51 | PATCH | `/api/admin/tasks/{taskId}/status` | 管理员 | 下架/恢复需求 |
-| 52 | GET | `/api/admin/orders` | 管理员 | 订单管理列表 |
-| 53 | PATCH | `/api/admin/orders/{orderId}/status` | 管理员 | 冻结/恢复订单 |
-| 54 | GET | `/api/admin/reports` | 管理员 | 举报管理列表 |
-| 55 | POST | `/api/admin/reports/{reportId}/handle` | 管理员 | 处理举报 |
-| 56 | POST | `/api/admin/announcements` | 管理员 | 发布公告 |
-| 57 | GET | `/api/admin/announcements` | 管理员 | 公告列表 |
-| 58 | PATCH | `/api/admin/announcements/{announcementId}` | 管理员 | 编辑公告 |
-| 59 | DELETE | `/api/admin/announcements/{announcementId}` | 管理员 | 删除公告 |
-| 60 | GET | `/api/announcements` | 公开 | 前台公告列表 |
+| 42 | POST | `/api/tasks/{taskId}/reports` | 认证 | 举报任务 |
+| 43 | POST | `/api/users/{userId}/reports` | 认证 | 举报用户 |
+| 44 | GET | `/api/reports` | 登录 | 我的举报列表 |
+| 45 | GET | `/api/reports/{reportId}` | 认证 | 举报详情 |
+| 46 | POST | `/api/files/upload` | 认证 | 上传图片 |
+| 47 | GET | `/api/admin/dashboard` | 管理员 | 后台概览 |
+| 48 | GET | `/api/admin/users` | 管理员 | 用户管理列表 |
+| 49 | GET | `/api/admin/users/{userId}` | 管理员 | 用户详情 |
+| 50 | PATCH | `/api/admin/users/{userId}/status` | 管理员 | 禁用/解禁用户 |
+| 51 | GET | `/api/admin/tasks` | 管理员 | 需求管理列表 |
+| 52 | PATCH | `/api/admin/tasks/{taskId}/status` | 管理员 | 下架/恢复需求 |
+| 53 | GET | `/api/admin/orders` | 管理员 | 订单管理列表 |
+| 54 | PATCH | `/api/admin/orders/{orderId}/status` | 管理员 | 冻结/恢复订单 |
+| 55 | GET | `/api/admin/reports` | 管理员 | 举报管理列表 |
+| 56 | PATCH | `/api/admin/reports/{reportId}` | 管理员 | 处理举报 |
+| 57 | POST | `/api/admin/announcements` | 管理员 | 发布公告 |
+| 58 | GET | `/api/admin/announcements` | 管理员 | 公告列表 |
+| 59 | PATCH | `/api/admin/announcements/{announcementId}` | 管理员 | 编辑公告 |
+| 60 | DELETE | `/api/admin/announcements/{announcementId}` | 管理员 | 删除公告 |
+| 61 | GET | `/api/announcements` | 公开 | 前台公告列表 |
