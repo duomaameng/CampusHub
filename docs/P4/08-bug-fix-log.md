@@ -783,11 +783,11 @@ JDBC URL 的 `characterEncoding` 使用了驱动不支持的 `utf8mb4` 写法。
 
 **修复方案**
 
-同意取消申请后不再清空 `service_provider_id`，只将订单状态改为 `PENDING_CONFIRM` 并清空 `cancel_reason`。前端在待接单状态下隐藏服务方信息。
+将 `orders.service_provider_id` 调整为可空；同意取消申请后清空 `service_provider_id` 和 `cancel_reason`，并将订单状态改为 `PENDING_CONFIRM`。前端在待接单状态下隐藏服务方信息，并按需求视角展示接单申请入口。
 
 **验证结果**
 
-发布方同意取消申请后不再触发数据库非空约束错误，订单能够回到待接单状态。
+发布方同意取消申请后不再触发数据库非空约束错误，订单能够回到待接单状态，且不会继续绑定原服务方。
 
 ---
 

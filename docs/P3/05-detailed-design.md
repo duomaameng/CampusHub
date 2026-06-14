@@ -140,19 +140,23 @@ P2 已接受的架构决策为：前端 Vue3 + TypeScript，后端 Java 17 + Spr
 
 订单状态流转：
 
+当前实现中，`OPEN` 属于 `TaskStatus`，不是 `OrderStatus`。发布者确认接单申请时，订单记录会创建并直接进入 `IN_PROGRESS`；取消同意或发布者取消会将订单退回 `PENDING_CONFIRM`，同时任务重新变为 `OPEN`。`DISPUTE` 由后台管理冻结订单产生，恢复时回到冻结前的订单状态。
+
 ```mermaid
 stateDiagram-v2
-    [*] --> OPEN
-    OPEN --> PENDING_CONFIRM: 服务方提交接单申请
-    PENDING_CONFIRM --> IN_PROGRESS: 发布者确认服务方
-    PENDING_CONFIRM --> CANCELLED: 发布者拒绝或超时
+    [*] --> IN_PROGRESS: 发布者确认接单申请并创建订单
+    PENDING_CONFIRM --> IN_PROGRESS: 重新确认服务方并开始执行
     IN_PROGRESS --> PENDING_COMPLETION: 服务方提交完成凭证
+    IN_PROGRESS --> IN_PROGRESS: 服务方申请取消 / 发布者拒绝取消
+    IN_PROGRESS --> PENDING_CONFIRM: 发布者取消或同意服务方取消
     PENDING_COMPLETION --> COMPLETED: 发布者确认完成
-    PENDING_COMPLETION --> DISPUTE: 发布者发起争议
-    DISPUTE --> COMPLETED: 管理员裁定完成
-    DISPUTE --> CANCELLED: 管理员裁定取消
+    IN_PROGRESS --> DISPUTE: 管理员冻结争议订单
+    PENDING_COMPLETION --> DISPUTE: 管理员冻结争议订单
+    PENDING_CONFIRM --> DISPUTE: 管理员冻结争议订单
+    DISPUTE --> IN_PROGRESS: 管理员恢复原状态
+    DISPUTE --> PENDING_COMPLETION: 管理员恢复原状态
+    DISPUTE --> PENDING_CONFIRM: 管理员恢复原状态
     COMPLETED --> REVIEWED: 双方评价或评价期结束
-    OPEN --> CANCELLED: 发布者取消或任务过期
 ```
 
 并发控制：
@@ -215,7 +219,7 @@ stateDiagram-v2
 
 主要职责：
 
-- 用户举报需求、订单消息、评价或用户。
+- 用户举报需求或用户账号；`ReportTargetType` 中保留订单消息、评价等后续扩展目标。
 - 管理员查看举报列表和详情。
 - 管理员处理举报，执行下架、警告、禁用、扣信用分等措施。
 - 管理员管理用户、需求、订单、公告。
@@ -226,12 +230,13 @@ stateDiagram-v2
 | 类/表 | 说明 |
 |-------|------|
 | `Report` / `report` | 举报记录 |
-| `announcement` | 系统公告 |
+| `ReportEvidence` / `report_evidence` | 举报证据与上传文件的关联记录 |
+| `announcement` | 管理员发布的系统公告 |
 | `admin_operation_log` | 管理员操作审计 |
 
 举报目标设计：
 
-- `Report` 使用 `target_type + target_id` 表达通用举报目标。
+- `Report` 使用 `target_type + target_id` 表达通用举报目标；当前 Controller 已实现 `TASK` 和 `USER` 两类提交入口。
 - 业务层不能把所有目标处理逻辑塞进一个大方法，应按目标类型拆分处理器。
 - 管理员处理结果通过系统通知反馈给举报人。
 
@@ -250,6 +255,7 @@ stateDiagram-v2
 | 表 | 说明 |
 |----|------|
 | `file_record` | 文件上传记录 |
+| `report_evidence` | 举报证据与上传文件关联记录 |
 
 首版文件可存储在本地目录或免费对象存储，数据库只保存元数据和可访问 URL。
 
@@ -269,6 +275,8 @@ P3 类图围绕主业务链路建模，核心对象如下：
 | `Notification` | 系统通知 | 关联接收用户 |
 | `Review` | 订单完成后的评价 | 关联订单、评价者、被评价者 |
 | `Report` | 用户举报记录 | 关联举报人和通用举报目标 |
+| `FileRecord` | 上传文件记录 | 关联上传用户，被任务配图、聊天图片、完成凭证和举报证据引用 |
+| `ReportEvidence` | 举报证据关联 | 连接 `Report` 与作为证据的 `FileRecord` |
 
 简化关系图：
 
@@ -287,6 +295,8 @@ class OrderMessage
 class Notification
 class Review
 class Report
+class FileRecord
+class ReportEvidence
 
 User "1" -- "1" UserProfile : has
 User "1" -- "0..*" Task : publishes
@@ -299,10 +309,11 @@ Order "1" *-- "0..*" OrderMessage : contains
 Order "1" -- "0..*" Review : receives
 User "1" -- "0..*" Notification : receives
 User "1" -- "0..*" Report : submits
+User "1" -- "0..*" FileRecord : uploads
 Review "0..*" --> "1" User : reviewer/reviewee
+Report "1" *-- "0..*" ReportEvidence : has evidence
+ReportEvidence "0..*" --> "1" FileRecord : file
 Report ..> Task : target
-Report ..> OrderMessage : target
-Report ..> Review : target
 Report ..> User : target
 ```
 
@@ -422,10 +433,11 @@ CampusHub 中存在接单申请通知、订单状态变更通知、评价邀请�
 | 消息 | `POST /api/orders/{orderId}/messages` | 发送订单内文字消息 |
 | 消息 | `POST /api/orders/{orderId}/messages/image` | 发送订单内图片消息 |
 | 评价 | `POST /api/orders/{orderId}/reviews` | 提交评价 |
-| 举报 | `POST /api/reports` | 提交举报 |
+| 举报 | `POST /api/tasks/{taskId}/reports` | 举报任务 |
+| 举报 | `POST /api/users/{userId}/reports` | 举报用户 |
 | 文件 | `POST /api/files/upload` | 上传图片 |
 | 后台 | `GET /api/admin/users` | 管理员用户列表 |
-| 后台 | `POST /api/admin/reports/{reportId}/handle` | 管理员处理举报 |
+| 后台 | `PATCH /api/admin/reports/{reportId}` | 管理员处理举报 |
 
 详细请求参数、响应结构和错误码见 [03-api-specification.md](03-api-specification.md) 和 [03-api-specification.yaml](03-api-specification.yaml)。
 
@@ -448,7 +460,7 @@ CampusHub 中存在接单申请通知、订单状态变更通知、评价邀请�
 
 ### 8.1 数据库总体结构
 
-数据库采用 MySQL 8.0，字符集 `utf8mb4`，存储引擎 InnoDB。核心表共 17 张：
+数据库采用 MySQL 8.0，字符集 `utf8mb4`，存储引擎 InnoDB。核心表共 18 张：
 
 | 分类 | 表 |
 |------|----|
@@ -457,7 +469,7 @@ CampusHub 中存在接单申请通知、订单状态变更通知、评价邀请�
 | 接单订单 | `application`、`orders`、`order_status_log` |
 | 消息通知 | `order_message`、`notification` |
 | 评价信用 | `review`、`credit_log` |
-| 举报审核 | `report` |
+| 举报审核 | `report`、`report_evidence` |
 | 基础设施 | `file_record`、`announcement`、`admin_operation_log` |
 
 ### 8.2 关系映射
@@ -473,6 +485,7 @@ CampusHub 中存在接单申请通知、订单状态变更通知、评价邀请�
 | `Order` 与 `OrderMessage` 一对多 | `order_message.order_id` |
 | `Order` 与 `Review` 一对多 | `review.order_id` |
 | `User` 与 `Task` 收藏多对多 | `favorite(user_id, task_id)` |
+| `Report` 与 `FileRecord` 证据关联 | `report_evidence(report_id, file_record_id)` |
 
 ### 8.3 关键索引
 

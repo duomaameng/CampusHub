@@ -109,8 +109,9 @@
 | 序号 | 方法 | 路径 | 说明 | 认证 | 状态  |
 |------|------|------|------|------|-----|
 | RP-01 | GET | `/api/reports` | 我的举报列表 | JWT | 已完成 |
-| RP-02 | POST | `/api/tasks/{taskId}/reports` | 提交举报 | JWT | 已完成 |
-| RP-03 | GET | `/api/reports/{reportId}` | 举报详情 | JWT | 已完成 |
+| RP-02 | POST | `/api/tasks/{taskId}/reports` | 提交任务举报 | JWT | 已完成 |
+| RP-03 | POST | `/api/users/{userId}/reports` | 提交用户举报 | JWT | 已完成 |
+| RP-04 | GET | `/api/reports/{reportId}` | 举报详情 | JWT | 已完成 |
 
 ---
 
@@ -163,11 +164,11 @@
 | Message 聊天 | 3      |
 | Review 评价 | 2      |
 | Notification 通知 | 5      |
-| Report 举报 | 3      |
+| Report 举报 | 4      |
 | File 文件 | 1      |
 | Admin 后台 | 10     |
 | Announcement 公告 | 5      |
-| **合计** | **58** |
+| **合计** | **59** |
 
 ---
 

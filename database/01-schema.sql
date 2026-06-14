@@ -142,7 +142,7 @@ CREATE TABLE `orders` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'order id',
   `task_id` BIGINT NOT NULL COMMENT 'task id',
   `publisher_id` BIGINT NOT NULL COMMENT 'publisher user id',
-  `service_provider_id` BIGINT NOT NULL COMMENT 'service provider user id',
+  `service_provider_id` BIGINT DEFAULT NULL COMMENT 'service provider user id; nullable when order is returned to pending confirmation',
   `status` VARCHAR(24) NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT 'order status',
   `completion_proof_url` VARCHAR(512) DEFAULT NULL COMMENT 'completion proof url',
   `cancel_reason` VARCHAR(500) DEFAULT NULL COMMENT 'cancel reason',

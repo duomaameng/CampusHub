@@ -62,7 +62,7 @@ INSERT INTO `report` (`id`, `reporter_id`, `target_type`, `target_id`, `reason_t
 INSERT INTO `file_record` (`id`, `user_id`, `file_name`, `file_url`, `file_size`, `purpose`) VALUES
 (1, 2, 'book-1.jpg', '/uploads/tasks/book-1.jpg', 182044, 'TASK_IMAGE'),
 (2, 2, 'print-order.jpg', '/uploads/tasks/print-order.jpg', 92511, 'TASK_IMAGE'),
-(3, 3, 'chat-proof.png', '/uploads/messages/chat-proof.png', 38220, 'MESSAGE_IMAGE');
+(3, 3, 'chat-proof.png', '/uploads/messages/chat-proof.png', 38220, 'CHAT_IMAGE');
 
 INSERT INTO `announcement` (`id`, `publisher_id`, `title`, `content`, `priority`, `is_active`) VALUES
 (1, 1, 'CampusHub test environment', 'This database contains local development seed data for registration, posting tasks, taking tasks, chat, review and report flows.', 'IMPORTANT', 1);

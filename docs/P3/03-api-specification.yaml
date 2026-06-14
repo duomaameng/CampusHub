@@ -713,28 +713,60 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/ReportStatus"
+  /tasks/{taskId}/reports:
     post:
       tags: [Report]
-      summary: 提交举报
+      summary: 举报任务
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [targetType, targetId, reasonType, description]
+              required: [reason]
               properties:
-                targetType:
-                  $ref: "#/components/schemas/ReportTargetType"
-                targetId:
-                  type: integer
-                  format: int64
-                reasonType:
-                  $ref: "#/components/schemas/ReportReasonType"
-                description:
+                reason:
                   type: string
-                  minLength: 10
                   maxLength: 1000
+                evidenceImageIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+  /users/{userId}/reports:
+    post:
+      tags: [Report]
+      summary: 举报用户
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  maxLength: 1000
+                evidenceImageIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
 
   /reports/{reportId}:
     get:
@@ -759,14 +791,14 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [file, purpose]
+              required: [file, businessType]
               properties:
                 file:
                   type: string
                   format: binary
-                purpose:
+                businessType:
                   type: string
-                  enum: [AVATAR, TASK_IMAGE, COMPLETION_PROOF, MESSAGE_IMAGE, REPORT_EVIDENCE]
+                  enum: [AVATAR, TASK_IMAGE, ORDER_PROOF, CHAT_IMAGE, REPORT_EVIDENCE]
 
   # ==================== Admin ====================
   /admin/dashboard:
@@ -916,8 +948,8 @@ paths:
           schema:
             $ref: "#/components/schemas/ReportStatus"
 
-  /admin/reports/{reportId}/handle:
-    post:
+  /admin/reports/{reportId}:
+    patch:
       tags: [Admin]
       summary: 处理举报
       parameters:
@@ -1100,7 +1132,7 @@ components:
       enum: [TEXT, IMAGE]
     NotificationType:
       type: string
-      enum: [APPLICATION, ORDER_STATUS, REVIEW_REQUEST, REPORT_RESULT]
+      enum: [APPLICATION, ORDER_STATUS, ORDER_MESSAGE, REVIEW_REQUEST, REPORT_RESULT]
 
     # ---- Common ----
     ApiResponse:

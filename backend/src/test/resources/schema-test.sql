@@ -105,7 +105,7 @@ CREATE TABLE orders (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   task_id BIGINT NOT NULL UNIQUE,
   publisher_id BIGINT NOT NULL,
-  service_provider_id BIGINT NOT NULL,
+  service_provider_id BIGINT,
   status VARCHAR(24) NOT NULL,
   completion_proof_url VARCHAR(512),
   cancel_reason VARCHAR(500),

@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> IN_PROGRESS: 发布者确认接单申请并创建订单
+    PENDING_CONFIRM --> IN_PROGRESS: 重新确认服务方并开始执行
+    IN_PROGRESS --> PENDING_COMPLETION: 服务方提交完成凭证
+    IN_PROGRESS --> IN_PROGRESS: 服务方申请取消 / 发布者拒绝取消
+    IN_PROGRESS --> PENDING_CONFIRM: 发布者取消或同意服务方取消
+    PENDING_COMPLETION --> COMPLETED: 发布者确认完成
+    IN_PROGRESS --> DISPUTE: 管理员冻结争议订单
+    PENDING_COMPLETION --> DISPUTE: 管理员冻结争议订单
+    PENDING_CONFIRM --> DISPUTE: 管理员冻结争议订单
+    DISPUTE --> IN_PROGRESS: 管理员恢复原状态
+    DISPUTE --> PENDING_COMPLETION: 管理员恢复原状态
+    DISPUTE --> PENDING_CONFIRM: 管理员恢复原状态
+    COMPLETED --> REVIEWED: 双方评价或评价期结束

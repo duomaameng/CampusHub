@@ -195,19 +195,20 @@ flowchart TD
 | 订单 | GET | `/api/orders` | 查询我的发布/接单订单 |
 | 订单 | GET | `/api/orders/{orderId}` | 查看订单详情 |
 | 订单 | POST | `/api/orders/{orderId}/messages` | 发送订单内文字消息 |
-| 订单 | POST | `/api/orders/{orderId}/messages/images` | 上传并发送订单内图片消息 |
+| 订单 | POST | `/api/orders/{orderId}/messages` | 发送订单内文字或图片消息 |
 | 订单 | WS | `/ws/orders/{orderId}/chat` | 订单双方实时接收文字和图片消息事件 |
 | 订单 | POST | `/api/orders/{orderId}/complete` | 服务方提交完成凭证 |
 | 订单 | POST | `/api/orders/{orderId}/confirm-completion` | 发布者确认完成 |
 | 评价 | POST | `/api/orders/{orderId}/reviews` | 提交订单评价 |
-| 举报 | POST | `/api/reports` | 提交举报 |
+| 举报 | POST | `/api/tasks/{taskId}/reports` | 提交任务举报 |
+| 举报 | POST | `/api/users/{userId}/reports` | 提交用户举报 |
 | 通知 | GET | `/api/notifications` | 查询通知列表 |
 | 通知 | PATCH | `/api/notifications/{notificationId}/read` | 标记已读 |
-| 文件 | POST | `/api/files/images` | 上传头像、需求图片、凭证图片 |
+| 文件 | POST | `/api/files/upload` | 上传头像、需求图片、完成凭证、聊天图片、举报证据 |
 | 后台 | GET | `/api/admin/users` | 管理员查询用户 |
 | 后台 | PATCH | `/api/admin/users/{userId}/status` | 禁用/解禁用户 |
 | 后台 | GET | `/api/admin/reports` | 查询举报列表 |
-| 后台 | POST | `/api/admin/reports/{reportId}/handle` | 处理举报 |
+| 后台 | PATCH | `/api/admin/reports/{reportId}` | 处理举报 |
 
 ### 3.3 模块间接口
 
@@ -229,19 +230,19 @@ flowchart TD
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 待接单
-    待接单 --> 待确认: 服务方申请接单
-    待确认 --> 进行中: 发布者确认
-    待确认 --> 已取消: 发布者拒绝/超时
+    [*] --> 进行中: 发布者确认接单申请并创建订单
+    待接单 --> 进行中: 重新确认服务方
     进行中 --> 待确认完成: 服务方提交完成凭证
+    进行中 --> 进行中: 服务方申请取消 / 发布者拒绝取消
+    进行中 --> 待接单: 发布者取消或同意服务方取消
     待确认完成 --> 已完成: 发布者确认完成
-    待确认完成 --> 争议处理中: 发布者发起争议
-    争议处理中 --> 已完成: 管理员裁定完成
-    争议处理中 --> 已取消: 管理员裁定取消
+    进行中 --> 争议处理中: 管理员冻结订单
+    待确认完成 --> 争议处理中: 管理员冻结订单
+    待接单 --> 争议处理中: 管理员冻结订单
+    争议处理中 --> 进行中: 管理员恢复原状态
+    争议处理中 --> 待确认完成: 管理员恢复原状态
+    争议处理中 --> 待接单: 管理员恢复原状态
     已完成 --> 已评价: 双方完成评价或评价期结束
-    待接单 --> 已取消: 发布者取消/过期
-    进行中 --> 已取消: 双方协商取消
-    已取消 --> [*]
     已评价 --> [*]
 ```
 
