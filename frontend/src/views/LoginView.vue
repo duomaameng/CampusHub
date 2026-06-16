@@ -36,6 +36,9 @@ async function submit() {
 
 <template>
   <section class="login-page" aria-labelledby="login-title">
+    <span class="orange-bloom orange-bloom--left" aria-hidden="true"></span>
+    <span class="orange-bloom orange-bloom--right" aria-hidden="true"></span>
+    <span class="orange-bloom orange-bloom--top" aria-hidden="true"></span>
     <div class="login-layout">
       <article class="site-card" aria-label="CampusHub website information">
         <span class="site-card__mark">
@@ -149,6 +152,55 @@ async function submit() {
 .login-page::after {
   inset: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 42%, rgba(0, 0, 0, 0.22));
+}
+
+.orange-bloom {
+  position: absolute;
+  z-index: 0;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.78;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 178, 112, 0.92) 0 7%, transparent 8%),
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 16px, rgba(255, 118, 41, 0.58) 17px 20px, transparent 21px 30px);
+  mask-image: radial-gradient(circle at 50% 50%, #000 0 68%, transparent 69%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0 68%, transparent 69%);
+}
+
+.orange-bloom::before,
+.orange-bloom::after {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border: 2px solid rgba(255, 146, 73, 0.72);
+  border-radius: 50%;
+}
+
+.orange-bloom::after {
+  inset: 28%;
+  border-color: rgba(255, 204, 164, 0.54);
+}
+
+.orange-bloom--left {
+  left: -88px;
+  bottom: 13%;
+  transform: rotate(-16deg);
+}
+
+.orange-bloom--right {
+  right: -92px;
+  bottom: 16%;
+  transform: rotate(18deg);
+}
+
+.orange-bloom--top {
+  width: 210px;
+  height: 210px;
+  left: 48%;
+  top: -98px;
+  opacity: 0.45;
 }
 
 .login-layout {
@@ -497,6 +549,10 @@ async function submit() {
   .site-card__pattern {
     width: 220px;
     opacity: 0.46;
+  }
+
+  .orange-bloom {
+    opacity: 0.42;
   }
 
   .login-card__links {
