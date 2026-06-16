@@ -2164,8 +2164,11 @@ select {
 input[type='checkbox'] {
   width: 16px;
   height: 16px;
+  padding: 0;
+  box-sizing: border-box;
   border-radius: 4px;
   border: 1.5px solid var(--border-medium);
+  background-image: none;
   appearance: none;
   cursor: pointer;
   position: relative;

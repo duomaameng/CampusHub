@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarClock, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { fileApi, taskApi } from '@/services/api'
@@ -32,11 +32,18 @@ const uploadError = ref('')
 const imageUploading = ref(false)
 const removingImageIds = ref<number[]>([])
 const uploadedImages = ref<UploadedFileItem[]>([])
-const minDeadline = computed(() => {
+const minDeadline = ref(createMinDeadline())
+let minDeadlineTimer: number | undefined
+
+function createMinDeadline() {
   const date = new Date(Date.now() + 60 * 1000)
   date.setSeconds(0, 0)
   return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000).toISOString().slice(0, 16)
-})
+}
+
+function refreshMinDeadline() {
+  minDeadline.value = createMinDeadline()
+}
 
 const categoryLabel: Record<TaskCategory, string> = {
   EXPRESS: '快递代取',
@@ -69,7 +76,7 @@ const categoryFields = computed(() => {
     return [
       ['itemName', '物品名称'],
       ['location', '地点'],
-      ['foundTime', '时间'],
+      ['foundTime', '丢失/捡到时间'],
       ['itemDescription', '物品描述'],
       ['contactInfo', '联系方式']
     ]
@@ -91,11 +98,22 @@ watch(
   }
 )
 
+onMounted(() => {
+  refreshMinDeadline()
+  minDeadlineTimer = window.setInterval(refreshMinDeadline, 30000)
+})
+
+onUnmounted(() => {
+  if (minDeadlineTimer) window.clearInterval(minDeadlineTimer)
+})
+
 async function submit() {
   error.value = ''
-  if (!form.deadline || new Date(form.deadline).getTime() <= Date.now()) {
-    error.value = '截止时间必须晚于当前时间'
+  if (!validateDeadline()) {
     return
+  }
+  for (const [key] of categoryFields.value) {
+    if (!validateCategoryDateTimeField(key)) return
   }
   loading.value = true
   try {
@@ -106,6 +124,34 @@ async function submit() {
   } finally {
     loading.value = false
   }
+}
+
+function validateDeadline() {
+  refreshMinDeadline()
+  if (!form.deadline || new Date(form.deadline).getTime() <= Date.now()) {
+    form.deadline = minDeadline.value
+    return false
+  }
+  return true
+}
+
+function isDateTimeField(key: string) {
+  return key.includes('Time')
+}
+
+function requiresFutureDateTime(key: string) {
+  return key === 'activityTime'
+}
+
+function validateCategoryDateTimeField(key: string) {
+  if (!requiresFutureDateTime(key)) return true
+  refreshMinDeadline()
+  const value = form.categoryFields[key]
+  if (typeof value !== 'string' || !value || new Date(value).getTime() <= Date.now()) {
+    form.categoryFields[key] = minDeadline.value
+    return false
+  }
+  return true
 }
 
 async function handleTaskImageChange(event: Event) {
@@ -240,7 +286,16 @@ async function removeUploadedImage(imageId: number) {
             <CalendarClock class="label-icon" aria-hidden="true" />
             截止时间
           </label>
-          <input id="deadline" v-model="form.deadline" type="datetime-local" :min="minDeadline" required />
+          <input
+            id="deadline"
+            v-model="form.deadline"
+            type="datetime-local"
+            :min="minDeadline"
+            required
+            @input="validateDeadline"
+            @change="validateDeadline"
+            @blur="validateDeadline"
+          />
         </div>
       </div>
 
@@ -257,7 +312,11 @@ async function removeUploadedImage(imageId: number) {
             :id="key"
             v-model="form.categoryFields[key]"
             :type="key.includes('Time') ? 'datetime-local' : key === 'price' || key === 'requiredCount' ? 'number' : 'text'"
+            :min="requiresFutureDateTime(key) ? minDeadline : undefined"
             required
+            @input="validateCategoryDateTimeField(key)"
+            @change="validateCategoryDateTimeField(key)"
+            @blur="validateCategoryDateTimeField(key)"
           />
         </div>
       </div>

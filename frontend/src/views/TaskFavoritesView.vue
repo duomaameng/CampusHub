@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router'
 
 import { taskApi } from '@/services/api'
 import { taskStatusText } from '@/types'
-import type { PageData, TaskItem, TaskStatus } from '@/types'
+import type { PageData, RewardType, TaskItem, TaskStatus } from '@/types'
 
 const filters = reactive<{
   status: '' | TaskStatus
@@ -17,6 +17,12 @@ const filters = reactive<{
 const page = ref<PageData<TaskItem>>()
 const loading = ref(false)
 const error = ref('')
+
+const rewardText: Record<RewardType, string> = {
+  CASH: '现金',
+  NEGOTIABLE: '面议',
+  CREDIT_INTENT: '积分意向'
+}
 
 const filteredRecords = computed(() => {
   const keyword = filters.keyword.trim().toLowerCase()
@@ -90,7 +96,7 @@ onMounted(loadFavorites)
         <p>{{ task.description }}</p>
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>
-          <span><Tag class="meta-icon" aria-hidden="true" />{{ task.rewardType }}</span>
+          <span><Tag class="meta-icon" aria-hidden="true" />{{ rewardText[task.rewardType] }}</span>
           <span><Clock class="meta-icon" aria-hidden="true" />{{ new Date(task.deadline).toLocaleString() }}</span>
         </div>
         <div class="meta-line">

@@ -5,7 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
-import type { ApplicationItem, OrderItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
+import type { ApplicationItem, OrderItem, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
@@ -67,6 +67,58 @@ const categoryText: Record<string, string> = {
   CONSULTATION: '咨询问答',
   TEAM_UP: '组队搭子',
   OTHER: '其他'
+}
+
+const rewardText: Record<RewardType, string> = {
+  CASH: '现金',
+  NEGOTIABLE: '面议',
+  CREDIT_INTENT: '积分意向'
+}
+
+const categoryFieldText: Record<string, string> = {
+  expressCompany: '快递公司',
+  building: '宿舍楼',
+  pickupLocation: '取件地点',
+  pickupCode: '取件码',
+  pickupAddress: '取件地址',
+  deliveryLocation: '送达地点',
+  deliveryAddress: '送达地址',
+  destination: '目的地',
+  subject: '辅导科目',
+  level: '难度/年级',
+  goodsCategory: '商品分类',
+  price: '售价',
+  itemName: '物品名称',
+  condition: '成色',
+  lostOrFound: '失物/招领',
+  location: '地点',
+  itemLocation: '地点',
+  foundTime: '丢失/捡到时间',
+  itemDescription: '物品描述',
+  contactInfo: '联系方式',
+  topic: '咨询主题',
+  activityType: '活动类型',
+  requiredCount: '人数需求',
+  activityTime: '活动时间',
+  teamType: '组队类型',
+  expectedMembers: '期望人数',
+  note: '补充说明'
+}
+
+const categoryFieldValueText: Record<string, string> = {
+  NEW: '全新',
+  LIKE_NEW: '几乎全新',
+  USED: '有使用痕迹'
+}
+
+function formatCategoryFieldKey(key: string) {
+  return categoryFieldText[key] || key
+}
+
+function formatCategoryFieldValue(value: string | number | boolean) {
+  if (typeof value === 'boolean') return value ? '是' : '否'
+  if (typeof value === 'string') return categoryFieldValueText[value] || value
+  return value
 }
 
 async function load() {
@@ -308,7 +360,7 @@ onMounted(load)
         <div class="grid two">
           <div class="panel">
             <strong>报酬类型</strong>
-            <p>{{ task.rewardType }}</p>
+            <p>{{ rewardText[task.rewardType] }}</p>
           </div>
           <div class="panel">
             <strong>截止时间</strong>
@@ -317,9 +369,11 @@ onMounted(load)
         </div>
 
         <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
-          <h2>分类字段</h2>
+          <h2>订单相关信息</h2>
           <div class="meta-line">
-            <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">{{ key }}: {{ value }}</span>
+            <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
+              {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
+            </span>
           </div>
         </div>
       </article>
