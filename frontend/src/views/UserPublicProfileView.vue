@@ -41,7 +41,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
+  <section class="user-public-profile-view">
     <div class="page-title">
       <div>
         <h1>用户资料</h1>
@@ -123,6 +123,94 @@ onMounted(load)
 </template>
 
 <style scoped>
+.user-public-profile-view {
+  --public-green: #b9ff66;
+  --public-dark: #191a23;
+  --public-grey: #f3f3f3;
+}
+
+.page-title {
+  margin-bottom: 26px;
+}
+
+.page-title h1 {
+  width: max-content;
+  padding: 5px 14px;
+  border-radius: 18px;
+  background: var(--public-green);
+  color: #000000;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0;
+  -webkit-text-fill-color: #000000;
+}
+
+.page-title p {
+  margin-top: 12px;
+  color: #3f4350;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-layout {
+  align-items: start;
+  gap: 26px;
+}
+
+.panel {
+  border: 2px solid #000000;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 7px 0 #000000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+}
+
+.panel::before,
+.panel::after,
+.empty-state::before {
+  display: none;
+}
+
+.detail-layout > .panel {
+  position: relative;
+  padding: 30px;
+  background:
+    radial-gradient(circle at 94% 8%, var(--public-green) 0 72px, transparent 73px),
+    #ffffff;
+}
+
+aside.panel {
+  padding: 28px;
+  background:
+    radial-gradient(circle at 96% 8%, var(--public-green) 0 62px, transparent 63px),
+    var(--public-dark);
+  color: #ffffff;
+}
+
+aside.panel h2,
+aside.panel h3 {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--public-green);
+  color: #000000;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+aside.panel h2 {
+  font-size: 22px;
+}
+
+aside.panel h3 {
+  font-size: 18px;
+}
+
 .profile-header {
   display: flex;
   align-items: center;
@@ -131,22 +219,98 @@ onMounted(load)
 }
 
 .avatar-preview.large {
-  width: 80px;
-  height: 80px;
-  font-size: 28px;
+  width: 92px;
+  height: 92px;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  background: var(--public-green);
+  box-shadow: 0 5px 0 #000000;
+  color: #000000;
+  font-size: 32px;
+  font-weight: 900;
+}
+
+.avatar-preview::after {
+  display: none;
 }
 
 .profile-meta h2 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--public-green);
+  color: #000000;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
 }
 
 .profile-tags {
   display: flex;
   gap: var(--space-2);
   margin-top: var(--space-2);
+}
+
+.tag {
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  padding: 5px 12px;
+  box-shadow: none;
+}
+
+.tag.success {
+  background: var(--public-green);
+  color: #000000;
+  border-color: #000000;
+}
+
+.grid.two > div,
+.field {
+  padding: 20px;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  background: var(--public-grey);
+  box-shadow: 0 4px 0 #000000;
+}
+
+.grid.two p:not(.hint),
+.field p:not(.hint) {
+  color: #000000;
+  font-weight: 900;
+}
+
+.hint {
+  color: #6f7485;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+aside.panel > .grid.two > div {
+  background: #ffffff;
+}
+
+aside.panel strong {
+  display: block;
+  color: #000000;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+aside.panel > p {
+  color: rgba(255, 255, 255, 0.84);
+  font-weight: 800;
+}
+
+aside.panel > .hint {
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .review-list {
@@ -156,12 +320,15 @@ onMounted(load)
 }
 
 .review-item {
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--border-light);
+  padding: 16px;
+  border: 2px solid #000000;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .review-item:last-child {
-  border-bottom: none;
+  border-bottom: 2px solid #000000;
 }
 
 .review-header {
@@ -171,21 +338,48 @@ onMounted(load)
 }
 
 .reviewer {
-  font-weight: 600;
+  font-weight: 900;
   font-size: 13px;
-  color: var(--text-primary);
+  color: #000000;
 }
 
 .rating {
-  color: var(--primary-500);
+  padding: 3px 9px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: var(--public-green);
+  color: #000000;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 900;
 }
 
 .review-content {
   margin: 4px 0;
-  color: var(--text-secondary);
+  color: #343743;
   font-size: 13px;
+  font-weight: 700;
   line-height: 1.5;
+}
+
+.error-message,
+.empty-state {
+  padding: 12px 16px;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 3px 0 #000000;
+  font-weight: 800;
+}
+
+.empty-state {
+  padding: var(--space-10) var(--space-6);
+  border-style: dashed;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>

@@ -241,7 +241,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section>
+  <section class="admin-view">
     <div class="page-title">
       <div>
         <h1>后台管理</h1>
@@ -577,14 +577,51 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.admin-view {
+  --admin-green: #b9ff66;
+  --admin-dark: #191a23;
+  --admin-grey: #f3f3f3;
+  --admin-line: #000000;
+}
+
+.admin-view :deep(.page-title) {
+  align-items: center;
+  padding: 30px 34px;
+  border: 2px solid var(--admin-line);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 94% 18%, rgba(185, 255, 102, 0.76) 0 58px, transparent 60px),
+    #ffffff;
+  box-shadow: 0 6px 0 var(--admin-line);
+}
+
+.admin-view :deep(.page-title h1) {
+  width: max-content;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: var(--admin-green);
+  color: #000000;
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.admin-view :deep(.page-title p) {
+  color: #2b2d35;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .admin-tabs {
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
+  gap: 8px;
+  padding: 8px;
+  background: #ffffff;
+  border: 2px solid var(--admin-line);
+  border-radius: 18px;
   margin-bottom: var(--space-6);
+  box-shadow: 0 5px 0 var(--admin-line);
   animation: fadeSlideUp 0.4s var(--transition-slow) both;
 }
 
@@ -592,32 +629,104 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  color: #20222b;
   font-size: 13px;
-  font-weight: 600;
-  transition: all var(--transition-fast);
+  font-weight: 900;
+  transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .admin-tab:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+  color: #000000;
+  background: var(--admin-grey);
+  border-color: var(--admin-line);
+  transform: translateY(-1px);
 }
 
 .admin-tab.active {
-  color: var(--primary-600);
-  background: var(--accent-light);
+  color: #000000;
+  background: var(--admin-green);
+  border-color: var(--admin-line);
+  box-shadow: 0 3px 0 var(--admin-line);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .admin-tab.active {
-    color: var(--primary-400);
-  }
+.admin-view :deep(.toolbar),
+.admin-view :deep(.panel),
+.admin-view section.grid {
+  border: 2px solid var(--admin-line);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 var(--admin-line);
 }
 
-[data-theme='dark'] .admin-tab.active {
-  color: var(--primary-400);
+.admin-view :deep(.toolbar) {
+  padding: 22px;
+}
+
+.admin-view :deep(.field label) {
+  color: #000000;
+  font-weight: 900;
+}
+
+.admin-view :deep(.label-icon) {
+  color: var(--admin-dark);
+}
+
+.admin-view :deep(.field input),
+.admin-view :deep(.field select),
+.admin-view :deep(.field textarea),
+.report-actions textarea {
+  border: 2px solid var(--admin-line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #000000;
+}
+
+.admin-view :deep(.field input:focus),
+.admin-view :deep(.field select:focus),
+.admin-view :deep(.field textarea:focus),
+.report-actions textarea:focus {
+  border-color: var(--admin-line);
+  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+}
+
+.admin-view :deep(.button) {
+  border: 2px solid var(--admin-line);
+  border-radius: 14px;
+  font-weight: 900;
+  box-shadow: none;
+}
+
+.admin-view :deep(.button.primary) {
+  background: var(--admin-dark);
+  color: #ffffff;
+}
+
+.admin-view :deep(.button.secondary),
+.admin-view :deep(.button.ghost) {
+  background: #ffffff;
+  color: #000000;
+}
+
+.admin-view :deep(.button.secondary:hover),
+.admin-view :deep(.button.ghost:hover) {
+  background: var(--admin-green);
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.admin-view :deep(.button.danger) {
+  background: #ffffff;
+  color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.admin-view :deep(.button.danger:hover) {
+  background: #fee2e2;
+  transform: translateY(-1px);
 }
 
 .admin-announcement-layout {
@@ -629,20 +738,59 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  padding: 6px 2px 0 18px;
 }
 
 .announcement-list-head h2 {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  width: max-content;
+  padding: 4px 8px;
+  border-radius: 24px;
+  background: var(--admin-green);
+  color: #000000;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.announcement-list-head .hint {
+  display: block;
+  margin-left: 16px;
+  margin-top: 6px;
 }
 
 .table-wrapper {
   overflow-x: auto;
+  border: 2px solid var(--admin-line);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 var(--admin-line);
 }
 
 .table-wrapper table {
   min-width: 760px;
+}
+
+.table-wrapper :deep(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-wrapper :deep(thead) {
+  background: var(--admin-dark);
+}
+
+.table-wrapper :deep(th) {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.table-wrapper :deep(td) {
+  color: #20222b;
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+.table-wrapper :deep(tbody tr:hover td) {
+  background: #f7ffe8;
 }
 
 .announcement-summary {
@@ -687,9 +835,9 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--text-secondary);
+  color: #20222b;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 900;
 }
 
 .pagination {
@@ -697,6 +845,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   gap: var(--space-4);
+  margin-top: var(--space-5);
 }
 
 @media (max-width: 1024px) {
