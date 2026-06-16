@@ -10,9 +10,9 @@ INSERT INTO `user` (`id`, `email`, `password_hash`, `role`, `status`, `verified`
 
 INSERT INTO `user_profile` (`id`, `user_id`, `nickname`, `avatar_url`, `gender`, `grade`, `college`, `bio`, `campus`, `contact`, `contact_visible`) VALUES
 (1, 1, '管理员', NULL, 'OTHER', NULL, '信息化中心', '系统管理员演示账号', '仙林', NULL, 0),
-(2, 2, '学生演示一', NULL, 'MALE', '2024', '软件学院', '已完成认证的学生演示账号', '仙林', '微信：student_demo1', 1),
-(3, 3, '学生演示二', NULL, 'FEMALE', '2024', '软件学院', '另一个已认证的学生演示账号', '仙林', '微信：student_demo2', 1),
-(4, 4, '待认证学生', NULL, 'OTHER', '2025', '软件学院', '待完成邮箱认证的学生演示账号', '仙林', '电话：student_pending', 0);
+(2, 2, 'duomaameng', NULL, 'MALE', '2024', '软件学院', '已完成认证的学生演示账号', '仙林', '微信：student_demo1', 1),
+(3, 3, 'Kurisu188', NULL, 'FEMALE', '2024', '软件学院', '另一个已认证的学生演示账号', '仙林', '微信：student_demo2', 1),
+(4, 4, 'petrichor', NULL, 'OTHER', '2025', '软件学院', '待完成邮箱认证的学生演示账号', '仙林', '电话：student_pending', 0);
 
 INSERT INTO `verification_code` (`id`, `email`, `code`, `purpose`, `expires_at`, `used`) VALUES
 (1, 'student.pending@smail.nju.edu.cn', '654321', 'REGISTER', DATE_ADD(NOW(), INTERVAL 1 DAY), 0),
