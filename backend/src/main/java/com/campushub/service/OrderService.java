@@ -115,7 +115,7 @@ public class OrderService {
                 OrderStatus.IN_PROGRESS,
                 OrderStatus.PENDING_COMPLETION,
                 currentUserId,
-                request.getNote() != null && !request.getNote().isBlank() ? request.getNote() : "Provider submitted completion"
+                request.getNote() != null && !request.getNote().isBlank() ? request.getNote() : "服务方提交完成"
         );
         notificationService.createOrderStatusNotification(order.getPublisherId(), order.getId(), OrderStatus.PENDING_COMPLETION);
     }
@@ -136,7 +136,7 @@ public class OrderService {
         Task task = requireTask(order.getTaskId());
         task.setStatus(TaskStatus.COMPLETED);
         taskMapper.updateById(task);
-        saveStatusLog(order.getId(), OrderStatus.PENDING_COMPLETION, OrderStatus.COMPLETED, currentUserId, "Publisher confirmed completion");
+        saveStatusLog(order.getId(), OrderStatus.PENDING_COMPLETION, OrderStatus.COMPLETED, currentUserId, "发布方确认完成");
 
         notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.COMPLETED);
         String taskTitle = task.getTitle();
@@ -281,7 +281,7 @@ public class OrderService {
         } else if (MessageType.IMAGE.equals(request.getMessageType())) {
             FileRecord image = request.getImageId() == null ? null : fileService.requireOwnedFile(request.getImageId(), UploadBusinessType.CHAT_IMAGE);
             if (image == null) {
-                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "Image file not found");
+                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "图片文件不存在");
             }
             message.setImageUrl(image.getFileUrl());
         }
@@ -334,7 +334,7 @@ public class OrderService {
         creditLog.setChangeAmount(scoreAfter - scoreBefore);
         creditLog.setScoreBefore(scoreBefore);
         creditLog.setScoreAfter(scoreAfter);
-        creditLog.setReason("Order #" + orderId + " review rating: " + request.getRating());
+        creditLog.setReason("订单 #" + orderId + " 评价评分：" + request.getRating());
         creditLog.setRelatedOrderId(orderId);
         creditLogMapper.insert(creditLog);
 
@@ -342,7 +342,7 @@ public class OrderService {
         if (reviewCount >= 2 && !OrderStatus.REVIEWED.equals(order.getStatus())) {
             order.setStatus(OrderStatus.REVIEWED);
             orderMapper.updateById(order);
-            saveStatusLog(order.getId(), OrderStatus.COMPLETED, OrderStatus.REVIEWED, currentUserId, "Both sides completed reviews");
+            saveStatusLog(order.getId(), OrderStatus.COMPLETED, OrderStatus.REVIEWED, currentUserId, "双方已完成评价");
         }
     }
 
@@ -523,6 +523,6 @@ public class OrderService {
         UserProfile profile = userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfile>()
                 .eq(UserProfile::getUserId, userId)
                 .last("LIMIT 1"));
-        return profile != null ? profile.getNickname() : "CampusHub User";
+        return profile != null ? profile.getNickname() : "CampusHub 用户";
     }
 }

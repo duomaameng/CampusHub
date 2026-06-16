@@ -144,10 +144,10 @@ public class AdminService {
     @Transactional
     public AdminUserStatusVO updateUserStatus(Long userId, UserStatus status, String reason) {
         if (status == null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "User status is required");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "用户状态不能为空");
         }
         if (UserStatus.ANONYMIZED.equals(status)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Admin user status update only supports ACTIVE or DISABLED");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "管理员只能将用户状态调整为正常或禁用");
         }
 
         User user = userMapper.selectById(userId);
@@ -209,20 +209,20 @@ public class AdminService {
     @Transactional
     public void updateTaskStatus(Long taskId, AdminTaskStatusUpdateRequest request) {
         if (request.getStatus() == null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Task status is required");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "需求状态不能为空");
         }
         Task task = requireTask(taskId);
         if (!TaskStatus.OPEN.equals(request.getStatus()) && !TaskStatus.CANCELLED.equals(request.getStatus())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Admin task status update only supports OPEN or CANCELLED");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "管理员只能将需求状态调整为开放或取消");
         }
         if (TaskStatus.OPEN.equals(task.getStatus()) && !TaskStatus.CANCELLED.equals(request.getStatus())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Open tasks can only be taken down to CANCELLED by admin");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "开放状态的需求只能由管理员下架为已取消");
         }
         if (TaskStatus.CANCELLED.equals(task.getStatus()) && !TaskStatus.OPEN.equals(request.getStatus())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Cancelled tasks can only be restored to OPEN by admin");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "已取消的需求只能由管理员恢复为开放状态");
         }
         if (!TaskStatus.OPEN.equals(task.getStatus()) && !TaskStatus.CANCELLED.equals(task.getStatus())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Only OPEN or CANCELLED tasks support admin status adjustment");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "只有开放或已取消的需求支持管理员调整状态");
         }
         TaskStatus nextStatus = request.getStatus();
         if (TaskStatus.OPEN.equals(task.getStatus()) && TaskStatus.CANCELLED.equals(nextStatus)) {
@@ -234,7 +234,7 @@ public class AdminService {
         }
         String previousStatus = findPreviousAdminStatus("UPDATE_TASK_STATUS", "TASK", taskId);
         if (!TaskStatus.OPEN.name().equals(previousStatus)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Only admin-taken-down tasks can be restored to OPEN");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "只有管理员下架的需求才能恢复为开放状态");
         }
         task.setStatus(TaskStatus.OPEN);
         taskMapper.updateById(task);
@@ -276,22 +276,22 @@ public class AdminService {
     @Transactional
     public void updateOrderStatus(Long orderId, AdminOrderStatusUpdateRequest request) {
         if (request.getStatus() == null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Order status is required");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "订单状态不能为空");
         }
         Order order = requireOrder(orderId);
         OrderStatus requestedStatus = request.getStatus();
         if (OrderStatus.DISPUTE.equals(requestedStatus)) {
             if (OrderStatus.DISPUTE.equals(order.getStatus())) {
-                throw new BusinessException(ErrorCode.BAD_REQUEST, "Order is already disputed");
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "订单已处于争议状态");
             }
             if (OrderStatus.COMPLETED.equals(order.getStatus())
                     || OrderStatus.CANCELLED.equals(order.getStatus())
                     || OrderStatus.REVIEWED.equals(order.getStatus())) {
-                throw new BusinessException(ErrorCode.BAD_REQUEST, "Completed, cancelled or reviewed orders cannot be frozen");
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "已完成、已取消或已评价的订单不能冻结");
             }
         } else {
             if (!OrderStatus.DISPUTE.equals(order.getStatus())) {
-                throw new BusinessException(ErrorCode.BAD_REQUEST, "Only disputed orders can be restored by admin");
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "只有争议中的订单可以由管理员恢复");
             }
         }
         OrderStatus currentStatus = order.getStatus();
@@ -307,14 +307,14 @@ public class AdminService {
         try {
             restoreStatus = OrderStatus.valueOf(previousStatus);
         } catch (Exception ex) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Missing original order status for admin restore");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "缺少订单冻结前的原始状态，无法恢复");
         }
         if (OrderStatus.DISPUTE.equals(restoreStatus)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Cannot restore order to disputed status");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能恢复为争议状态");
         }
         if (!requestedStatus.equals(restoreStatus)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST,
-                    "Restore target must match the original order status before dispute: " + restoreStatus.name());
+                    "恢复目标必须与冻结前的订单状态一致：" + restoreStatus.name());
         }
         order.setStatus(restoreStatus);
         orderMapper.updateById(order);
@@ -382,7 +382,7 @@ public class AdminService {
         announcement.setPriority(StringUtils.hasText(request.getPriority()) ? request.getPriority().trim() : "NORMAL");
         announcement.setIsActive(true);
         announcementMapper.insert(announcement);
-        return new AnnouncementPublishVO(announcement.getId(), "PUBLISHED");
+        return new AnnouncementPublishVO(announcement.getId(), "已发布");
     }
 
     @Transactional
@@ -405,7 +405,7 @@ public class AdminService {
         announcementMapper.updateById(announcement);
         return new AnnouncementPublishVO(
                 announcement.getId(),
-                Boolean.TRUE.equals(announcement.getIsActive()) ? "ACTIVE" : "INACTIVE"
+                Boolean.TRUE.equals(announcement.getIsActive()) ? "已启用" : "已停用"
         );
     }
 
@@ -417,14 +417,14 @@ public class AdminService {
 
     private int normalizePage(int page) {
         if (page < 1) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Page must be greater than or equal to 1");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "页码必须大于等于 1");
         }
         return page;
     }
 
     private int normalizeSize(int size) {
         if (size < 1) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Size must be greater than or equal to 1");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "每页数量必须大于等于 1");
         }
         return Math.min(size, MAX_PAGE_SIZE);
     }
@@ -533,7 +533,7 @@ public class AdminService {
     private Announcement requireAnnouncement(Long announcementId) {
         Announcement announcement = announcementMapper.selectById(announcementId);
         if (announcement == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "Announcement not found");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "公告不存在");
         }
         return announcement;
     }

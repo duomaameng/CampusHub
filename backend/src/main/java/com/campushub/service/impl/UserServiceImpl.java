@@ -295,6 +295,6 @@ public class UserServiceImpl implements UserService {
                 new LambdaQueryWrapper<UserProfile>()
                         .eq(UserProfile::getUserId, userId)
                         .last("LIMIT 1"));
-        return profile != null ? profile.getNickname() : "CampusHub User";
+        return profile != null ? profile.getNickname() : "CampusHub 用户";
     }
 }

@@ -22,7 +22,7 @@ public class TaskUpdateRequest {
 
     private RewardType rewardType;
 
-    @Future
+    @Future(message = "截止时间必须晚于当前时间")
     private LocalDateTime deadline;
 
     private Boolean anonymous;

@@ -291,19 +291,19 @@ async function cancelOrder() {
     success.value = ''
     return
   }
-  const successText = isProvider.value && !isPublisher.value ? 'Cancel request submitted, waiting for publisher approval' : 'Order cancelled'
+  const successText = isProvider.value && !isPublisher.value ? '取消申请已提交，等待发布方处理' : '订单已取消'
   await runAction(() => orderApi.cancel(order.value!.id, cancelReason.value), successText)
   cancelReason.value = ''
 }
 
 async function approveCancelRequest() {
   if (!order.value) return
-  await runAction(() => orderApi.approveCancelRequest(order.value!.id), 'Cancel request approved, task reopened')
+  await runAction(() => orderApi.approveCancelRequest(order.value!.id), '已同意取消申请，需求已重新开放')
 }
 
 async function rejectCancelRequest() {
   if (!order.value) return
-  await runAction(() => orderApi.rejectCancelRequest(order.value!.id), 'Cancel request rejected')
+  await runAction(() => orderApi.rejectCancelRequest(order.value!.id), '已拒绝取消申请')
 }
 
 function toDatetimeLocal(value: string) {

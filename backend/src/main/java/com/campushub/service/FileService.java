@@ -91,12 +91,12 @@ public class FileService {
     public FileRecord requireOwnedFile(Long fileId) {
         FileRecord record = fileRecordMapper.selectById(fileId);
         if (record == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "File record not found");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件记录不存在");
         }
 
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!currentUserId.equals(record.getUserId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "You can only use files uploaded by yourself");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只能使用自己上传的文件");
         }
         return record;
     }
@@ -104,29 +104,29 @@ public class FileService {
     public FileRecord requireOwnedFile(Long fileId, UploadBusinessType expectedPurpose) {
         FileRecord record = requireOwnedFile(fileId);
         if (!expectedPurpose.name().equals(record.getPurpose())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "File purpose does not match business usage");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件用途与业务场景不匹配");
         }
         return record;
     }
 
     public FileRecord requireOwnedFile(String fileUrl, UploadBusinessType expectedPurpose) {
         if (fileUrl == null || fileUrl.isBlank()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "File url cannot be blank");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件地址不能为空");
         }
 
         FileRecord record = fileRecordMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<FileRecord>()
                 .eq(FileRecord::getFileUrl, fileUrl)
                 .last("LIMIT 1"));
         if (record == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "File record not found");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件记录不存在");
         }
 
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!currentUserId.equals(record.getUserId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "You can only use files uploaded by yourself");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只能删除自己上传的文件");
         }
         if (!expectedPurpose.name().equals(record.getPurpose())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "File purpose does not match business usage");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件用途与业务场景不匹配");
         }
         return record;
     }
@@ -137,20 +137,20 @@ public class FileService {
         String fileUrl = record.getFileUrl();
         String storedFileName = fileUrl == null ? "" : fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
         if (storedFileName.isBlank()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "File url is invalid");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件地址无效");
         }
 
         Path targetDirectory = Paths.get(uploadPath).toAbsolutePath().normalize();
         Path targetFile = targetDirectory.resolve(storedFileName).normalize();
         if (!targetFile.startsWith(targetDirectory)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "File path is invalid");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件路径无效");
         }
 
         fileRecordMapper.deleteById(fileId);
         try {
             Files.deleteIfExists(targetFile);
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "File delete failed");
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "文件删除失败");
         }
     }
 

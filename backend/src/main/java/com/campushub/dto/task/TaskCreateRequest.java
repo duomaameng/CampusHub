@@ -14,26 +14,26 @@ import java.util.Map;
 @Data
 public class TaskCreateRequest {
 
-    @NotNull
+    @NotNull(message = "需求分类不能为空")
     private TaskCategory category;
 
-    @NotBlank
+    @NotBlank(message = "需求标题不能为空")
     private String title;
 
-    @NotBlank
+    @NotBlank(message = "需求描述不能为空")
     private String description;
 
-    @NotBlank
+    @NotBlank(message = "校区不能为空")
     private String campus;
 
-    @NotNull
+    @NotNull(message = "报酬类型不能为空")
     private RewardType rewardType;
 
-    @NotNull
-    @Future
+    @NotNull(message = "截止时间不能为空")
+    @Future(message = "截止时间必须晚于当前时间")
     private LocalDateTime deadline;
 
-    @NotNull
+    @NotNull(message = "匿名设置不能为空")
     private Boolean anonymous;
 
     private List<Long> imageIds;

@@ -167,7 +167,7 @@ public class TaskService {
 
         String applicantNickname = Optional.ofNullable(findProfile(currentUserId))
                 .map(UserProfile::getNickname)
-                .orElse("CampusHub User");
+                .orElse("CampusHub 用户");
         notificationService.createApplicationNotification(task.getPublisherId(), task.getId(), applicantNickname, task.getTitle());
 
         return new TaskApplyVO(application.getId(), taskId, application.getStatus(), application.getCreatedAt());
@@ -245,7 +245,7 @@ public class TaskService {
         log.setFromStatus(OrderStatus.PENDING_CONFIRM.name());
         log.setToStatus(OrderStatus.IN_PROGRESS.name());
         log.setOperatorId(currentUserId);
-        log.setReason("Publisher confirmed application");
+        log.setReason("发布方确认接单申请");
         orderStatusLogMapper.insert(log);
 
         notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.IN_PROGRESS);
@@ -399,7 +399,7 @@ public class TaskService {
 
     private String requireText(String value, String fieldName) {
         if (value == null || value.isBlank()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " must not be blank");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, fieldName + " 不能为空");
         }
         return value.trim();
     }
@@ -435,7 +435,7 @@ public class TaskService {
         vo.setPublisherId(task.getPublisherId());
 
         UserProfile publisherProfile = findProfile(task.getPublisherId());
-        vo.setPublisherNickname(publisherProfile != null ? publisherProfile.getNickname() : "CampusHub User");
+        vo.setPublisherNickname(publisherProfile != null ? publisherProfile.getNickname() : "CampusHub 用户");
         vo.setPublisherAvatarUrl(publisherProfile != null ? publisherProfile.getAvatarUrl() : null);
 
         vo.setCategory(task.getCategory());
@@ -479,7 +479,7 @@ public class TaskService {
         vo.setApplicantId(application.getApplicantId());
 
         UserProfile profile = findProfile(application.getApplicantId());
-        vo.setApplicantNickname(profile != null ? profile.getNickname() : "CampusHub User");
+        vo.setApplicantNickname(profile != null ? profile.getNickname() : "CampusHub 用户");
         vo.setApplicantAvatarUrl(profile != null ? profile.getAvatarUrl() : null);
         vo.setApplicantCreditScore(findLatestCreditScore(application.getApplicantId()));
         vo.setMessage(application.getMessage());
@@ -521,7 +521,7 @@ public class TaskService {
         try {
             return objectMapper.writeValueAsString(fields);
         } catch (Exception e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Invalid categoryFields format");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "分类扩展字段格式无效");
         }
     }
 
@@ -540,7 +540,7 @@ public class TaskService {
         try {
             return TaskCategory.valueOf(category.trim());
         } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Invalid task category");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "需求分类无效");
         }
     }
 }

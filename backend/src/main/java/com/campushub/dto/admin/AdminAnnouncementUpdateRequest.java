@@ -6,13 +6,13 @@ import lombok.Data;
 @Data
 public class AdminAnnouncementUpdateRequest {
 
-    @Size(min = 1, max = 100, message = "Announcement title must be within 100 characters")
+    @Size(min = 1, max = 100, message = "公告标题必须在 1 到 100 个字符之间")
     private String title;
 
-    @Size(min = 1, max = 5000, message = "Announcement content must be within 5000 characters")
+    @Size(min = 1, max = 5000, message = "公告内容必须在 1 到 5000 个字符之间")
     private String content;
 
-    @Size(max = 20, message = "Announcement priority must be within 20 characters")
+    @Size(max = 20, message = "公告优先级不能超过 20 个字符")
     private String priority;
 
     private Boolean isActive;

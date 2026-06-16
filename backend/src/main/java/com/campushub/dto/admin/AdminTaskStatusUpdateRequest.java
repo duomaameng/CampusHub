@@ -13,9 +13,9 @@ public class AdminTaskStatusUpdateRequest {
      * OPEN      - restore a previously taken-down task
      * CANCELLED - take down an open task
      */
-    @NotNull
+    @NotNull(message = "需求状态不能为空")
     private TaskStatus status;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "处理原因不能超过 500 个字符")
     private String reason;
 }

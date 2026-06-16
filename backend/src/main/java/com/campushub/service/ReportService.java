@@ -85,7 +85,7 @@ public class ReportService {
             throw new BusinessException(ErrorCode.REPORT_NOT_FOUND);
         }
         if (!currentUserId.equals(report.getReporterId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "You are not allowed to view this report");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看该举报");
         }
         return toReportDetailVO(report);
     }
@@ -129,7 +129,7 @@ public class ReportService {
     public ReportSubmissionVO submitUserReport(Long userId, ReportCreateRequest request) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (currentUserId.equals(userId)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "You cannot report yourself");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能举报自己");
         }
         if (userMapper.selectById(userId) == null) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
@@ -172,7 +172,7 @@ public class ReportService {
             throw new BusinessException(ErrorCode.REPORT_ALREADY_HANDLED);
         }
         if (!ReportStatus.RESOLVED.equals(request.getStatus()) && !ReportStatus.REJECTED.equals(request.getStatus())) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Processed report status must be RESOLVED or REJECTED");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "已处理举报的状态只能是已解决或已驳回");
         }
 
         Long currentUserId = SecurityUtils.requireCurrentUserId();
@@ -204,14 +204,14 @@ public class ReportService {
 
     private int normalizePage(int page) {
         if (page < 1) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Page must be greater than or equal to 1");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "页码必须大于等于 1");
         }
         return page;
     }
 
     private int normalizeSize(int size) {
         if (size < 1) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "Size must be greater than or equal to 1");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "每页数量必须大于等于 1");
         }
         return Math.min(size, MAX_PAGE_SIZE);
     }

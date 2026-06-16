@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 public class OrderMessageRequest {
 
-    @NotNull
+    @NotNull(message = "消息类型不能为空")
     private MessageType messageType;
 
     private String content;

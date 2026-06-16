@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 public class OrderCancelRequest {
 
-    @NotBlank
+    @NotBlank(message = "取消原因不能为空")
     private String reason;
 }

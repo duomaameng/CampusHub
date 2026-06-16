@@ -89,7 +89,7 @@ onMounted(loadTasks)
       <div class="hero-copy">
         <span class="eyebrow">
           <Handshake class="eyebrow-icon" aria-hidden="true" />
-          Live Board
+          任务大厅
         </span>
         <strong>浏览校园互助任务，找到适合你的机会。</strong>
         <span>筛选分类与校区，进入详情页查看完整信息并提交接单申请；发布者确认后即可开始协作。</span>

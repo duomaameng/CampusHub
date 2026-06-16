@@ -15,9 +15,9 @@ public class AdminOrderStatusUpdateRequest {
      *           original status before the dispute (for example IN_PROGRESS,
      *           PENDING_CONFIRM, or PENDING_COMPLETION)
      */
-    @NotNull
+    @NotNull(message = "订单状态不能为空")
     private OrderStatus status;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "处理原因不能超过 500 个字符")
     private String reason;
 }

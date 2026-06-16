@@ -8,9 +8,9 @@ import lombok.Data;
 @Data
 public class ReportProcessRequest {
 
-    @NotNull
+    @NotNull(message = "举报处理状态不能为空")
     private ReportStatus status;
 
-    @NotBlank
+    @NotBlank(message = "处理结果不能为空")
     private String result;
 }

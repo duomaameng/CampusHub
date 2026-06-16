@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 public class ReportCreateRequest {
 
-    @NotBlank
+    @NotBlank(message = "举报原因不能为空")
     private String reason;
 
     private List<Long> evidenceImageIds;
