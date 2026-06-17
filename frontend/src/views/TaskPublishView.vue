@@ -27,6 +27,7 @@ const form = reactive<TaskForm>({
 })
 
 const loading = ref(false)
+const submitted = ref(false)
 const error = ref('')
 const uploadError = ref('')
 const imageUploading = ref(false)
@@ -108,6 +109,7 @@ onUnmounted(() => {
 })
 
 async function submit() {
+  if (submitted.value) return
   error.value = ''
   if (!validateDeadline()) {
     return
@@ -116,11 +118,13 @@ async function submit() {
     if (!validateCategoryDateTimeField(key)) return
   }
   loading.value = true
+  submitted.value = true
   try {
     const result = await taskApi.create(form)
     router.push(`/tasks/${result.id}`)
   } catch (err) {
     error.value = err instanceof Error ? err.message : '发布失败'
+    submitted.value = false
   } finally {
     loading.value = false
   }
@@ -330,9 +334,9 @@ async function removeUploadedImage(imageId: number) {
 
       <p v-if="error" class="error-message">{{ error }}</p>
       <div class="actions">
-        <button class="button primary" type="submit" :disabled="loading">
+        <button class="button primary" type="submit" :disabled="loading || submitted">
           <Send class="button-icon" aria-hidden="true" />
-          <span>{{ loading ? '发布中' : '发布需求' }}</span>
+          <span>{{ loading || submitted ? '发布中' : '发布需求' }}</span>
         </button>
       </div>
     </form>

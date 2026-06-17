@@ -435,11 +435,18 @@ public class TaskService {
     private TaskItemVO toTaskItemVO(Task task) {
         TaskItemVO vo = new TaskItemVO();
         vo.setId(task.getId());
-        vo.setPublisherId(task.getPublisherId());
+        vo.setAnonymous(task.getAnonymous());
 
-        UserProfile publisherProfile = findProfile(task.getPublisherId());
-        vo.setPublisherNickname(publisherProfile != null ? publisherProfile.getNickname() : "CampusHub 用户");
-        vo.setPublisherAvatarUrl(publisherProfile != null ? publisherProfile.getAvatarUrl() : null);
+        if (Boolean.TRUE.equals(task.getAnonymous())) {
+            vo.setPublisherId(null);
+            vo.setPublisherNickname("匿名用户");
+            vo.setPublisherAvatarUrl(null);
+        } else {
+            vo.setPublisherId(task.getPublisherId());
+            UserProfile publisherProfile = findProfile(task.getPublisherId());
+            vo.setPublisherNickname(publisherProfile != null ? publisherProfile.getNickname() : "CampusHub 用户");
+            vo.setPublisherAvatarUrl(publisherProfile != null ? publisherProfile.getAvatarUrl() : null);
+        }
 
         vo.setCategory(task.getCategory());
         vo.setTitle(task.getTitle());
@@ -448,7 +455,6 @@ public class TaskService {
         vo.setRewardType(task.getRewardType());
         vo.setDeadline(task.getDeadline());
         vo.setStatus(task.getStatus());
-        vo.setAnonymous(task.getAnonymous());
         vo.setImageUrls(taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()
                         .eq(TaskImage::getTaskId, task.getId())
                         .orderByAsc(TaskImage::getSortOrder))

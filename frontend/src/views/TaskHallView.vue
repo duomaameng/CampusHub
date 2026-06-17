@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Search,
   Tag,
+  UserRound,
   Users
 } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -173,7 +174,8 @@ onMounted(loadTasks)
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>
           <span><Tag class="meta-icon" aria-hidden="true" />{{ rewardText[task.rewardType] }}</span>
-          <span><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink></span>
+          <span v-if="task.anonymous"><UserRound class="meta-icon" aria-hidden="true" />匿名用户</span>
+          <span v-else><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink></span>
           <span><Clock class="meta-icon" aria-hidden="true" />{{ new Date(task.deadline).toLocaleString() }} 截止</span>
         </div>
         <div class="meta-line">

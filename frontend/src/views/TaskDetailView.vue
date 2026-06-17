@@ -333,7 +333,8 @@ onMounted(load)
         <div class="page-title">
           <div>
             <h1>{{ task.title }}</h1>
-            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p v-if="task.anonymous">匿名用户 · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p v-else><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
           <div class="task-actions">
             <span class="tag">{{ categoryText[task.category] }}</span>

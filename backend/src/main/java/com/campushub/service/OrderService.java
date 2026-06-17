@@ -426,8 +426,13 @@ public class OrderService {
         vo.setId(order.getId());
         vo.setTaskId(order.getTaskId());
         vo.setTaskTitle(task.getTitle());
-        vo.setPublisherId(order.getPublisherId());
-        vo.setPublisherNickname(findNickname(order.getPublisherId()));
+        if (Boolean.TRUE.equals(task.getAnonymous())) {
+            vo.setPublisherId(null);
+            vo.setPublisherNickname("匿名用户");
+        } else {
+            vo.setPublisherId(order.getPublisherId());
+            vo.setPublisherNickname(findNickname(order.getPublisherId()));
+        }
         if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
             vo.setServiceProviderId(null);
             vo.setServiceProviderNickname("暂无服务方");
