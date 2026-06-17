@@ -52,7 +52,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
+  <section class="notifications-view">
     <div class="page-title">
       <div>
         <h1>通知中心</h1>
@@ -92,20 +92,60 @@ onMounted(load)
 </template>
 
 <style scoped>
-.page-title .button.secondary {
-  padding: 10px 20px;
+.notifications-view {
+  --notice-green: #b9ff66;
+  --notice-dark: #191a23;
+  --notice-grey: #f3f3f3;
+  --notice-line: #000000;
+}
+
+.notifications-view :deep(.page-title) {
+  padding: 28px 32px;
+  border: 2px solid var(--notice-line);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 94% 10%, rgba(185, 255, 102, 0.82) 0 56px, transparent 58px),
+    #ffffff;
+  box-shadow: 0 6px 0 var(--notice-line);
+}
+
+.notifications-view :deep(.page-title h1) {
+  width: max-content;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border-radius: 24px;
+  background: var(--notice-green);
+  background-clip: border-box;
+  -webkit-background-clip: border-box;
+  color: #000000;
+  -webkit-text-fill-color: #000000;
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.notifications-view :deep(.page-title p) {
+  color: #2b2d35;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  font-size: 11px;
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  color: white;
-  border: none;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+}
+
+.page-title .button.secondary {
+  padding: 12px 18px;
+  border: 2px solid var(--notice-line);
+  border-radius: 14px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 14px;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: none;
 }
 
 .page-title .button.secondary:hover {
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  background: var(--notice-green);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
@@ -115,53 +155,54 @@ onMounted(load)
 }
 
 .notification-item {
-  padding: var(--space-5);
-  border: 1.5px solid var(--border-light);
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid var(--notice-line);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 3px 0 var(--notice-line);
   position: relative;
-  transition: all var(--transition-base);
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
 }
 
-.notification-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, var(--primary-400), var(--secondary-500));
-  opacity: 0;
-  transition: opacity var(--transition-fast);
+.notification-item::before,
+.notification-item::after {
+  display: none;
 }
 
 .notification-item.unread {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.02), var(--bg-surface));
-  border-left: 3px solid var(--primary-500);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.06);
-}
-
-.notification-item.unread::before {
-  opacity: 1;
+  background: linear-gradient(135deg, #ffffff 0%, #f7ffe8 100%);
+  box-shadow: 0 3px 0 var(--notice-line);
 }
 
 .notification-item:hover {
-  border-color: rgba(99, 102, 241, 0.15);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
-  transform: translateX(2px);
+  border-color: var(--notice-line);
+  box-shadow: 0 4px 0 var(--notice-line);
+  transform: translateY(-1px);
 }
 
 .notification-item h2 {
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 24px;
+  background: var(--notice-green);
+  color: #000000;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.25;
 }
 
 .notification-item p {
+  margin: 2px 0 8px;
   font-size: 13.5px;
-  line-height: 1.65;
-  color: var(--text-secondary);
+  line-height: 1.42;
+  color: #343743;
 }
 
 .notification-item .tag {
+  display: none;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -176,52 +217,66 @@ onMounted(load)
 }
 
 .notification-item .button.ghost {
-  padding: 8px 16px;
-  font-weight: 600;
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 2px solid var(--notice-line);
+  border-radius: 14px;
+  background: var(--notice-dark);
+  color: #ffffff;
+  font-weight: 900;
 }
 
 .notification-item .button.ghost:hover {
-  color: var(--primary-600);
-  background: var(--primary-50);
+  color: #ffffff;
+  background: #000000;
 }
 
 .notification-item .button.secondary {
-  padding: 8px 16px;
-  font-weight: 600;
-  border: 1.5px solid var(--border-light);
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 2px solid var(--notice-line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 900;
 }
 
 .notification-item .button.secondary:hover:not(:disabled) {
-  border-color: var(--primary-400);
-  background: var(--primary-50);
-  color: var(--primary-700);
+  border-color: var(--notice-line);
+  background: var(--notice-green);
+  color: #000000;
 }
 
 .notification-item .button.danger-outline {
-  padding: 8px 16px;
-  font-weight: 600;
-  border: 1.5px solid rgba(239, 68, 68, 0.3);
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 2px solid #b91c1c;
+  border-radius: 14px;
   background: transparent;
-  color: var(--danger);
+  color: #b91c1c;
+  font-weight: 900;
 }
 
 .notification-item .button.danger-outline:hover {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.5);
+  background: #fee2e2;
+  border-color: #b91c1c;
 }
 
 .empty-state {
   padding: var(--space-10) var(--space-6);
   font-size: 14px;
-  font-weight: 600;
-  border: 2px dashed var(--border-medium);
+  font-weight: 900;
+  border: 2px dashed var(--notice-line);
+  border-radius: 24px;
+  background: #ffffff;
 }
 
 .error-message {
   margin-bottom: var(--space-4);
   padding: 12px 16px;
-  font-weight: 600;
-  border: 1.5px solid rgba(239, 68, 68, 0.2);
+  font-weight: 900;
+  border: 2px solid #b91c1c;
+  border-radius: 14px;
 }
 
 .grid {
@@ -230,7 +285,7 @@ onMounted(load)
 
 @media (max-width: 768px) {
   .notification-item {
-    padding: var(--space-4);
+    padding: 16px;
   }
 }
 </style>

@@ -8,15 +8,13 @@ import {
   LogIn,
   LogOut,
   Megaphone,
-  Moon,
   PlusCircle,
   ShieldCheck,
-  Sun,
   Undo2,
   UserPlus,
   UserRound
 } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
@@ -27,30 +25,9 @@ const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
 
-const isDark = ref(false)
-
-function initTheme() {
-  const stored = localStorage.getItem('campus-hub-theme')
-  if (stored === 'dark') {
-    isDark.value = true
-    document.documentElement.setAttribute('data-theme', 'dark')
-  } else if (stored === 'light') {
-    isDark.value = false
-    document.documentElement.setAttribute('data-theme', 'light')
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    isDark.value = true
-  }
-}
-
-function toggleTheme() {
-  isDark.value = !isDark.value
-  const theme = isDark.value ? 'dark' : 'light'
-  document.documentElement.setAttribute('data-theme', theme)
-  localStorage.setItem('campus-hub-theme', theme)
-}
-
 onMounted(async () => {
-  initTheme()
+  document.documentElement.setAttribute('data-theme', 'light')
+  localStorage.setItem('campus-hub-theme', 'light')
   if (auth.token) {
     try {
       await auth.loadMe()
@@ -125,10 +102,6 @@ async function handleLogout() {
       </nav>
 
       <div class="account-area">
-        <button class="theme-toggle" type="button" :aria-label="isDark ? '切换到亮色模式' : '切换到暗色模式'" @click="toggleTheme">
-          <Moon v-if="isDark" class="theme-toggle-icon" aria-hidden="true" />
-          <Sun v-else class="theme-toggle-icon" aria-hidden="true" />
-        </button>
         <template v-if="auth.isAuthenticated">
           <span class="account-name">{{ auth.user?.nickname }}</span>
           <button class="button ghost" type="button" @click="handleLogout">
@@ -162,35 +135,6 @@ async function handleLogout() {
 </template>
 
 <style scoped>
-.theme-toggle {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-on-sidebar);
-  transition: all var(--transition-fast);
-  margin-bottom: var(--space-2);
-  align-self: center;
-}
-
-.theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-on-sidebar-active);
-}
-
-.theme-toggle-icon {
-  width: 16px;
-  height: 16px;
-}
-
-@media (max-width: 768px) {
-  .theme-toggle {
-    margin-bottom: 0;
-  }
-}
-
 .page-enter-active {
   transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }

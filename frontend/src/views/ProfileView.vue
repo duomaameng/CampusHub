@@ -85,7 +85,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
+  <section class="profile-view">
     <div class="page-title">
       <div>
         <h1>个人资料</h1>
@@ -195,139 +195,233 @@ onMounted(load)
 </template>
 
 <style scoped>
+.profile-view {
+  --profile-green: #b9ff66;
+  --profile-dark: #191a23;
+  --profile-grey: #f3f3f3;
+}
+
+.page-title {
+  margin-bottom: 26px;
+}
+
+.page-title h1 {
+  width: max-content;
+  padding: 5px 14px;
+  border-radius: 18px;
+  background: var(--profile-green);
+  color: #000000;
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0;
+  -webkit-text-fill-color: #000000;
+}
+
+.page-title p {
+  margin-top: 12px;
+  color: #3f4350;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-layout {
+  align-items: start;
+  gap: 26px;
+}
+
 .form-panel {
-  border: 1.5px solid var(--border-light);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  position: relative;
+  padding: 32px;
+  border: 2px solid #000000;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 7px 0 #000000;
+  overflow: hidden;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.form-panel::before,
+.form-panel::after,
+.panel::before,
+.panel::after,
+.empty-state::before {
+  display: none;
+}
+
+.form-panel > .panel {
+  position: relative;
+  padding: 24px;
+  border: 2px solid #000000;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 96% 0%, var(--profile-green) 0 58px, transparent 59px),
+    var(--profile-grey);
+  box-shadow: 0 5px 0 #000000;
+  overflow: hidden;
 }
 
 .form-panel h2 {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  width: max-content;
+  max-width: 100%;
   margin-bottom: var(--space-3);
-  position: relative;
-  padding-left: var(--space-3);
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--profile-green);
+  color: #000000;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
 }
 
 .form-panel h2::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 2px;
-  bottom: 2px;
-  width: 3px;
-  background: linear-gradient(180deg, var(--primary-400), var(--secondary-500));
-  border-radius: 2px;
+  display: none;
 }
 
 .form-panel .field input,
 .form-panel .field select,
 .form-panel .field textarea {
-  padding: 11px 14px;
+  min-height: 50px;
+  padding: 11px 15px;
+  color: #000000;
   font-size: 14px;
-  border: 1.5px solid var(--border-light);
-  background: var(--bg-body);
+  font-weight: 800;
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: none;
   transition: all var(--transition-fast);
 }
 
 .form-panel .field input:focus,
 .form-panel .field select:focus,
 .form-panel .field textarea:focus {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), var(--shadow-sm);
-  background: var(--bg-surface);
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  background: #ffffff;
 }
 
 .form-panel .field label {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
+  color: #4a4e5b;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .form-panel .button.primary {
   padding: 12px 28px;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0;
+  background: var(--profile-dark);
+  border: 2px solid #000000;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #000000;
   align-self: flex-start;
 }
 
 .form-panel .button.primary:hover:not(:disabled) {
+  color: #000000;
+  background: var(--profile-green);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 5px 0 #000000;
 }
 
 .upload-trigger {
   padding: 10px 20px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  border: 1.5px solid var(--border-light);
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0;
+  background: var(--profile-dark);
+  border: 2px solid #000000;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .upload-trigger:hover {
-  border-color: var(--primary-400);
-  background: var(--primary-50);
-  color: var(--primary-700);
+  border-color: #000000;
+  background: var(--profile-green);
+  color: #000000;
 }
 
 .avatar-preview {
-  border: 3px solid var(--bg-surface);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15), 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 2px solid #000000;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #000000;
 }
 
 .avatar-preview::after {
-  background: conic-gradient(from 0deg, var(--primary-400), var(--secondary-500), var(--accent-400), var(--primary-400));
+  display: none;
 }
 
 aside.panel {
-  border: 1.5px solid var(--border-light);
-  background: linear-gradient(135deg, var(--bg-surface), var(--bg-body));
+  position: relative;
+  padding: 28px;
+  border: 2px solid #000000;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 96% 8%, var(--profile-green) 0 62px, transparent 63px),
+    var(--profile-dark);
+  color: #ffffff;
+  box-shadow: 0 7px 0 #000000;
+  overflow: hidden;
 }
 
 aside.panel h2 {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  padding-left: var(--space-3);
-  position: relative;
+  width: max-content;
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--profile-green);
+  color: #000000;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 aside.panel h2::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 2px;
-  bottom: 2px;
-  width: 3px;
-  background: linear-gradient(180deg, var(--success), var(--primary-500));
-  border-radius: 2px;
+  display: none;
+}
+
+aside.panel .grid.two > div {
+  padding: 18px;
+  border: 2px solid #000000;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 0 #000000;
 }
 
 aside.panel strong {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  background: linear-gradient(135deg, var(--primary-600), var(--secondary-600));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #000000;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 0;
+  background: none;
+  -webkit-text-fill-color: #000000;
   display: block;
 }
 
 aside.panel p {
   font-size: 13.5px;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 800;
+}
+
+aside.panel .grid.two .hint {
+  color: #6f7485;
 }
 
 .error-message,
 .success-message {
   padding: 12px 16px;
-  font-weight: 600;
-  border: 1.5px solid;
+  font-weight: 800;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 #000000;
 }
 
 .error-message {
@@ -340,25 +434,57 @@ aside.panel p {
 
 .hint {
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .checkbox-label {
   font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-weight: 800;
+  color: #343743;
 }
 
 .checkbox-label input[type='checkbox'] {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 2px 0 #000000;
+  appearance: none;
+  cursor: pointer;
+}
+
+.checkbox-label input[type='checkbox']:checked {
+  background: var(--profile-green);
+  border-color: #000000;
+}
+
+.checkbox-label input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid #000000;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-label input[type='checkbox']:focus-visible {
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48), 0 2px 0 #000000;
 }
 
 .empty-state {
   padding: var(--space-10) var(--space-6);
   font-size: 14px;
-  font-weight: 600;
-  border: 2px dashed var(--border-medium);
+  font-weight: 800;
+  border: 2px dashed #000000;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #000000;
 }
 
 @media (max-width: 1024px) {

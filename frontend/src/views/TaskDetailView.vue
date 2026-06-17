@@ -324,7 +324,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
+  <section class="task-detail-view">
     <p v-if="error" class="error-message">{{ error }}</p>
     <div v-if="loading" class="empty-state">正在加载需求</div>
 
@@ -512,8 +512,15 @@ onMounted(load)
 </template>
 
 <style scoped>
+.task-detail-view {
+  --task-green: #b9ff66;
+  --task-dark: #191a23;
+  --task-grey: #f3f3f3;
+}
+
 .detail-layout {
-  gap: var(--space-8);
+  align-items: start;
+  gap: 26px;
 }
 
 .button.is-soft-disabled {
@@ -536,110 +543,144 @@ onMounted(load)
 
 .favorite-button {
   min-width: 86px;
-  border: 1.5px solid rgba(79, 70, 229, 0.38);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--primary-700);
-  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .favorite-button:hover:not(:disabled) {
-  border-color: var(--primary-500);
-  background: var(--primary-50);
-  color: var(--primary-700);
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.15);
+  border-color: #000000;
+  background: var(--task-green);
+  color: #000000;
+  box-shadow: 0 5px 0 #000000;
 }
 
 .favorite-button.active {
-  border-color: rgba(79, 70, 229, 0.72);
-  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-  color: white;
-  box-shadow: 0 5px 18px rgba(79, 70, 229, 0.28);
+  border-color: #000000;
+  background: var(--task-green);
+  color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .panel {
-  border: 1.5px solid var(--border-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  border: 2px solid #000000;
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 6px 0 #000000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+}
+
+.panel::before,
+.panel::after,
+.item-card::before,
+.item-card::after,
+.empty-state::before {
+  display: none;
+}
+
+.detail-layout > article.panel {
+  position: relative;
+  padding: 34px;
+  background:
+    radial-gradient(circle at 94% 10%, var(--task-green) 0 72px, transparent 73px),
+    #ffffff;
 }
 
 .panel h1 {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.3;
-  color: var(--text-primary);
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--task-green);
+  color: #000000;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
+  -webkit-text-fill-color: #000000;
 }
 
 .panel h2 {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  width: max-content;
+  max-width: 100%;
   margin-bottom: var(--space-2);
-  position: relative;
-  padding-left: var(--space-3);
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--task-green);
+  color: #000000;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
 }
 
 .panel h2::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 2px;
-  bottom: 2px;
-  width: 3px;
-  background: linear-gradient(180deg, var(--primary-400), var(--secondary-500));
-  border-radius: 2px;
+  display: none;
 }
 
 .panel .tag {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-weight: 900;
+  letter-spacing: 0;
   padding: 5px 14px;
-  background: linear-gradient(135deg, var(--primary-50), var(--secondary-50));
-  color: var(--primary-600);
-  border: 1px solid var(--primary-100);
+  background: var(--task-green);
+  color: #000000;
+  border: 2px solid #000000;
+  border-radius: 999px;
 }
 
 .panel .page-title p {
-  font-size: 13.5px;
-  color: var(--text-secondary);
+  margin-top: 12px;
+  font-size: 14px;
+  color: #4a4e5b;
+  font-weight: 800;
 }
 
 .panel .page-title p a {
-  color: var(--primary-600);
-  font-weight: 600;
+  color: #000000;
+  font-weight: 900;
 }
 
 .panel .page-title p a:hover {
-  color: var(--primary-700);
+  color: #365600;
 }
 
 .panel > p {
-  font-size: 14.5px;
+  max-width: 760px;
+  font-size: 16px;
   line-height: 1.7;
-  color: var(--text-secondary);
+  color: #343743;
+  font-weight: 700;
 }
 
 .panel .grid.two .panel {
-  padding: var(--space-4);
-  background: var(--bg-body);
-  border: 1px solid var(--border-light);
+  padding: 20px;
+  background: var(--task-grey);
+  border: 2px solid #000000;
+  border-radius: 22px;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .panel .grid.two .panel strong {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  display: block;
-  margin-bottom: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--task-green);
+  color: #000000;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .panel .grid.two .panel p {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 800;
+  color: #000000;
 }
 
 .upload-grid {
@@ -647,13 +688,16 @@ onMounted(load)
 }
 
 .upload-card {
-  border: 1.5px solid var(--border-light);
+  border: 2px solid #000000;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 4px 0 #000000;
   transition: all var(--transition-base);
 }
 
 .upload-card:hover {
-  border-color: var(--primary-300);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+  border-color: #000000;
+  box-shadow: 0 5px 0 #000000;
   transform: translateY(-2px);
 }
 
@@ -666,22 +710,67 @@ onMounted(load)
 }
 
 aside .panel {
-  border: 1.5px solid var(--border-light);
+  padding: 24px;
+  border: 2px solid #000000;
+  border-radius: 24px;
+  box-shadow: 0 6px 0 #000000;
 }
 
 aside .panel h2 {
-  font-size: 15px;
+  font-size: 22px;
 }
 
-aside .panel .button.primary {
-  padding: 11px 20px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+.button {
+  border: 2px solid #000000;
+  border-radius: 14px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #000000;
 }
 
-aside .panel .button.primary:hover:not(:disabled) {
+.button.primary,
+.button.secondary {
+  color: #ffffff;
+  background: var(--task-dark);
+}
+
+.button.primary:hover:not(:disabled),
+.button.secondary:hover:not(:disabled) {
+  color: #000000;
+  background: var(--task-green);
+  box-shadow: 0 5px 0 #000000;
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
+}
+
+.button.ghost {
+  color: #000000;
+  background: #ffffff;
+}
+
+.button.ghost:hover:not(:disabled) {
+  background: var(--task-green);
+}
+
+.button.danger {
+  border-color: #000000;
+  background: #ffffff;
+  color: #c1121f;
+}
+
+.button.danger:hover:not(:disabled) {
+  background: #ffe8e8;
+  color: #9f0f19;
+}
+
+.field input,
+.field textarea,
+.field select,
+aside .panel textarea {
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 800;
+  box-shadow: none;
 }
 
 aside .panel textarea {
@@ -689,78 +778,70 @@ aside .panel textarea {
   padding: 12px 14px;
   font-size: 14px;
   line-height: 1.6;
-  border: 1.5px solid var(--border-light);
-  background: var(--bg-body);
   transition: all var(--transition-fast);
 }
 
+.field input:focus,
+.field textarea:focus,
+.field select:focus,
 aside .panel textarea:focus {
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1), var(--shadow-sm);
-  background: var(--bg-surface);
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  background: #ffffff;
 }
 
 aside .panel textarea::placeholder {
-  color: var(--text-tertiary);
-  font-weight: 400;
+  color: #8b90a0;
+  font-weight: 700;
 }
 
 .item-card {
-  padding: var(--space-4);
-  border: 1.5px solid var(--border-light);
+  padding: 18px;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  background: var(--task-grey);
+  box-shadow: 0 4px 0 #000000;
 }
 
 .item-card:hover {
-  border-color: rgba(99, 102, 241, 0.15);
+  border-color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+  box-shadow: 0 5px 0 #000000;
 }
 
 .item-card h3 a {
-  color: var(--primary-600);
-  font-weight: 700;
+  color: #000000;
+  font-weight: 900;
 }
 
 .item-card h3 a:hover {
-  color: var(--primary-700);
-}
-
-.item-card .button.secondary {
-  padding: 9px 18px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  border: 1.5px solid var(--border-light);
-  background: var(--bg-surface);
-}
-
-.item-card .button.secondary:hover:not(:disabled) {
-  border-color: var(--primary-400);
-  background: var(--primary-50);
-  color: var(--primary-700);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+  color: #365600;
 }
 
 .empty-state {
   padding: var(--space-8) var(--space-4);
   font-size: 13px;
-  font-weight: 600;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.02), transparent 60%),
-    var(--bg-surface);
-  border: 2px dashed var(--border-medium);
+  font-weight: 800;
+  background: #ffffff;
+  border: 2px dashed #000000;
+  border-radius: 22px;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .error-message,
 .success-message {
   margin-top: var(--space-2);
   padding: 10px 14px;
-  font-weight: 600;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 #000000;
+  font-weight: 800;
 }
 
 .hint {
   font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-tertiary);
+  font-weight: 700;
+  color: #6f7485;
 }
 
 @media (max-width: 1024px) {

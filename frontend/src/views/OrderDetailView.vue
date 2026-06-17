@@ -425,7 +425,7 @@ onMounted(load)
 </script>
 
 <template>
-  <section>
+  <section class="order-detail-view">
     <p v-if="error" class="error-message">{{ error }}</p>
     <p v-if="success" class="success-message">{{ success }}</p>
     <div v-if="loading" class="empty-state">正在加载订单</div>
@@ -740,6 +740,295 @@ onMounted(load)
 </template>
 
 <style scoped>
+.order-detail-view {
+  --order-green: #b9ff66;
+  --order-dark: #191a23;
+  --order-grey: #f3f3f3;
+}
+
+.detail-layout {
+  align-items: start;
+  gap: 26px;
+}
+
+.panel,
+.item-card,
+.empty-state {
+  border: 2px solid #000000;
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 6px 0 #000000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: hidden;
+}
+
+.panel::before,
+.panel::after,
+.item-card::before,
+.item-card::after,
+.empty-state::before {
+  display: none;
+}
+
+.detail-layout > article.panel {
+  position: relative;
+  padding: 34px;
+  background:
+    radial-gradient(circle at 92% 12%, var(--order-green) 0 74px, transparent 75px),
+    #ffffff;
+}
+
+.detail-layout > article.panel > p {
+  max-width: 760px;
+  color: #343743;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.detail-layout > aside {
+  gap: 20px;
+}
+
+.detail-layout > aside > .panel {
+  padding: 24px;
+  border-radius: 24px;
+}
+
+.page-title {
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.page-title h1,
+.panel h2 {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 12px;
+  border-radius: 18px;
+  background: var(--order-green);
+  color: #000000;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
+  -webkit-text-fill-color: #000000;
+}
+
+.page-title h1 {
+  font-size: 32px;
+}
+
+.panel h2 {
+  font-size: 22px;
+}
+
+.page-title p {
+  margin-top: 12px;
+  color: #4a4e5b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.page-title > .tag {
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #000000;
+}
+
+.grid.two > .panel {
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--order-grey);
+  box-shadow: 0 4px 0 #000000;
+}
+
+.grid.two > .panel strong {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--order-green);
+  color: #000000;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.timeline {
+  display: grid;
+  gap: 12px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.timeline li {
+  position: relative;
+  padding: 14px 16px 14px 42px;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  background: var(--order-grey);
+  box-shadow: 0 3px 0 #000000;
+}
+
+.timeline li::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 18px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: var(--order-green);
+}
+
+.timeline strong,
+.message-bubble strong,
+.item-card strong {
+  color: #000000;
+  font-weight: 900;
+}
+
+.timeline p {
+  margin-top: 5px;
+  color: #565b6b;
+  font-weight: 700;
+}
+
+.messages {
+  gap: 12px;
+}
+
+.message-bubble {
+  border: 2px solid #000000;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 3px 0 #000000;
+}
+
+.message-bubble p {
+  color: #343743;
+  font-weight: 700;
+}
+
+.field input,
+.field textarea,
+.field select {
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+}
+
+.button {
+  border: 2px solid #000000;
+  border-radius: 14px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 #000000;
+}
+
+.button.primary,
+.button.secondary {
+  background: var(--order-dark);
+  color: #ffffff;
+}
+
+.button.primary:hover,
+.button.secondary:hover {
+  background: var(--order-green);
+  color: #000000;
+  box-shadow: 0 5px 0 #000000;
+}
+
+.button.ghost {
+  background: #ffffff;
+  color: #000000;
+}
+
+.button.ghost:hover {
+  background: var(--order-green);
+  color: #000000;
+}
+
+.button.danger {
+  border-color: #000000;
+  background: #ffffff;
+  color: #c1121f;
+}
+
+.button.danger:hover {
+  background: #ffe8e8;
+  color: #9f0f19;
+}
+
+.item-card {
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--order-grey);
+}
+
+.item-card .tag {
+  border: 2px solid #000000;
+  background: var(--order-green);
+  color: #000000;
+  font-weight: 900;
+}
+
+.item-title {
+  align-items: flex-start;
+}
+
+.hint {
+  color: #6f7485;
+  font-weight: 700;
+}
+
+.stars {
+  gap: 8px;
+}
+
+.star-button {
+  border: 2px solid #000000;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 900;
+  box-shadow: 0 3px 0 #000000;
+}
+
+.star-button.active,
+.star-button:hover {
+  background: var(--order-green);
+  color: #000000;
+}
+
+.upload-card {
+  border: 2px solid #000000;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 3px 0 #000000;
+}
+
+.success-message,
+.error-message {
+  border: 2px solid #000000;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 #000000;
+  font-weight: 800;
+}
+
 .button.is-soft-disabled {
   opacity: 0.48;
   filter: grayscale(0.18);

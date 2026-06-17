@@ -2039,5 +2039,5 @@
 | 57 | POST | `/api/admin/announcements` | 管理员 | 发布公告 |
 | 58 | GET | `/api/admin/announcements` | 管理员 | 公告列表 |
 | 59 | PATCH | `/api/admin/announcements/{announcementId}` | 管理员 | 编辑公告 |
-| 60 | DELETE | `/api/admin/announcements/{announcementId}` | 管理员 | 删除公告 |
-| 61 | GET | `/api/announcements` | 公开 | 前台公告列表 |
+| 59 | DELETE | `/api/admin/announcements/{announcementId}` | 管理员 | 删除公告 |
+| 60 | GET | `/api/announcements` | 公开 | 前台公告列表 |
