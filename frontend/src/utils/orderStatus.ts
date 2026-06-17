@@ -7,6 +7,7 @@ export const orderStatusRank: Record<OrderStatus, number> = {
   DISPUTE: 1,
   COMPLETED: 2,
   REVIEWED: 2,
+  TIMEOUT: 3,
   CANCELLED: 3
 }
 

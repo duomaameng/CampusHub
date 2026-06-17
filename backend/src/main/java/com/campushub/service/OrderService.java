@@ -44,6 +44,8 @@ public class OrderService {
     private final FileService fileService;
 
     public PageResult<OrderItemVO> listOrders(int page, int size, String role, OrderStatus status, String keyword) {
+        refreshTimedOutOrders();
+
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Page<Order> pageQuery = new Page<>(page, size);
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
@@ -85,6 +87,7 @@ public class OrderService {
     }
 
     public OrderDetailVO getOrder(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         ensureParticipant(order);
         return toOrderDetailVO(order);
@@ -92,6 +95,7 @@ public class OrderService {
 
     @Transactional
     public void completeOrder(Long orderId, OrderCompleteRequest request) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getServiceProviderId(), currentUserId)) {
@@ -122,6 +126,7 @@ public class OrderService {
 
     @Transactional
     public void confirmCompletion(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getPublisherId(), currentUserId)) {
@@ -146,11 +151,15 @@ public class OrderService {
 
     @Transactional
     public void cancelOrder(Long orderId, OrderCancelRequest request) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         ensureParticipant(order);
         if (OrderStatus.CANCELLED.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_ALREADY_CANCELLED);
+        }
+        if (OrderStatus.TIMEOUT.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单已超时，不能继续操作");
         }
         if (OrderStatus.COMPLETED.equals(order.getStatus()) || OrderStatus.REVIEWED.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_ALREADY_COMPLETED);
@@ -206,6 +215,7 @@ public class OrderService {
 
     @Transactional
     public void approveCancelRequest(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getPublisherId(), currentUserId)) {
@@ -240,6 +250,7 @@ public class OrderService {
 
     @Transactional
     public void rejectCancelRequest(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getPublisherId(), currentUserId)) {
@@ -260,10 +271,11 @@ public class OrderService {
 
     @Transactional
     public void sendMessage(Long orderId, OrderMessageRequest request) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         ensureParticipant(order);
-        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus()) || OrderStatus.TIMEOUT.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
         }
 
@@ -482,6 +494,13 @@ public class OrderService {
                 .filter(reason -> reason != null && !reason.isBlank())
                 .reduce((first, second) -> second)
                 .orElse(null);
+    }
+
+    private void refreshTimedOutOrders() {
+        taskMapper.expireOpenTasksPastDeadline();
+        orderMapper.timeoutPendingConfirmOrdersForExpiredTasks();
+        orderMapper.timeoutInProgressOrdersPastTaskDeadline();
+        taskMapper.expireInProgressTasksWithTimedOutOrders();
     }
 
     private void ensureParticipant(Order order) {

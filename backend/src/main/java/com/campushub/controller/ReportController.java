@@ -39,4 +39,9 @@ public class ReportController {
     public ApiResponse<ReportSubmissionVO> submitUserReport(@PathVariable Long userId, @Valid @RequestBody ReportCreateRequest request) {
         return ApiResponse.success(reportService.submitUserReport(userId, request));
     }
+
+    @PostMapping("/api/orders/{orderId}/timeout-report")
+    public ApiResponse<ReportSubmissionVO> submitTimeoutOrderReport(@PathVariable Long orderId, @Valid @RequestBody ReportCreateRequest request) {
+        return ApiResponse.success(reportService.submitTimeoutOrderReport(orderId, request));
+    }
 }

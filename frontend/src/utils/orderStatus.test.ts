@@ -12,13 +12,15 @@ describe('compareOrdersByStatus', () => {
       order(1, 'CANCELLED', '2026-06-01T10:00:00.000Z'),
       order(2, 'COMPLETED', '2026-06-04T10:00:00.000Z'),
       order(3, 'PENDING_CONFIRM', '2026-06-05T10:00:00.000Z'),
-      order(4, 'IN_PROGRESS', '2026-06-02T10:00:00.000Z')
+      order(4, 'IN_PROGRESS', '2026-06-02T10:00:00.000Z'),
+      order(5, 'TIMEOUT', '2026-06-06T10:00:00.000Z')
     ].sort(compareOrdersByStatus)
 
     expect(records.map((item) => item.status)).toEqual([
       'IN_PROGRESS',
       'PENDING_CONFIRM',
       'COMPLETED',
+      'TIMEOUT',
       'CANCELLED'
     ])
   })

@@ -80,10 +80,10 @@
 **TaskCategory：** `EXPRESS`（快递代取）、`ERRAND`（跑腿代办）、`TUTORING`（学习辅导）、`SECOND_HAND`（二手交易）、`LOST_FOUND`（失物招领）、`CONSULTATION`（咨询问答）、`TEAM_UP`（组队搭子）、`OTHER`（其他）  
 **TaskStatus：** `OPEN`（待接单）、`IN_PROGRESS`（进行中）、`COMPLETED`（已完成）、`CANCELLED`（已取消）、`EXPIRED`（已过期）  
 **ApplicationStatus：** `PENDING`（待确认）、`APPROVED`（已确认）、`REJECTED`（已拒绝）、`CANCELLED`（已取消）  
-**OrderStatus：** `PENDING_CONFIRM`（待确认）、`IN_PROGRESS`（进行中）、`PENDING_COMPLETION`（待确认完成）、`COMPLETED`（已完成）、`CANCELLED`（已取消）、`DISPUTE`（争议处理中）、`REVIEWED`（已评价）  
+**OrderStatus：** `PENDING_CONFIRM`（待确认）、`IN_PROGRESS`（进行中）、`PENDING_COMPLETION`（待确认完成）、`COMPLETED`（已完成）、`CANCELLED`（已取消）、`TIMEOUT`（已超时）、`DISPUTE`（争议处理中）、`REVIEWED`（已评价）  
 **RewardType：** `CASH`（现金）、`NEGOTIABLE`（面议）、`CREDIT_INTENT`（积分意向）  
 **ReportTargetType：** `TASK`、`ORDER_MESSAGE`、`REVIEW`、`USER`  
-**ReportReasonType：** `FRAUD`（诈骗）、`ABUSE`（辱骂）、`SPAM`（垃圾信息）、`ILLEGAL`（违法内容）、`OTHER`（其他）  
+**ReportReasonType：** `FRAUD`（诈骗）、`ABUSE`（辱骂）、`SPAM`（垃圾信息）、`ILLEGAL`（违法内容）、`TIMEOUT`（订单超时）、`OTHER`（其他）  
 **ReportStatus：** `PENDING`（待处理）、`PROCESSING`（处理中）、`RESOLVED`（已处理）、`REJECTED`（已驳回）  
 **MessageType：** `TEXT`（文字）、`IMAGE`（图片）  
 **NotificationType：** `APPLICATION`（接单申请）、`ORDER_STATUS`（订单状态变更）、`ORDER_MESSAGE`（订单消息）、`REVIEW_REQUEST`（评价邀请）、`REPORT_RESULT`（举报结果）

@@ -21,6 +21,8 @@ public class Report {
 
     private Long targetId;
 
+    private Long relatedOrderId;
+
     private ReportReasonType reasonType;
 
     private String description;

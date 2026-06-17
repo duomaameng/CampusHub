@@ -17,6 +17,7 @@ export type OrderStatus =
   | 'PENDING_COMPLETION'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'TIMEOUT'
   | 'DISPUTE'
   | 'REVIEWED'
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
@@ -25,6 +26,7 @@ export type MessageType = 'TEXT' | 'IMAGE'
 export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
 export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'
 export type ReportTargetType = 'TASK' | 'ORDER_MESSAGE' | 'REVIEW' | 'USER'
+export type ReportReasonType = 'FRAUD' | 'ABUSE' | 'SPAM' | 'ILLEGAL' | 'TIMEOUT' | 'OTHER'
 export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED'
 
 export const taskStatusText: Record<TaskStatus, string> = {
@@ -48,6 +50,7 @@ export const orderStatusText: Record<OrderStatus, string> = {
   PENDING_COMPLETION: '待确认完成',
   COMPLETED: '已完成',
   CANCELLED: '已取消',
+  TIMEOUT: '已超时',
   DISPUTE: '争议处理中',
   REVIEWED: '已评价'
 }
@@ -317,6 +320,8 @@ export interface AdminReportItem {
   reporterId: number
   targetType: ReportTargetType
   targetId: number
+  relatedOrderId?: number | null
+  reasonType: ReportReasonType
   reason: string
   status: ReportStatus
   createdAt: string
@@ -357,6 +362,8 @@ export interface ReportItem {
   reportId: number
   targetType: ReportTargetType
   targetId: number
+  relatedOrderId?: number | null
+  reasonType: ReportReasonType
   reason: string
   status: ReportStatus
   result?: string | null

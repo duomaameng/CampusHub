@@ -116,3 +116,13 @@ WHERE `id` = 1;
 UPDATE `admin_operation_log`
 SET `detail` = '处理了用于测试的示例举报'
 WHERE `id` = 1;
+
+UPDATE `task`
+SET `deadline` = CASE `id`
+    WHEN 1 THEN '2026-08-08 18:00:00'
+    WHEN 2 THEN '2026-08-12 20:00:00'
+    WHEN 3 THEN '2026-08-10 20:00:00'
+    WHEN 4 THEN '2026-08-05 18:00:00'
+    ELSE `deadline`
+END
+WHERE `id` IN (1, 2, 3, 4);

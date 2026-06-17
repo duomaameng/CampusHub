@@ -13,4 +13,6 @@ public class ReportProcessRequest {
 
     @NotBlank(message = "处理结果不能为空")
     private String result;
+
+    private Integer creditPenalty;
 }

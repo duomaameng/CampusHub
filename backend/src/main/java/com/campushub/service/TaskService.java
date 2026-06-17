@@ -49,6 +49,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,8 @@ public class TaskService {
     private final ObjectMapper objectMapper;
 
     public PageResult<TaskItemVO> listTasks(int page, int size, String category, String campus, String keyword, String sort) {
+        expireOpenTasksPastDeadline();
+
         Page<Task> pageQuery = new Page<>(page, size);
         LambdaQueryWrapper<Task> wrapper = new LambdaQueryWrapper<Task>()
                 .in(Task::getStatus, Arrays.asList(TaskStatus.OPEN, TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED));
@@ -105,7 +108,7 @@ public class TaskService {
     }
 
     public TaskItemVO getTask(Long taskId) {
-        return toTaskItemVO(requireTask(taskId));
+        return toTaskItemVO(requireFreshTask(taskId));
     }
 
     @Transactional
@@ -139,7 +142,7 @@ public class TaskService {
     @Transactional
     public TaskApplyVO applyTask(Long taskId, TaskApplyRequest request) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
-        Task task = requireTask(taskId);
+        Task task = requireFreshTask(taskId);
 
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
@@ -198,7 +201,7 @@ public class TaskService {
             throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
         }
 
-        Task task = requireTask(application.getTaskId());
+        Task task = requireFreshTask(application.getTaskId());
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(task.getPublisherId(), currentUserId)) {
             throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
@@ -255,7 +258,7 @@ public class TaskService {
     @Transactional
     public TaskItemVO updateTask(Long taskId, TaskUpdateRequest request) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
-        Task task = requireTask(taskId);
+        Task task = requireFreshTask(taskId);
         if (!Objects.equals(task.getPublisherId(), currentUserId)) {
             throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
         }
@@ -300,7 +303,7 @@ public class TaskService {
     @Transactional
     public void deleteTask(Long taskId) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
-        Task task = requireTask(taskId);
+        Task task = requireFreshTask(taskId);
         if (!Objects.equals(task.getPublisherId(), currentUserId)) {
             throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
         }
@@ -494,6 +497,63 @@ public class TaskService {
             throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
         }
         return task;
+    }
+
+    private Task requireFreshTask(Long taskId) {
+        Task task = requireTask(taskId);
+        expireOpenTaskIfPastDeadline(task);
+        return task;
+    }
+
+    private void expireOpenTasksPastDeadline() {
+        taskMapper.expireOpenTasksPastDeadline();
+        orderMapper.timeoutPendingConfirmOrdersForExpiredTasks();
+        orderMapper.timeoutInProgressOrdersPastTaskDeadline();
+        taskMapper.expireInProgressTasksWithTimedOutOrders();
+    }
+
+    private void expireOpenTaskIfPastDeadline(Task task) {
+        if (task.getDeadline() == null || task.getDeadline().isAfter(LocalDateTime.now())) {
+            return;
+        }
+
+        if (TaskStatus.OPEN.equals(task.getStatus())) {
+            int updatedRows = taskMapper.updateStatusIfCurrent(
+                    task.getId(),
+                    TaskStatus.OPEN.name(),
+                    TaskStatus.EXPIRED.name()
+            );
+            if (updatedRows == 1) {
+                task.setStatus(TaskStatus.EXPIRED);
+                orderMapper.timeoutPendingConfirmOrderByTaskId(task.getId());
+            } else {
+                refreshTaskStatus(task);
+            }
+            return;
+        }
+
+        if (TaskStatus.IN_PROGRESS.equals(task.getStatus())) {
+            int orderUpdatedRows = orderMapper.timeoutInProgressOrderByTaskId(task.getId());
+            if (orderUpdatedRows > 0) {
+                int taskUpdatedRows = taskMapper.updateStatusIfCurrent(
+                        task.getId(),
+                        TaskStatus.IN_PROGRESS.name(),
+                        TaskStatus.EXPIRED.name()
+                );
+                if (taskUpdatedRows == 1) {
+                    task.setStatus(TaskStatus.EXPIRED);
+                } else {
+                    refreshTaskStatus(task);
+                }
+            }
+        }
+    }
+
+    private void refreshTaskStatus(Task task) {
+        Task refreshed = taskMapper.selectById(task.getId());
+        if (refreshed != null) {
+            task.setStatus(refreshed.getStatus());
+        }
     }
 
     private UserProfile findProfile(Long userId) {

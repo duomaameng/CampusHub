@@ -149,7 +149,7 @@ CREATE TABLE orders (
     task_id             BIGINT          NOT NULL                 COMMENT '关联任务ID',
     publisher_id        BIGINT          NOT NULL                 COMMENT '发布者（需求方）ID',
     service_provider_id BIGINT          DEFAULT NULL             COMMENT '服务方ID，订单退回待确认时可为空',
-    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT '状态: PENDING_CONFIRM/IN_PROGRESS/PENDING_COMPLETION/COMPLETED/CANCELLED/DISPUTE/REVIEWED',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT '状态: PENDING_CONFIRM/IN_PROGRESS/PENDING_COMPLETION/COMPLETED/CANCELLED/TIMEOUT/DISPUTE/REVIEWED',
     completion_proof_url VARCHAR(512)   DEFAULT NULL             COMMENT '完成凭证图片URL',
     cancel_reason       VARCHAR(500)    DEFAULT NULL             COMMENT '取消原因',
     version             INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
@@ -263,7 +263,8 @@ CREATE TABLE report (
     reporter_id     BIGINT          NOT NULL                 COMMENT '举报人ID',
     target_type     VARCHAR(16)     NOT NULL                 COMMENT '举报对象类型: TASK/ORDER_MESSAGE/REVIEW/USER',
     target_id       BIGINT          NOT NULL                 COMMENT '被举报对象ID',
-    reason_type     VARCHAR(16)     NOT NULL                 COMMENT '举报类型: FRAUD/ABUSE/SPAM/ILLEGAL/OTHER',
+    related_order_id BIGINT         DEFAULT NULL             COMMENT '关联订单ID',
+    reason_type     VARCHAR(16)     NOT NULL                 COMMENT '举报类型: FRAUD/ABUSE/SPAM/ILLEGAL/TIMEOUT/OTHER',
     description     VARCHAR(1000)   NOT NULL                 COMMENT '举报描述',
     status          VARCHAR(16)     NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/PROCESSING/RESOLVED/REJECTED',
     result          VARCHAR(500)    DEFAULT NULL             COMMENT '处理结果说明',
@@ -273,7 +274,9 @@ CREATE TABLE report (
     PRIMARY KEY (id),
     KEY idx_report_reporter (reporter_id, status),
     KEY idx_report_admin (status, created_at),
+    KEY idx_report_related_order (related_order_id, reason_type, status),
     CONSTRAINT fk_report_reporter FOREIGN KEY (reporter_id) REFERENCES user(id),
+    CONSTRAINT fk_report_related_order FOREIGN KEY (related_order_id) REFERENCES orders(id),
     CONSTRAINT fk_report_processor FOREIGN KEY (processed_by) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='举报表';
 

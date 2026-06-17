@@ -17,4 +17,23 @@ public interface TaskMapper extends BaseMapper<Task> {
     int updateStatusIfCurrent(@Param("taskId") Long taskId,
                               @Param("currentStatus") String currentStatus,
                               @Param("nextStatus") String nextStatus);
+
+    @Update("""
+            UPDATE task
+            SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP
+            WHERE status = 'OPEN' AND deadline <= CURRENT_TIMESTAMP
+            """)
+    int expireOpenTasksPastDeadline();
+
+    @Update("""
+            UPDATE task
+            SET status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP
+            WHERE status = 'IN_PROGRESS'
+              AND deadline <= CURRENT_TIMESTAMP
+              AND id IN (
+                  SELECT task_id FROM orders
+                  WHERE status = 'TIMEOUT'
+              )
+            """)
+    int expireInProgressTasksWithTimedOutOrders();
 }

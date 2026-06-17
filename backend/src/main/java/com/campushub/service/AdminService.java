@@ -286,6 +286,7 @@ public class AdminService {
             }
             if (OrderStatus.COMPLETED.equals(order.getStatus())
                     || OrderStatus.CANCELLED.equals(order.getStatus())
+                    || OrderStatus.TIMEOUT.equals(order.getStatus())
                     || OrderStatus.REVIEWED.equals(order.getStatus())) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "已完成、已取消或已评价的订单不能冻结");
             }
@@ -348,6 +349,8 @@ public class AdminService {
                         report.getReporterId(),
                         report.getTargetType(),
                         report.getTargetId(),
+                        report.getRelatedOrderId(),
+                        report.getReasonType(),
                         report.getDescription(),
                         report.getStatus(),
                         report.getCreatedAt()

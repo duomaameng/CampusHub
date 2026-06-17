@@ -1114,7 +1114,7 @@ components:
       enum: [PENDING, APPROVED, REJECTED, CANCELLED]
     OrderStatus:
       type: string
-      enum: [PENDING_CONFIRM, IN_PROGRESS, PENDING_COMPLETION, COMPLETED, CANCELLED, DISPUTE, REVIEWED]
+      enum: [PENDING_CONFIRM, IN_PROGRESS, PENDING_COMPLETION, COMPLETED, CANCELLED, TIMEOUT, DISPUTE, REVIEWED]
     RewardType:
       type: string
       enum: [CASH, NEGOTIABLE, CREDIT_INTENT]
@@ -1123,7 +1123,7 @@ components:
       enum: [TASK, ORDER_MESSAGE, REVIEW, USER]
     ReportReasonType:
       type: string
-      enum: [FRAUD, ABUSE, SPAM, ILLEGAL, OTHER]
+      enum: [FRAUD, ABUSE, SPAM, ILLEGAL, TIMEOUT, OTHER]
     ReportStatus:
       type: string
       enum: [PENDING, PROCESSING, RESOLVED, REJECTED]

@@ -52,6 +52,7 @@ const statusClass: Record<string, string> = {
   IN_PROGRESS: 'info',
   PENDING_COMPLETION: 'warning',
   COMPLETED: 'warning',
+  TIMEOUT: 'danger',
   DISPUTE: 'warning',
   REVIEWED: 'warning',
   PENDING_CONFIRM: 'success'
@@ -64,6 +65,7 @@ const statusRank: Record<OrderStatus, number> = {
   DISPUTE: 1,
   COMPLETED: 2,
   REVIEWED: 2,
+  TIMEOUT: 3,
   CANCELLED: 3
 }
 
@@ -207,6 +209,7 @@ onMounted(loadOrders)
           <option value="PENDING_COMPLETION">待确认完成</option>
           <option value="COMPLETED">已完成</option>
           <option value="REVIEWED">已评价</option>
+          <option value="TIMEOUT">已超时</option>
           <option value="DISPUTE">争议处理中</option>
           <option value="PENDING_CONFIRM">待接单</option>
         </select>

@@ -81,7 +81,7 @@ const canSubmitCompletion = computed(() => (
 const canConfirmCompletion = computed(() => isPublisher.value && order.value?.status === 'PENDING_COMPLETION')
 const canReviewOrder = computed(() => order.value?.status === 'COMPLETED')
 const shouldShowReviews = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED'].includes(order.value.status)))
-const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.value.status)))
+const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'TIMEOUT', 'PENDING_CONFIRM'].includes(order.value.status)))
 const canEditTask = computed(() => Boolean(task.value && task.value.status === 'OPEN' && task.value.applicationCount === 0))
 
 const statusClass: Record<string, string> = {
@@ -89,6 +89,7 @@ const statusClass: Record<string, string> = {
   PENDING_COMPLETION: 'warning',
   COMPLETED: 'warning',
   CANCELLED: 'danger',
+  TIMEOUT: 'danger',
   DISPUTE: 'warning',
   REVIEWED: 'warning',
   PENDING_CONFIRM: 'success'
@@ -225,11 +226,16 @@ async function submitReport() {
   success.value = ''
   reportSubmitting.value = true
   try {
-    await reportApi.submitUser(
-      reportTargetUser.value.id,
-      reportReason.value.trim(),
-      reportEvidenceFiles.value.map((item) => item.id)
-    )
+    const evidenceIds = reportEvidenceFiles.value.map((item) => item.id)
+    if (order.value?.status === 'TIMEOUT' && isPublisher.value) {
+      await reportApi.submitTimeoutOrder(orderId.value, reportReason.value.trim(), evidenceIds)
+    } else {
+      await reportApi.submitUser(
+        reportTargetUser.value.id,
+        reportReason.value.trim(),
+        evidenceIds
+      )
+    }
     reportReason.value = ''
     reportEvidenceFiles.value = []
     success.value = '举报已提交'

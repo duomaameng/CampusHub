@@ -132,6 +132,11 @@ public class NotificationService {
         notificationMapper.insert(notificationFactory.reportResult(receiverId, taskId, resultSummary));
     }
 
+    @Transactional
+    public void createReportResultOrderNotification(Long receiverId, Long orderId, String resultSummary) {
+        notificationMapper.insert(notificationFactory.reportResultForOrder(receiverId, orderId, resultSummary));
+    }
+
     private NotificationItemVO toItemVO(Notification notification) {
         String targetType = notification.getRelatedOrderId() != null ? "ORDER" : "TASK";
         Long targetId = notification.getRelatedOrderId() != null ? notification.getRelatedOrderId() : notification.getRelatedTaskId();

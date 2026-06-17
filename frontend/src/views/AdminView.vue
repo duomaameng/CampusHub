@@ -40,6 +40,7 @@ const reportsError = ref('')
 const reportsSuccess = ref('')
 const reportProcessingId = ref<number | null>(null)
 const reportResults = ref<Record<number, string>>({})
+const reportPenalties = ref<Record<number, number>>({})
 
 const announcementPageNumber = ref(1)
 const announcementPage = ref<PageData<AnnouncementItem>>()
@@ -122,9 +123,13 @@ async function processReport(item: AdminReportItem, status: Extract<ReportStatus
 
   reportProcessingId.value = item.id
   try {
-    await adminApi.processReport(item.id, status, result)
+    const creditPenalty = item.reasonType === 'TIMEOUT' && status === 'RESOLVED'
+      ? reportPenalties.value[item.id] || 10
+      : undefined
+    await adminApi.processReport(item.id, status, result, creditPenalty)
     reportsSuccess.value = '举报已处理'
     reportResults.value[item.id] = ''
+    delete reportPenalties.value[item.id]
     await loadReports()
   } catch (err) {
     reportsError.value = err instanceof Error ? err.message : '举报处理失败'
@@ -397,7 +402,10 @@ onMounted(async () => {
             <tr v-for="report in reportPage.records" :key="report.id">
               <td>{{ report.id }}</td>
               <td>{{ report.reporterId }}</td>
-              <td>{{ reportTargetTypeText[report.targetType] }} #{{ report.targetId }}</td>
+              <td>
+                {{ reportTargetTypeText[report.targetType] }} #{{ report.targetId }}
+                <span v-if="report.relatedOrderId" class="hint">订单 #{{ report.relatedOrderId }}</span>
+              </td>
               <td class="report-reason">{{ report.reason }}</td>
               <td>
                 <span :class="['tag', report.status === 'PENDING' || report.status === 'PROCESSING' ? 'warning' : report.status === 'RESOLVED' ? 'success' : 'danger']">
@@ -408,6 +416,17 @@ onMounted(async () => {
               <td>
                 <div v-if="report.status === 'PENDING' || report.status === 'PROCESSING'" class="report-actions">
                   <textarea v-model.trim="reportResults[report.id]" maxlength="500" placeholder="填写处理结果" />
+                  <div v-if="report.reasonType === 'TIMEOUT'" class="field">
+                    <label :for="`report-penalty-${report.id}`">信用扣分</label>
+                    <input
+                      :id="`report-penalty-${report.id}`"
+                      v-model.number="reportPenalties[report.id]"
+                      type="number"
+                      min="1"
+                      max="30"
+                      placeholder="默认 10"
+                    />
+                  </div>
                   <div class="actions">
                     <button
                       class="button secondary"

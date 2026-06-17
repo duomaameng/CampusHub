@@ -5,16 +5,21 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
+import com.campushub.entity.CreditLog;
 import com.campushub.entity.FileRecord;
 import com.campushub.dto.report.ReportCreateRequest;
 import com.campushub.dto.report.ReportProcessRequest;
+import com.campushub.entity.Order;
 import com.campushub.entity.Report;
 import com.campushub.entity.ReportEvidence;
 import com.campushub.entity.Task;
+import com.campushub.enums.OrderStatus;
 import com.campushub.enums.ReportReasonType;
 import com.campushub.enums.ReportStatus;
 import com.campushub.enums.ReportTargetType;
 import com.campushub.enums.UploadBusinessType;
+import com.campushub.mapper.CreditLogMapper;
+import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.ReportEvidenceMapper;
 import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
@@ -35,11 +40,18 @@ import java.util.List;
 public class ReportService {
 
     private static final int MAX_PAGE_SIZE = 50;
+    private static final int DEFAULT_CREDIT_SCORE = 100;
+    private static final int MIN_CREDIT_SCORE = 0;
+    private static final int MAX_CREDIT_SCORE = 100;
+    private static final int DEFAULT_TIMEOUT_PENALTY = 10;
+    private static final int MAX_TIMEOUT_PENALTY = 30;
 
     private final ReportMapper reportMapper;
     private final ReportEvidenceMapper reportEvidenceMapper;
     private final TaskMapper taskMapper;
+    private final OrderMapper orderMapper;
     private final UserMapper userMapper;
+    private final CreditLogMapper creditLogMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
 
@@ -163,6 +175,65 @@ public class ReportService {
     }
 
     @Transactional
+    public ReportSubmissionVO submitTimeoutOrderReport(Long orderId, ReportCreateRequest request) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
+        if (!currentUserId.equals(order.getPublisherId())) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT, "只有发布方可以举报超时服务");
+        }
+        if (!OrderStatus.TIMEOUT.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "只有已超时订单可以提交超时举报");
+        }
+        if (order.getServiceProviderId() == null) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单没有可举报的服务方");
+        }
+
+        Report existing = reportMapper.selectOne(new LambdaQueryWrapper<Report>()
+                .eq(Report::getReporterId, currentUserId)
+                .eq(Report::getTargetType, ReportTargetType.USER)
+                .eq(Report::getTargetId, order.getServiceProviderId())
+                .eq(Report::getRelatedOrderId, orderId)
+                .eq(Report::getReasonType, ReportReasonType.TIMEOUT)
+                .last("LIMIT 1"));
+        if (existing != null) {
+            if (ReportStatus.PENDING.equals(existing.getStatus()) || ReportStatus.PROCESSING.equals(existing.getStatus())) {
+                throw new BusinessException(ErrorCode.REPORT_ALREADY_HANDLED, "超时举报处理中，请勿重复提交");
+            }
+            throw new BusinessException(ErrorCode.REPORT_ALREADY_HANDLED, "该超时举报已处理，不能重复提交");
+        }
+
+        Report report = new Report();
+        report.setReporterId(currentUserId);
+        report.setTargetType(ReportTargetType.USER);
+        report.setTargetId(order.getServiceProviderId());
+        report.setRelatedOrderId(orderId);
+        report.setReasonType(ReportReasonType.TIMEOUT);
+        report.setDescription(request.getReason().trim());
+        report.setStatus(ReportStatus.PENDING);
+        reportMapper.insert(report);
+
+        List<Long> evidenceImageIds = request.getEvidenceImageIds() == null ? List.of() : request.getEvidenceImageIds();
+        for (Long imageId : evidenceImageIds) {
+            FileRecord fileRecord = fileService.requireOwnedFile(imageId, UploadBusinessType.REPORT_EVIDENCE);
+            ReportEvidence evidence = new ReportEvidence();
+            evidence.setReportId(report.getId());
+            evidence.setFileRecordId(fileRecord.getId());
+            reportEvidenceMapper.insert(evidence);
+        }
+
+        return new ReportSubmissionVO(
+                report.getId(),
+                orderId,
+                request.getReason().trim(),
+                evidenceImageIds,
+                report.getCreatedAt()
+        );
+    }
+
+    @Transactional
     public void processReport(Long reportId, ReportProcessRequest request) {
         Report report = reportMapper.selectById(reportId);
         if (report == null) {
@@ -182,7 +253,45 @@ public class ReportService {
         report.setProcessedAt(LocalDateTime.now());
         reportMapper.updateById(report);
 
-        notificationService.createReportResultNotification(report.getReporterId(), report.getTargetId(), request.getResult().trim());
+        if (ReportStatus.RESOLVED.equals(request.getStatus()) && ReportReasonType.TIMEOUT.equals(report.getReasonType())) {
+            applyTimeoutCreditPenalty(report, request);
+        }
+
+        if (report.getRelatedOrderId() != null) {
+            notificationService.createReportResultOrderNotification(report.getReporterId(), report.getRelatedOrderId(), request.getResult().trim());
+            notificationService.createReportResultOrderNotification(report.getTargetId(), report.getRelatedOrderId(), request.getResult().trim());
+        } else {
+            notificationService.createReportResultNotification(report.getReporterId(), report.getTargetId(), request.getResult().trim());
+        }
+    }
+
+    private void applyTimeoutCreditPenalty(Report report, ReportProcessRequest request) {
+        Integer requestedPenalty = request.getCreditPenalty();
+        int penalty = requestedPenalty == null ? DEFAULT_TIMEOUT_PENALTY : requestedPenalty;
+        if (penalty < 1 || penalty > MAX_TIMEOUT_PENALTY) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "超时扣分必须在 1 到 30 之间");
+        }
+
+        Long userId = report.getTargetId();
+        CreditLog latest = creditLogMapper.selectOne(new LambdaQueryWrapper<CreditLog>()
+                .eq(CreditLog::getUserId, userId)
+                .orderByDesc(CreditLog::getId)
+                .last("LIMIT 1"));
+        int scoreBefore = clampCreditScore(latest != null ? latest.getScoreAfter() : DEFAULT_CREDIT_SCORE);
+        int scoreAfter = clampCreditScore(scoreBefore - penalty);
+
+        CreditLog creditLog = new CreditLog();
+        creditLog.setUserId(userId);
+        creditLog.setChangeAmount(scoreAfter - scoreBefore);
+        creditLog.setScoreBefore(scoreBefore);
+        creditLog.setScoreAfter(scoreAfter);
+        creditLog.setReason("超时订单举报成立，扣减信用分");
+        creditLog.setRelatedOrderId(report.getRelatedOrderId());
+        creditLogMapper.insert(creditLog);
+    }
+
+    private int clampCreditScore(int score) {
+        return Math.max(MIN_CREDIT_SCORE, Math.min(MAX_CREDIT_SCORE, score));
     }
 
     private ReportReasonType guessReasonType(String reason) {
@@ -221,6 +330,8 @@ public class ReportService {
                 report.getId(),
                 report.getTargetType(),
                 report.getTargetId(),
+                report.getRelatedOrderId(),
+                report.getReasonType(),
                 report.getDescription(),
                 report.getStatus(),
                 report.getResult(),
@@ -234,6 +345,8 @@ public class ReportService {
                 report.getId(),
                 report.getTargetType(),
                 report.getTargetId(),
+                report.getRelatedOrderId(),
+                report.getReasonType(),
                 report.getDescription(),
                 report.getStatus(),
                 report.getResult(),

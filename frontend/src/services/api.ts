@@ -305,12 +305,12 @@ export const adminApi = {
     if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
     return request<PageData<AdminReportItem>>({ method: 'GET', url: '/admin/reports', params })
   },
-  processReport(reportId: number, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>, result: string) {
+  processReport(reportId: number, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>, result: string, creditPenalty?: number) {
     if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
     return request<null>({
       method: 'PATCH',
       url: `/admin/reports/${reportId}`,
-      data: { status, result }
+      data: { status, result, creditPenalty }
     })
   }
 }
@@ -355,6 +355,14 @@ export const reportApi = {
     return request<ReportSubmission>({
       method: 'POST',
       url: `/users/${userId}/reports`,
+      data: { reason, evidenceImageIds }
+    })
+  },
+  submitTimeoutOrder(orderId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用超时订单举报'))
+    return request<ReportSubmission>({
+      method: 'POST',
+      url: `/orders/${orderId}/timeout-report`,
       data: { reason, evidenceImageIds }
     })
   }

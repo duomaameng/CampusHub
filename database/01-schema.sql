@@ -143,7 +143,7 @@ CREATE TABLE `orders` (
   `task_id` BIGINT NOT NULL COMMENT 'task id',
   `publisher_id` BIGINT NOT NULL COMMENT 'publisher user id',
   `service_provider_id` BIGINT DEFAULT NULL COMMENT 'service provider user id; nullable when order is returned to pending confirmation',
-  `status` VARCHAR(24) NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT 'order status',
+  `status` VARCHAR(24) NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT 'PENDING_CONFIRM IN_PROGRESS PENDING_COMPLETION COMPLETED CANCELLED TIMEOUT DISPUTE or REVIEWED',
   `completion_proof_url` VARCHAR(512) DEFAULT NULL COMMENT 'completion proof url',
   `cancel_reason` VARCHAR(500) DEFAULT NULL COMMENT 'cancel reason',
   `version` INT NOT NULL DEFAULT 0 COMMENT 'optimistic lock version',
@@ -239,6 +239,7 @@ CREATE TABLE `report` (
   `reporter_id` BIGINT NOT NULL COMMENT 'reporter user id',
   `target_type` VARCHAR(16) NOT NULL COMMENT 'report target type',
   `target_id` BIGINT NOT NULL COMMENT 'report target id',
+  `related_order_id` BIGINT DEFAULT NULL COMMENT 'related order id for order-scoped reports',
   `reason_type` VARCHAR(16) NOT NULL COMMENT 'reason type',
   `description` VARCHAR(1000) NOT NULL COMMENT 'report description',
   `status` VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT 'report status',
@@ -249,7 +250,9 @@ CREATE TABLE `report` (
   PRIMARY KEY (`id`),
   KEY `idx_report_reporter_status` (`reporter_id`, `status`),
   KEY `idx_report_admin_status_time` (`status`, `created_at`),
+  KEY `idx_report_related_order` (`related_order_id`, `reason_type`, `status`),
   CONSTRAINT `fk_report_reporter` FOREIGN KEY (`reporter_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `fk_report_related_order` FOREIGN KEY (`related_order_id`) REFERENCES `orders` (`id`),
   CONSTRAINT `fk_report_processor` FOREIGN KEY (`processed_by`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='report table';
 

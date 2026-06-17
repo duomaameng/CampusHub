@@ -56,6 +56,14 @@ public class NotificationFactory {
         return notification;
     }
 
+    public Notification reportResultForOrder(Long receiverId, Long orderId, String resultSummary) {
+        Notification notification = base(receiverId, NotificationType.REPORT_RESULT);
+        notification.setTitle("举报处理结果已更新");
+        notification.setContent(resultSummary);
+        notification.setRelatedOrderId(orderId);
+        return notification;
+    }
+
     private Notification base(Long receiverId, NotificationType type) {
         Notification notification = new Notification();
         notification.setReceiverId(receiverId);
@@ -72,6 +80,7 @@ public class NotificationFactory {
             case PENDING_COMPLETION -> "待确认完成";
             case COMPLETED -> "已完成";
             case CANCELLED -> "已取消";
+            case TIMEOUT -> "已超时";
             case DISPUTE -> "争议处理中";
             case REVIEWED -> "已评价";
         };
