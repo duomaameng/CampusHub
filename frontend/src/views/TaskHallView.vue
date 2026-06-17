@@ -187,7 +187,8 @@ onMounted(loadTasks)
           查看详情
           <ArrowRight class="meta-icon" aria-hidden="true" />
         </span>
-        <span class="task-visual" aria-hidden="true">
+        <img v-if="task.imageUrls && task.imageUrls.length" :src="task.imageUrls[0]" alt="" class="card-image" />
+        <span v-else class="task-visual" aria-hidden="true">
           <span class="visual-window" />
           <span class="visual-dot" />
           <span class="visual-line visual-line-1" />
@@ -444,13 +445,9 @@ section {
 .cards-grid {
   position: relative;
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   grid-auto-rows: auto;
   gap: 22px;
-}
-
-.cards-grid .item-card:nth-child(3n + 1) {
-  grid-row: span 2;
 }
 
 .item-card {
@@ -704,16 +701,39 @@ section {
     grid-template-columns: 1fr;
   }
 
-  .cards-grid .item-card:nth-child(3n + 1) {
-    grid-row: span 1;
-  }
-
   .item-card {
     padding: var(--space-5);
   }
 
-  .task-visual {
+.card-image {
+  position: absolute;
+  right: 28px;
+  top: 28px;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
+  z-index: 0;
+}
+
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
+}
+
+.task-visual {
     display: none;
+  }
+
+  .card-image {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    border-radius: 16px;
   }
 
   .toolbar {

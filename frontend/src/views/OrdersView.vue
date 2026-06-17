@@ -23,6 +23,7 @@ type OrderListCard = {
   serviceProviderHint: string
   numberLabel: string
   createdAt: string
+  imageUrl?: string
 }
 
 const auth = useAuthStore()
@@ -83,7 +84,8 @@ const orderCards = computed<OrderListCard[]>(() => {
     serviceProviderNickname: order.serviceProviderNickname,
     serviceProviderHint: '暂无服务方',
     numberLabel: `订单号 ${order.id}`,
-    createdAt: order.createdAt
+    createdAt: order.createdAt,
+    imageUrl: order.taskImageUrl
   }))
 
   const taskItems = missingPublishedTasks.value.map<OrderListCard>((task) => ({
@@ -97,7 +99,8 @@ const orderCards = computed<OrderListCard[]>(() => {
     publisherNickname: task.publisherNickname,
     serviceProviderHint: '尚未接单',
     numberLabel: `任务号 ${task.id}`,
-    createdAt: task.createdAt
+    createdAt: task.createdAt,
+    imageUrl: task.imageUrls?.[0]
   }))
 
   return [...orderItems, ...taskItems].sort(compareOrderCards)
@@ -264,7 +267,8 @@ onMounted(loadOrders)
           <CalendarClock class="meta-icon" aria-hidden="true" />
           {{ card.numberLabel }} · {{ new Date(card.createdAt).toLocaleString() }}
         </p>
-        <span class="order-card-visual" aria-hidden="true">
+        <img v-if="card.imageUrl" :src="card.imageUrl" alt="" class="card-image" />
+        <span v-else class="order-card-visual" aria-hidden="true">
           <span class="visual-dot" />
         </span>
       </RouterLink>
@@ -300,13 +304,9 @@ onMounted(loadOrders)
 
 .orders-view .cards-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   grid-auto-rows: auto;
   gap: 22px;
-}
-
-.orders-view .cards-grid .item-card:nth-child(3n + 1) {
-  grid-row: span 2;
 }
 
 .role-tabs {
@@ -463,6 +463,24 @@ onMounted(loadOrders)
   background: var(--order-green);
 }
 
+.card-image {
+  position: absolute;
+  right: 24px;
+  top: 22px;
+  z-index: 0;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
+}
+
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
+}
+
 .item-card:hover .order-card-visual {
   transform: rotate(-3deg);
 }
@@ -589,16 +607,8 @@ onMounted(loadOrders)
     grid-template-columns: 1fr;
   }
 
-  .orders-view .cards-grid .item-card:nth-child(3n + 1) {
-    grid-row: span 1;
-  }
-
   .role-tabs,
   .toolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .cards-grid {
     grid-template-columns: 1fr;
   }
 
@@ -613,6 +623,15 @@ onMounted(loadOrders)
 
   .order-card-visual {
     display: none;
+  }
+
+  .card-image {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    border-radius: 16px;
   }
 }
 </style>
