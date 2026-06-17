@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Bookmark, Clock, MapPin, Tag, Users } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -110,7 +110,7 @@ onMounted(loadFavorites)
 
 <style scoped>
 .task-favorites-view {
-  --favorite-green: #b9ff66;
+  --favorite-green: #7dbe8e;
   --favorite-dark: #191a23;
   --favorite-grey: #f3f3f3;
 }
@@ -185,13 +185,13 @@ onMounted(loadFavorites)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #f8ffe8;
+  background: #e8f5ec;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .toolbar .field label {

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { CalendarClock, ClipboardList, UserRound } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -274,7 +274,7 @@ onMounted(loadOrders)
 
 <style scoped>
 .orders-view {
-  --order-green: #b9ff66;
+  --order-green: #7dbe8e;
   --order-dark: #191a23;
   --order-grey: #f3f3f3;
 }
@@ -337,7 +337,7 @@ onMounted(loadOrders)
 }
 
 .role-tab:hover {
-  background: #f8ffe8;
+  background: #e8f5ec;
   transform: translateY(-2px);
 }
 
@@ -385,13 +385,13 @@ onMounted(loadOrders)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #f8ffe8;
+  background: #e8f5ec;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .toolbar .field label {
@@ -556,7 +556,7 @@ onMounted(loadOrders)
 }
 
 .item-card .meta-line a:hover {
-  color: #365600;
+  color: #2d5a3d;
 }
 
 .item-card .hint {

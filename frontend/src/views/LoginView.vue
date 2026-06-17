@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ArrowRight, LockKeyhole, LogIn, Mail, Sparkles, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -96,7 +96,7 @@ async function submit() {
 
 <style scoped>
 .login-page {
-  --positivus-green: #b9ff66;
+  --positivus-green: #7dbe8e;
   --positivus-dark: #191a23;
   --positivus-grey: #f3f3f3;
   --positivus-line: #000000;
@@ -129,7 +129,7 @@ async function submit() {
   min-height: 560px;
   padding: clamp(30px, 4vw, 52px);
   background:
-    radial-gradient(circle at 88% 16%, rgba(185, 255, 102, 0.78) 0 74px, transparent 76px),
+    radial-gradient(circle at 88% 16%, rgba(125, 190, 142, 0.78) 0 74px, transparent 76px),
     linear-gradient(145deg, #ffffff 0%, var(--positivus-grey) 100%);
   display: flex;
   flex-direction: column;
@@ -274,7 +274,7 @@ async function submit() {
 :deep(.password-input-wrapper input:focus) {
   border-color: var(--positivus-line);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.55);
 }
 
 :deep(.password-visibility-button) {
@@ -328,7 +328,7 @@ async function submit() {
 
 .button.primary:hover:not(:disabled) {
   background: #000000;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.65);
+  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.65);
   transform: translateY(-2px);
 }
 
@@ -378,7 +378,7 @@ async function submit() {
 }
 
 .signup-strip a:hover {
-  color: #365600;
+  color: #2d5a3d;
 }
 
 @media (max-width: 980px) {

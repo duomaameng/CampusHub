@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -93,7 +93,7 @@ onMounted(load)
 
 <style scoped>
 .notifications-view {
-  --notice-green: #b9ff66;
+  --notice-green: #7dbe8e;
   --notice-dark: #191a23;
   --notice-grey: #f3f3f3;
   --notice-line: #000000;
@@ -104,7 +104,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 94% 10%, rgba(185, 255, 102, 0.82) 0 56px, transparent 58px),
+    radial-gradient(circle at 94% 10%, rgba(125, 190, 142, 0.82) 0 56px, transparent 58px),
     #ffffff;
   box-shadow: 0 6px 0 var(--notice-line);
 }
@@ -173,7 +173,7 @@ onMounted(load)
 }
 
 .notification-item.unread {
-  background: linear-gradient(135deg, #ffffff 0%, #f7ffe8 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e8f5ec 100%);
   box-shadow: 0 3px 0 var(--notice-line);
 }
 

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { AlertCircle, CalendarClock, Megaphone, RefreshCcw } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
@@ -109,7 +109,7 @@ onMounted(load)
 
 <style scoped>
 .announcements-view {
-  --notice-green: #b9ff66;
+  --notice-green: #7dbe8e;
   --notice-dark: #191a23;
   --notice-grey: #f3f3f3;
   --notice-line: #000000;
@@ -121,7 +121,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background:
-    radial-gradient(circle at 92% 12%, rgba(185, 255, 102, 0.8) 0 58px, transparent 60px),
+    radial-gradient(circle at 92% 12%, rgba(125, 190, 142, 0.8) 0 58px, transparent 60px),
     #ffffff;
   box-shadow: 0 5px 0 var(--notice-line);
 }
@@ -230,7 +230,7 @@ onMounted(load)
 
 .page-title .button.secondary:hover {
   background: #000000;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.55);
   transform: translateY(-1px);
 }
 

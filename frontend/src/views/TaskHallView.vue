@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {
   ArrowRight,
   Bookmark,
@@ -199,7 +199,7 @@ onMounted(loadTasks)
 <style scoped>
 section {
   --card-hover-lift: -6px;
-  --task-green: #b9ff66;
+  --task-green: #7dbe8e;
   --task-dark: #191a23;
   --task-grey: #f3f3f3;
 }
@@ -400,13 +400,13 @@ section {
 .toolbar .field select:hover,
 .toolbar .field input:hover {
   border-color: #000000;
-  background: #f8ffe8;
+  background: #e8f5ec;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .toolbar .field label {
@@ -557,7 +557,7 @@ section {
 }
 
 .item-card .meta-line a:hover {
-  color: #365600;
+  color: #2d5a3d;
 }
 
 .item-card .card-action {
@@ -609,7 +609,7 @@ section {
   width: 40px;
   height: 10px;
   border-radius: 999px;
-  background: #b9ff66;
+  background: #7dbe8e;
 }
 
 .visual-dot {
@@ -620,7 +620,7 @@ section {
   height: 46px;
   border: 2px solid #000000;
   border-radius: 50%;
-  background: #b9ff66;
+  background: #7dbe8e;
 }
 
 .visual-line {

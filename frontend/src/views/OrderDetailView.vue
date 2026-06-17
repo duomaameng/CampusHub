@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -741,7 +741,7 @@ onMounted(load)
 
 <style scoped>
 .order-detail-view {
-  --order-green: #b9ff66;
+  --order-green: #7dbe8e;
   --order-dark: #191a23;
   --order-grey: #f3f3f3;
 }
@@ -928,7 +928,7 @@ onMounted(load)
 .field textarea:focus,
 .field select:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .button {

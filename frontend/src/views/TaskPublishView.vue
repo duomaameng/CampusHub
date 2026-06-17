@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { CalendarClock, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -341,7 +341,7 @@ async function removeUploadedImage(imageId: number) {
 
 <style scoped>
 .task-publish-view {
-  --publish-green: #b9ff66;
+  --publish-green: #7dbe8e;
   --publish-dark: #191a23;
   --publish-grey: #f3f3f3;
   position: relative;
@@ -447,7 +447,7 @@ async function removeUploadedImage(imageId: number) {
 .field input:hover,
 .field select:hover,
 .field textarea:hover {
-  background-color: #f8ffe8;
+  background-color: #e8f5ec;
 }
 
 .field input:focus,
@@ -455,7 +455,7 @@ async function removeUploadedImage(imageId: number) {
 .field textarea:focus {
   border-color: #000000;
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .button {
@@ -565,7 +565,7 @@ async function removeUploadedImage(imageId: number) {
 }
 
 .checkbox-label input[type='checkbox']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48), 0 2px 0 #000000;
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48), 0 2px 0 #000000;
 }
 
 .error-message {

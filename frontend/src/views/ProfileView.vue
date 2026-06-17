@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
 import { fileApi, userApi } from '@/services/api'
@@ -196,7 +196,7 @@ onMounted(load)
 
 <style scoped>
 .profile-view {
-  --profile-green: #b9ff66;
+  --profile-green: #7dbe8e;
   --profile-dark: #191a23;
   --profile-grey: #f3f3f3;
 }
@@ -296,7 +296,7 @@ onMounted(load)
 .form-panel .field select:focus,
 .form-panel .field textarea:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
   background: #ffffff;
 }
 
@@ -467,7 +467,7 @@ aside.panel .grid.two .hint {
 }
 
 .checkbox-label input[type='checkbox']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48), 0 2px 0 #000000;
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48), 0 2px 0 #000000;
 }
 
 .empty-state {

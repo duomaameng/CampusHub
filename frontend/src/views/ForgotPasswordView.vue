@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { KeyRound, Mail, RotateCcw } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -109,7 +109,7 @@ async function resetPassword() {
 
 <style scoped>
 .forgot-password-view {
-  --reset-green: #b9ff66;
+  --reset-green: #7dbe8e;
   --reset-dark: #191a23;
   --reset-grey: #f3f3f3;
   --reset-line: #000000;
@@ -117,7 +117,7 @@ async function resetPassword() {
   border: 2px solid var(--reset-line);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 92% 8%, rgba(185, 255, 102, 0.82) 0 58px, transparent 60px),
+    radial-gradient(circle at 92% 8%, rgba(125, 190, 142, 0.82) 0 58px, transparent 60px),
     #ffffff;
   box-shadow: 0 7px 0 var(--reset-line);
 }
@@ -189,7 +189,7 @@ async function resetPassword() {
 .forgot-password-view :deep(.password-input-wrapper input:focus) {
   border-color: var(--reset-line);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.55);
 }
 
 .forgot-password-view :deep(.password-visibility-button) {
@@ -218,7 +218,7 @@ async function resetPassword() {
 
 .forgot-password-view .button.primary:hover:not(:disabled) {
   background: #000000;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.55);
   transform: translateY(-1px);
 }
 

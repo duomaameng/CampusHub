@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { LockKeyhole, Mail, RotateCcw, ShieldCheck, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -122,7 +122,7 @@ async function submit() {
 
 <style scoped>
 .register-view {
-  --register-green: #b9ff66;
+  --register-green: #7dbe8e;
   --register-dark: #191a23;
   --register-grey: #f3f3f3;
   position: relative;
@@ -247,7 +247,7 @@ async function submit() {
 .field input:focus,
 :deep(.password-input:focus) {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 :deep(.password-visibility-button) {
