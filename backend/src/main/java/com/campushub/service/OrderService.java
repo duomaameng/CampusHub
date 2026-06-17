@@ -40,6 +40,7 @@ public class OrderService {
     private final ApplicationMapper applicationMapper;
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
+    private final TaskImageMapper taskImageMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
 
@@ -443,6 +444,15 @@ public class OrderService {
         vo.setStatus(order.getStatus());
         vo.setCancelReason(order.getCancelReason());
         vo.setCreatedAt(order.getCreatedAt());
+        List<String> imageUrls = taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()
+                        .eq(TaskImage::getTaskId, task.getId())
+                        .orderByAsc(TaskImage::getSortOrder))
+                .stream()
+                .map(TaskImage::getImageUrl)
+                .toList();
+        if (!imageUrls.isEmpty()) {
+            vo.setTaskImageUrl(imageUrls.get(0));
+        }
     }
 
     private OrderStatusLogVO toStatusLogVO(OrderStatusLog log) {
