@@ -619,11 +619,13 @@ onMounted(async () => {
   margin-bottom: 10px;
   padding: 5px 10px;
   border-radius: 7px;
+  border: 2px solid #000000;
   background: var(--admin-green);
   color: #000000;
   font-size: 34px;
   line-height: 1.12;
   letter-spacing: 0;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .admin-view :deep(.page-title p) {

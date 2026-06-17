@@ -801,25 +801,28 @@ onMounted(load)
   margin-bottom: 8px;
 }
 
-.page-title h1,
-.panel h2 {
+.page-title h1 {
   width: max-content;
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--order-green);
   color: #000000;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.18;
-  -webkit-text-fill-color: #000000;
-}
-
-.page-title h1 {
   font-size: 32px;
+  -webkit-text-fill-color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .panel h2 {
+  width: max-content;
+  max-width: 100%;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.18;
   font-size: 22px;
 }
 
@@ -849,10 +852,6 @@ onMounted(load)
 .grid.two > .panel strong {
   display: inline-block;
   margin-bottom: 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--order-green);
-  color: #000000;
   font-size: 14px;
   font-weight: 900;
 }

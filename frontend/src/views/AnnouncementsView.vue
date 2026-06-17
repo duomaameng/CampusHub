@@ -131,6 +131,7 @@ onMounted(load)
   margin: 0;
   padding: 5px 10px;
   border-radius: 24px;
+  border: 2px solid #000000;
   background: var(--notice-green);
   background-clip: border-box;
   -webkit-background-clip: border-box;
@@ -139,6 +140,7 @@ onMounted(load)
   font-size: 32px;
   line-height: 1.12;
   letter-spacing: 0;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .announcements-view :deep(.page-title p) {
@@ -265,12 +267,7 @@ onMounted(load)
 }
 
 .announcement-card h2 {
-  width: max-content;
   max-width: 100%;
-  padding: 4px 8px;
-  border-radius: 24px;
-  background: var(--notice-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;

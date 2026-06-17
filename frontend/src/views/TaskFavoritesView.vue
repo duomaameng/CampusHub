@@ -52,7 +52,6 @@ onMounted(loadFavorites)
     <div class="page-title">
       <div>
         <h1>我的收藏</h1>
-        <p>集中查看已经收藏的需求，继续跟进或取消收藏可进入详情页操作。</p>
       </div>
       <RouterLink class="button ghost" to="/tasks">返回任务大厅</RouterLink>
     </div>
@@ -125,6 +124,7 @@ onMounted(loadFavorites)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--favorite-green);
   color: #000000;
   font-size: 34px;
@@ -132,15 +132,7 @@ onMounted(loadFavorites)
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-}
-
-.page-title p {
-  margin-top: 12px;
-  max-width: 680px;
-  color: #3f4350;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.6;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .page-title .button.ghost {
@@ -211,12 +203,11 @@ onMounted(loadFavorites)
 }
 
 .item-card {
-  min-height: 205px;
-  padding: 26px 30px;
+  padding: 22px 26px;
   border: 2px solid #000000;
-  border-radius: 28px;
-  background: var(--favorite-grey);
-  box-shadow: 0 6px 0 #000000;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #000000;
   position: relative;
   overflow: hidden;
 }
@@ -248,24 +239,6 @@ onMounted(loadFavorites)
   transform: rotate(-3deg);
 }
 
-.item-card:nth-child(2n) {
-  background: var(--favorite-green);
-}
-
-.item-card:nth-child(3n) {
-  background: var(--favorite-dark);
-  color: #ffffff;
-}
-
-.item-card:nth-child(3n)::after {
-  border-color: #ffffff;
-}
-
-.item-card:nth-child(3n) p,
-.item-card:nth-child(3n) .meta-line span {
-  color: #ffffff;
-}
-
 .item-title,
 .item-card p,
 .meta-line {
@@ -289,12 +262,7 @@ onMounted(loadFavorites)
 }
 
 .item-card h2 {
-  width: max-content;
   max-width: calc(100% - 120px);
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: var(--favorite-green);
-  color: #000000;
   font-size: 21px;
   font-weight: 900;
   line-height: 1.18;
@@ -368,7 +336,26 @@ onMounted(loadFavorites)
   font-weight: 800;
 }
 
+.task-favorites-view .cards-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-auto-rows: auto;
+  gap: 22px;
+}
+
+.task-favorites-view .cards-grid .item-card:nth-child(3n + 1) {
+  grid-row: span 2;
+}
+
 @media (max-width: 768px) {
+  .task-favorites-view .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-favorites-view .cards-grid .item-card:nth-child(3n + 1) {
+    grid-row: span 1;
+  }
+
   .toolbar {
     grid-template-columns: 1fr;
   }

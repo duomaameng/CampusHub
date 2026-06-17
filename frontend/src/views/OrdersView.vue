@@ -287,6 +287,7 @@ onMounted(loadOrders)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--order-green);
   color: #000000;
   font-size: 34px;
@@ -294,6 +295,18 @@ onMounted(loadOrders)
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: 0 4px 0 #000000;
+}
+
+.orders-view .cards-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-auto-rows: auto;
+  gap: 22px;
+}
+
+.orders-view .cards-grid .item-card:nth-child(3n + 1) {
+  grid-row: span 2;
 }
 
 .role-tabs {
@@ -412,12 +425,11 @@ onMounted(loadOrders)
 }
 
 .item-card {
-  min-height: 190px;
-  padding: 26px 170px 26px 30px;
+  padding: 22px 130px 22px 26px;
   border: 2px solid #000000;
-  border-radius: 28px;
-  background: var(--order-grey);
-  box-shadow: 0 6px 0 #000000;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #000000;
   position: relative;
   overflow: hidden;
 }
@@ -455,32 +467,6 @@ onMounted(loadOrders)
   transform: rotate(-3deg);
 }
 
-.item-card:nth-child(2n) {
-  background: var(--order-green);
-}
-
-.item-card:nth-child(3n) {
-  background: var(--order-dark);
-  color: #ffffff;
-}
-
-.item-card:nth-child(3n) h2,
-.item-card:nth-child(3n) .meta-line span,
-.item-card:nth-child(3n) .meta-line a,
-.item-card:nth-child(3n) .hint {
-  color: #ffffff;
-}
-
-.item-card:nth-child(3n) .order-card-visual {
-  border-color: #ffffff;
-}
-
-.item-card:nth-child(3n) .relation-pill {
-  border-color: #000000;
-  background: var(--order-green);
-  color: #000000;
-}
-
 .item-title {
   position: relative;
   z-index: 1;
@@ -499,13 +485,8 @@ onMounted(loadOrders)
 }
 
 .item-card h2 {
-  width: max-content;
   max-width: 100%;
   margin-top: 8px;
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: var(--order-green);
-  color: #000000;
   font-size: 21px;
   font-weight: 900;
   line-height: 1.18;
@@ -604,6 +585,14 @@ onMounted(loadOrders)
 }
 
 @media (max-width: 768px) {
+  .orders-view .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-view .cards-grid .item-card:nth-child(3n + 1) {
+    grid-row: span 1;
+  }
+
   .role-tabs,
   .toolbar {
     grid-template-columns: 1fr;

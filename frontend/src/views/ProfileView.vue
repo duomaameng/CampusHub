@@ -209,6 +209,7 @@ onMounted(load)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--profile-green);
   color: #000000;
   font-size: 34px;
@@ -216,6 +217,7 @@ onMounted(load)
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .page-title p {
@@ -265,11 +267,6 @@ onMounted(load)
 .form-panel h2 {
   width: max-content;
   max-width: 100%;
-  margin-bottom: var(--space-3);
-  padding: 5px 12px;
-  border-radius: 18px;
-  background: var(--profile-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
@@ -373,10 +370,6 @@ aside.panel {
 
 aside.panel h2 {
   width: max-content;
-  padding: 5px 12px;
-  border-radius: 18px;
-  background: var(--profile-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;

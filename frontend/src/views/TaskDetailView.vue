@@ -594,6 +594,7 @@ onMounted(load)
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--task-green);
   color: #000000;
   font-size: 32px;
@@ -601,16 +602,13 @@ onMounted(load)
   letter-spacing: 0;
   line-height: 1.18;
   -webkit-text-fill-color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .panel h2 {
   width: max-content;
   max-width: 100%;
   margin-bottom: var(--space-2);
-  padding: 5px 12px;
-  border-radius: 18px;
-  background: var(--task-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
@@ -667,10 +665,6 @@ onMounted(load)
 .panel .grid.two .panel strong {
   display: inline-block;
   margin-bottom: 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--task-green);
-  color: #000000;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: 0;

@@ -137,6 +137,7 @@ onMounted(load)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--public-green);
   color: #000000;
   font-size: 34px;
@@ -144,6 +145,7 @@ onMounted(load)
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .page-title p {

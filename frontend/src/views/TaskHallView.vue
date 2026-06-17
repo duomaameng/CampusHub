@@ -77,7 +77,6 @@ onMounted(loadTasks)
     <div class="page-title">
       <div>
         <h1>任务大厅</h1>
-        <p>浏览公开需求，按分类、校区、关键词和截止时间筛选。</p>
       </div>
       <RouterLink class="button primary" to="/tasks/new">
         <PlusCircle class="button-icon" aria-hidden="true" />
@@ -214,6 +213,7 @@ section {
   width: max-content;
   padding: 4px 12px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--task-green);
   color: #000000;
   font-size: 34px;
@@ -221,20 +221,14 @@ section {
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-}
-
-.page-title p {
-  margin-top: 12px;
-  color: #3f4350;
-  font-size: 16px;
-  font-weight: 700;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .hero-strip {
   position: relative;
   align-items: stretch;
-  grid-template-columns: minmax(420px, 1.45fr) repeat(3, minmax(150px, 0.65fr));
-  gap: 18px;
+  grid-template-columns: minmax(320px, 1.2fr) repeat(3, minmax(100px, 0.5fr));
+  gap: 14px;
   margin-bottom: 28px;
   background: transparent;
   border: 0;
@@ -245,45 +239,45 @@ section {
 }
 
 .hero-copy {
-  min-height: 178px;
-  padding: 26px 140px 24px 30px;
+  min-height: 90px;
+  padding: 18px 80px 16px 22px;
   border: 2px solid #000000;
-  border-radius: 28px;
+  border-radius: 22px;
   background: var(--task-dark);
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: 0 5px 0 #000000;
   overflow: hidden;
 }
 
 .hero-copy .eyebrow {
   width: max-content;
   max-width: 100%;
-  padding: 5px 13px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: var(--task-green);
   color: #000000;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.08em;
 }
 
 .hero-copy .eyebrow-icon {
-  width: 17px;
-  height: 17px;
+  width: 14px;
+  height: 14px;
 }
 
 .hero-copy strong {
-  max-width: 360px;
+  max-width: 320px;
   color: #ffffff;
-  font-size: 23px;
+  font-size: 15px;
   font-weight: 900;
   line-height: 1.2;
   letter-spacing: 0;
 }
 
 .hero-copy span:not(.eyebrow) {
-  max-width: 390px;
+  max-width: 340px;
   color: rgba(255, 255, 255, 0.78);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.65;
 }
@@ -291,10 +285,10 @@ section {
 .hero-copy::before {
   content: '';
   position: absolute;
-  right: 24px;
-  top: 34px;
-  width: 92px;
-  height: 92px;
+  right: 18px;
+  top: 24px;
+  width: 72px;
+  height: 72px;
   border: 2px solid #000000;
   border-radius: 50%;
   background: var(--task-green);
@@ -306,12 +300,12 @@ section {
 .hero-copy::after {
   content: '';
   position: absolute;
-  right: 58px;
-  bottom: 24px;
-  width: 62px;
-  height: 50px;
+  right: 48px;
+  bottom: 16px;
+  width: 48px;
+  height: 38px;
   border: 2px solid #000000;
-  border-radius: 20px;
+  border-radius: 16px;
   background: #ffffff;
   transform: rotate(-11deg);
   opacity: 1;
@@ -319,13 +313,13 @@ section {
 }
 
 .metric-card {
-  min-height: 178px;
-  padding: 26px 18px;
+  min-height: 90px;
+  padding: 14px 12px;
   border: 2px solid #000000;
-  border-radius: 28px;
+  border-radius: 22px;
   background: var(--task-grey);
-  box-shadow: 0 6px 0 #000000;
-  gap: 12px;
+  box-shadow: 0 5px 0 #000000;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -339,10 +333,10 @@ section {
 }
 
 .metric-card .metric-icon {
-  width: 46px;
-  height: 46px;
+  width: 30px;
+  height: 30px;
   border: 2px solid #000000;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--task-green);
   color: #000000;
   box-shadow: none;
@@ -356,7 +350,7 @@ section {
 
 .metric-card strong {
   color: #000000;
-  font-size: 34px;
+  font-size: 20px;
   font-weight: 900;
   background: none;
   -webkit-background-clip: border-box;
@@ -366,7 +360,7 @@ section {
 
 .metric-card span:last-child {
   color: #6f7485;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0;
   text-transform: none;
@@ -447,33 +441,24 @@ section {
 
 .cards-grid {
   position: relative;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  grid-auto-rows: auto;
+  gap: 22px;
+}
+
+.cards-grid .item-card:nth-child(3n + 1) {
+  grid-row: span 2;
 }
 
 .item-card {
-  min-height: 205px;
-  padding: 26px 30px;
+  padding: 22px 26px;
   border: 2px solid #000000;
-  border-radius: 28px;
-  background: #f3f3f3;
-  box-shadow: 0 6px 0 #000000;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 #000000;
   position: relative;
   overflow: hidden;
-}
-
-.item-card:nth-child(2n) {
-  background: #b9ff66;
-}
-
-.item-card:nth-child(3n) {
-  background: #191a23;
-  color: #ffffff;
-}
-
-.item-card:nth-child(3n) h2,
-.item-card:nth-child(3n) p,
-.item-card:nth-child(3n) .meta-line span,
-.item-card:nth-child(3n) .meta-line a {
-  color: #ffffff;
 }
 
 .item-card::after {
@@ -490,12 +475,7 @@ section {
 }
 
 .item-card h2 {
-  width: max-content;
   max-width: calc(100% - 120px);
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: #b9ff66;
-  color: #000000;
   font-size: 21px;
   font-weight: 900;
   line-height: 1.18;
@@ -597,9 +577,9 @@ section {
   gap: var(--space-3);
 }
 
-.item-card:nth-child(3n) .card-action {
-  border-top-color: rgba(255, 255, 255, 0.65);
-  color: #b9ff66;
+.item-card:hover .card-action .meta-icon {
+  transition: transform var(--transition-fast);
+  transform: translateX(4px);
 }
 
 .task-visual {
@@ -662,11 +642,6 @@ section {
   bottom: 14px;
 }
 
-.item-card:nth-child(3n) .visual-window,
-.item-card:nth-child(3n) .visual-line {
-  border-color: #ffffff;
-}
-
 .card-action .meta-icon {
   transition: transform var(--transition-fast);
 }
@@ -727,8 +702,11 @@ section {
     grid-template-columns: 1fr;
   }
 
+  .cards-grid .item-card:nth-child(3n + 1) {
+    grid-row: span 1;
+  }
+
   .item-card {
-    min-height: auto;
     padding: var(--space-5);
   }
 

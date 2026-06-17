@@ -373,6 +373,7 @@ async function removeUploadedImage(imageId: number) {
   max-width: 100%;
   padding: 5px 14px;
   border-radius: 18px;
+  border: 2px solid #000000;
   background: var(--publish-green);
   color: #000000;
   font-size: 34px;
@@ -380,6 +381,7 @@ async function removeUploadedImage(imageId: number) {
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .page-title p {
@@ -408,10 +410,6 @@ async function removeUploadedImage(imageId: number) {
 .panel h2 {
   width: max-content;
   max-width: 100%;
-  padding: 5px 12px;
-  border-radius: 18px;
-  background: var(--publish-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
