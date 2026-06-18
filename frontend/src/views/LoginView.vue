@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ArrowRight, LockKeyhole, LogIn, Mail, Sparkles, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -120,7 +120,7 @@ async function submit() {
 .login-card {
   border: 2px solid var(--positivus-line);
   border-radius: 28px;
-  box-shadow: 0 8px 0 var(--positivus-line);
+  box-shadow: none;
 }
 
 .login-story {
@@ -202,7 +202,7 @@ async function submit() {
   display: inline;
   padding: 0 7px 4px;
   border-radius: 7px;
-  background: var(--positivus-green);
+  background: transparent;
   color: #000000;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -399,7 +399,7 @@ async function submit() {
   .login-story,
   .login-card {
     border-radius: 20px;
-    box-shadow: 0 5px 0 var(--positivus-line);
+    box-shadow: none;
   }
 
   .login-story {

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -138,14 +138,14 @@ onMounted(load)
   padding: 5px 14px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--public-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title p {
@@ -164,7 +164,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 28px;
   background: #ffffff;
-  box-shadow: 0 7px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -198,7 +198,7 @@ aside.panel h3 {
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
-  background: var(--public-green);
+  background: transparent;
   color: #000000;
   font-weight: 900;
   letter-spacing: 0;
@@ -226,7 +226,7 @@ aside.panel h3 {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--public-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   color: #000000;
   font-size: 32px;
   font-weight: 900;
@@ -242,7 +242,7 @@ aside.panel h3 {
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
-  background: var(--public-green);
+  background: transparent;
   color: #000000;
   font-size: 28px;
   font-weight: 900;
@@ -280,7 +280,7 @@ aside.panel h3 {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--public-grey);
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .grid.two p:not(.hint),
@@ -326,7 +326,7 @@ aside.panel > .hint {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .review-item:last-child {
@@ -369,7 +369,7 @@ aside.panel > .hint {
   border: 2px solid #000000;
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 

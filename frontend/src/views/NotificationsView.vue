@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
@@ -106,7 +106,7 @@ onMounted(load)
   background:
     radial-gradient(circle at 94% 10%, rgba(185, 255, 102, 0.82) 0 56px, transparent 58px),
     #ffffff;
-  box-shadow: 0 6px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .notifications-view :deep(.page-title h1) {
@@ -115,7 +115,7 @@ onMounted(load)
   padding: 5px 10px;
   border-radius: 24px;
   border: 2px solid #000000;
-  background: var(--notice-green);
+  background: transparent;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   color: #000000;
@@ -123,7 +123,7 @@ onMounted(load)
   font-size: 34px;
   line-height: 1.12;
   letter-spacing: 0;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .notifications-view :deep(.page-title p) {
@@ -162,7 +162,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 3px 0 var(--notice-line);
+  box-shadow: none;
   position: relative;
   transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
 }
@@ -174,12 +174,12 @@ onMounted(load)
 
 .notification-item.unread {
   background: linear-gradient(135deg, #ffffff 0%, #f7ffe8 100%);
-  box-shadow: 0 3px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .notification-item:hover {
   border-color: var(--notice-line);
-  box-shadow: 0 4px 0 var(--notice-line);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 

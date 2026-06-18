@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import {
   ArrowRight,
   Bookmark,
@@ -214,14 +214,14 @@ section {
   padding: 4px 12px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--task-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .hero-strip {
@@ -244,7 +244,7 @@ section {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--task-dark);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -318,7 +318,7 @@ section {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--task-grey);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   gap: 8px;
   overflow: hidden;
 }
@@ -329,7 +329,7 @@ section {
 
 .metric-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 9px 0 #000000;
+  box-shadow: none;
 }
 
 .metric-card .metric-icon {
@@ -374,7 +374,7 @@ section {
   border: 2px solid #000000;
   border-radius: 28px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
@@ -429,13 +429,13 @@ section {
   background: var(--task-dark);
   border: 2px solid #000000;
   border-radius: 14px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .toolbar .button.secondary:hover {
   color: #000000;
   background: var(--task-green);
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -456,7 +456,7 @@ section {
   border: 2px solid #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
@@ -658,14 +658,14 @@ section {
   background: var(--task-dark);
   border: 2px solid #000000;
   border-radius: 14px;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title .button.primary:hover {
   transform: translateY(-2px);
   color: #000000;
   background: var(--task-green);
-  box-shadow: 0 7px 0 #000000;
+  box-shadow: none;
 }
 
 .empty-state {

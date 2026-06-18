@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Bookmark, Clock, MapPin, Tag, Users } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -125,14 +125,14 @@ onMounted(loadFavorites)
   padding: 5px 14px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--favorite-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title .button.ghost {
@@ -142,12 +142,12 @@ onMounted(loadFavorites)
   background: #ffffff;
   color: #000000;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title .button.ghost:hover {
   background: var(--favorite-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -160,7 +160,7 @@ onMounted(loadFavorites)
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
@@ -207,7 +207,7 @@ onMounted(loadFavorites)
   border: 2px solid #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
@@ -321,7 +321,7 @@ onMounted(loadFavorites)
   border: 2px dashed #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   color: #4a4e5b;
   font-size: 14px;
   font-weight: 800;
@@ -332,7 +332,7 @@ onMounted(loadFavorites)
   padding: 12px 16px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 

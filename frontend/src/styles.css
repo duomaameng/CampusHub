@@ -602,7 +602,7 @@ select {
   border: 2px solid var(--sidebar-line);
   border-radius: 18px;
   background: var(--sidebar-paper);
-  box-shadow: 0 5px 0 var(--sidebar-line);
+  box-shadow: none;
   transition: transform var(--transition-fast), background var(--transition-fast);
 }
 
@@ -696,7 +696,7 @@ select {
   color: #000000;
   font-weight: 900;
   border-color: var(--sidebar-line);
-  box-shadow: 0 4px 0 var(--sidebar-line);
+  box-shadow: none;
 }
 
 .nav-links a.router-link-active::before {
@@ -2347,7 +2347,7 @@ input[type='checkbox']:focus-visible {
     background: rgba(255, 255, 255, 0.94);
     border: 2px solid var(--sidebar-line);
     border-radius: 18px;
-    box-shadow: 0 6px 0 var(--sidebar-line);
+    box-shadow: none;
     backdrop-filter: blur(12px);
   }
 

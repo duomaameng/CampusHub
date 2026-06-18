@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { AlertCircle, CalendarClock, Megaphone, RefreshCcw } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
@@ -123,7 +123,7 @@ onMounted(load)
   background:
     radial-gradient(circle at 92% 12%, rgba(185, 255, 102, 0.8) 0 58px, transparent 60px),
     #ffffff;
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .announcements-view :deep(.page-title h1) {
@@ -132,7 +132,7 @@ onMounted(load)
   padding: 5px 10px;
   border-radius: 24px;
   border: 2px solid #000000;
-  background: var(--notice-green);
+  background: transparent;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   color: #000000;
@@ -140,7 +140,7 @@ onMounted(load)
   font-size: 32px;
   line-height: 1.12;
   letter-spacing: 0;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .announcements-view :deep(.page-title p) {
@@ -154,7 +154,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background: var(--notice-grey);
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -248,7 +248,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
   position: relative;
 }
 
@@ -262,7 +262,7 @@ onMounted(load)
 
 .announcement-card:hover {
   border-color: var(--notice-line);
-  box-shadow: 0 7px 0 var(--notice-line);
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -317,7 +317,7 @@ onMounted(load)
   background: #ffffff;
   border: 2px solid var(--notice-line);
   border-radius: 24px;
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .pagination .button.ghost {

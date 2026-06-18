@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { CalendarClock, ClipboardList, UserRound } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -288,14 +288,14 @@ onMounted(loadOrders)
   padding: 5px 14px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--order-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .orders-view .cards-grid {
@@ -326,7 +326,7 @@ onMounted(loadOrders)
   background: #ffffff;
   color: #000000;
   text-align: left;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transition: all var(--transition-fast);
 }
 
@@ -344,7 +344,7 @@ onMounted(loadOrders)
 .role-tab.active {
   border-color: #000000;
   background: var(--order-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .role-tab.active strong {
@@ -360,7 +360,7 @@ onMounted(loadOrders)
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
@@ -414,13 +414,13 @@ onMounted(loadOrders)
   background: var(--order-dark);
   border: 2px solid #000000;
   border-radius: 14px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .toolbar .button.secondary:hover {
   color: #000000;
   background: var(--order-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -429,7 +429,7 @@ onMounted(loadOrders)
   border: 2px solid #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
@@ -572,7 +572,7 @@ onMounted(loadOrders)
   border: 2px dashed #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .error-message {
@@ -581,7 +581,7 @@ onMounted(loadOrders)
   font-weight: 800;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {

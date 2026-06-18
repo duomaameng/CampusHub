@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { CalendarClock, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -351,7 +351,7 @@ async function removeUploadedImage(imageId: number) {
   background:
     radial-gradient(circle at 96% 4%, var(--publish-green) 0 78px, transparent 79px),
     #ffffff;
-  box-shadow: 0 8px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -374,14 +374,14 @@ async function removeUploadedImage(imageId: number) {
   padding: 5px 14px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--publish-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title p {
@@ -401,7 +401,7 @@ async function removeUploadedImage(imageId: number) {
   background:
     radial-gradient(circle at 96% 0%, var(--publish-green) 0 58px, transparent 59px),
     var(--publish-grey);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -462,7 +462,7 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .button.primary,
@@ -475,7 +475,7 @@ async function removeUploadedImage(imageId: number) {
 .button.secondary:hover:not(:disabled) {
   color: #000000;
   background: var(--publish-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -486,7 +486,7 @@ async function removeUploadedImage(imageId: number) {
 
 .button.ghost:hover:not(:disabled) {
   background: var(--publish-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .button:disabled {
@@ -508,13 +508,13 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
   transition: all var(--transition-fast);
 }
 
 .upload-card:hover {
   border-color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -543,7 +543,7 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 6px;
   background: #ffffff;
-  box-shadow: 0 2px 0 #000000;
+  box-shadow: none;
   appearance: none;
   cursor: pointer;
 }
@@ -565,14 +565,14 @@ async function removeUploadedImage(imageId: number) {
 }
 
 .checkbox-label input[type='checkbox']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48), 0 2px 0 #000000;
+  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
 }
 
 .error-message {
   padding: 12px 16px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 

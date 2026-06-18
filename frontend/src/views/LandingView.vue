@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { LogIn, UserPlus, ArrowRight, Compass, GraduationCap } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -192,7 +192,7 @@ function goExplore() {
   border: 2px solid var(--positivus-line);
   border-radius: 34px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 9px 0 var(--positivus-line);
+  box-shadow: none;
 }
 
 .landing-main::before {
@@ -275,7 +275,7 @@ function goExplore() {
   display: inline;
   padding: 0 10px 6px;
   border-radius: 7px;
-  background: var(--positivus-green);
+  background: transparent;
   color: #000000;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;

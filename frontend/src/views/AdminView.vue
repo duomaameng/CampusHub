@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Edit3, Megaphone, RefreshCcw, Search, ShieldAlert, Trash2, UserRoundCog, UsersRound } from '@lucide/vue'
 import { onMounted, reactive, ref } from 'vue'
 
@@ -611,7 +611,7 @@ onMounted(async () => {
   background:
     radial-gradient(circle at 94% 18%, rgba(185, 255, 102, 0.76) 0 58px, transparent 60px),
     #ffffff;
-  box-shadow: 0 6px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .admin-view :deep(.page-title h1) {
@@ -620,12 +620,12 @@ onMounted(async () => {
   padding: 5px 10px;
   border-radius: 7px;
   border: 2px solid #000000;
-  background: var(--admin-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   line-height: 1.12;
   letter-spacing: 0;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .admin-view :deep(.page-title p) {
@@ -642,7 +642,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 18px;
   margin-bottom: var(--space-6);
-  box-shadow: 0 5px 0 var(--admin-line);
+  box-shadow: none;
   animation: fadeSlideUp 0.4s var(--transition-slow) both;
 }
 
@@ -671,7 +671,7 @@ onMounted(async () => {
   color: #000000;
   background: var(--admin-green);
   border-color: var(--admin-line);
-  box-shadow: 0 3px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .admin-view :deep(.toolbar),
@@ -680,7 +680,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .admin-view :deep(.toolbar) {
@@ -766,7 +766,7 @@ onMounted(async () => {
   width: max-content;
   padding: 4px 8px;
   border-radius: 24px;
-  background: var(--admin-green);
+  background: transparent;
   color: #000000;
   font-size: 24px;
   font-weight: 900;
@@ -784,7 +784,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .table-wrapper table {

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -546,28 +546,28 @@ onMounted(load)
   border: 2px solid #000000;
   background: #ffffff;
   color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .favorite-button:hover:not(:disabled) {
   border-color: #000000;
   background: var(--task-green);
   color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .favorite-button.active {
   border-color: #000000;
   background: var(--task-green);
   color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .panel {
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -595,14 +595,14 @@ onMounted(load)
   padding: 5px 12px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--task-green);
+  background: transparent;
   color: #000000;
   font-size: 32px;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.18;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .panel h2 {
@@ -659,7 +659,7 @@ onMounted(load)
   background: var(--task-grey);
   border: 2px solid #000000;
   border-radius: 22px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .panel .grid.two .panel strong {
@@ -685,13 +685,13 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
   transition: all var(--transition-base);
 }
 
 .upload-card:hover {
   border-color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -707,7 +707,7 @@ aside .panel {
   padding: 24px;
   border: 2px solid #000000;
   border-radius: 24px;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
 }
 
 aside .panel h2 {
@@ -718,7 +718,7 @@ aside .panel h2 {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .button.primary,
@@ -731,7 +731,7 @@ aside .panel h2 {
 .button.secondary:hover:not(:disabled) {
   color: #000000;
   background: var(--task-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -794,13 +794,13 @@ aside .panel textarea::placeholder {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--task-grey);
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .item-card:hover {
   border-color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .item-card h3 a {
@@ -819,7 +819,7 @@ aside .panel textarea::placeholder {
   background: #ffffff;
   border: 2px dashed #000000;
   border-radius: 22px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .error-message,
@@ -828,7 +828,7 @@ aside .panel textarea::placeholder {
   padding: 10px 14px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 

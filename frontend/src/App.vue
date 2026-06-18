@@ -8,6 +8,7 @@ import {
   LogIn,
   LogOut,
   Megaphone,
+  MessageSquareText,
   PlusCircle,
   ShieldCheck,
   Undo2,
@@ -85,6 +86,14 @@ async function handleLogout() {
         <RouterLink v-if="auth.isAuthenticated" to="/orders">
           <ClipboardList class="nav-icon" aria-hidden="true" />
           <span>我的订单</span>
+        </RouterLink>
+        <RouterLink
+          v-if="auth.isAuthenticated"
+          to="/chats"
+          :class="{ 'router-link-active': route.name === 'order-chat' || route.name === 'chats' }"
+        >
+          <MessageSquareText class="nav-icon" aria-hidden="true" />
+          <span>消息</span>
         </RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/notifications">
           <Bell class="nav-icon" aria-hidden="true" />

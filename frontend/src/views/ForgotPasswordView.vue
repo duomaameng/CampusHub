@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { KeyRound, Mail, RotateCcw } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -119,7 +119,7 @@ async function resetPassword() {
   background:
     radial-gradient(circle at 92% 8%, rgba(185, 255, 102, 0.82) 0 58px, transparent 60px),
     #ffffff;
-  box-shadow: 0 7px 0 var(--reset-line);
+  box-shadow: none;
 }
 
 .forgot-password-view::before,
@@ -136,7 +136,7 @@ async function resetPassword() {
   margin-bottom: 10px;
   padding: 5px 10px;
   border-radius: 24px;
-  background: var(--reset-green);
+  background: transparent;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   color: #000000;
