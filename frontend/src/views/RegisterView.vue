@@ -122,7 +122,7 @@ async function submit() {
 
 <style scoped>
 .register-view {
-  --register-green: #7dbe8e;
+  --register-green: #ffb454;
   --register-dark: #191a23;
   --register-grey: #f3f3f3;
   position: relative;
@@ -247,7 +247,7 @@ async function submit() {
 .field input:focus,
 :deep(.password-input:focus) {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 :deep(.password-visibility-button) {
@@ -311,3 +311,7 @@ async function submit() {
   }
 }
 </style>
+
+
+
+

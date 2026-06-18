@@ -109,7 +109,7 @@ onMounted(load)
 
 <style scoped>
 .announcements-view {
-  --notice-green: #7dbe8e;
+  --notice-green: #ffb454;
   --notice-dark: #191a23;
   --notice-grey: #f3f3f3;
   --notice-line: #000000;
@@ -121,7 +121,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background:
-    radial-gradient(circle at 92% 12%, rgba(125, 190, 142, 0.8) 0 58px, transparent 60px),
+    radial-gradient(circle at 92% 12%, rgba(255, 180, 84, 0.8) 0 58px, transparent 60px),
     #ffffff;
   box-shadow: none;
 }
@@ -173,7 +173,7 @@ onMounted(load)
   width: max-content;
   padding: 5px 10px;
   border-radius: 24px;
-  background: var(--notice-green);
+  background: transparent;
   color: #000000;
   font-weight: 900;
   font-size: 13px;
@@ -230,7 +230,7 @@ onMounted(load)
 
 .page-title .button.secondary:hover {
   background: #000000;
-  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.55);
   transform: translateY(-1px);
 }
 
@@ -372,3 +372,7 @@ onMounted(load)
   }
 }
 </style>
+
+
+
+

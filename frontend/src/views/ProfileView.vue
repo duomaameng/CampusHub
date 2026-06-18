@@ -196,7 +196,7 @@ onMounted(load)
 
 <style scoped>
 .profile-view {
-  --profile-green: #7dbe8e;
+  --profile-green: #ffb454;
   --profile-dark: #191a23;
   --profile-grey: #f3f3f3;
 }
@@ -210,14 +210,14 @@ onMounted(load)
   padding: 5px 14px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--profile-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title p {
@@ -238,7 +238,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 28px;
   background: #ffffff;
-  box-shadow: 0 7px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -260,7 +260,7 @@ onMounted(load)
   background:
     radial-gradient(circle at 96% 0%, var(--profile-green) 0 58px, transparent 59px),
     var(--profile-grey);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -296,7 +296,7 @@ onMounted(load)
 .form-panel .field select:focus,
 .form-panel .field textarea:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
   background: #ffffff;
 }
 
@@ -317,7 +317,7 @@ onMounted(load)
   background: var(--profile-dark);
   border: 2px solid #000000;
   border-radius: 14px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
   align-self: flex-start;
 }
 
@@ -325,7 +325,7 @@ onMounted(load)
   color: #000000;
   background: var(--profile-green);
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .upload-trigger {
@@ -336,7 +336,7 @@ onMounted(load)
   background: var(--profile-dark);
   border: 2px solid #000000;
   border-radius: 14px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .upload-trigger:hover {
@@ -348,7 +348,7 @@ onMounted(load)
 .avatar-preview {
   border: 2px solid #000000;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .avatar-preview::after {
@@ -364,7 +364,7 @@ aside.panel {
     radial-gradient(circle at 96% 8%, var(--profile-green) 0 62px, transparent 63px),
     var(--profile-dark);
   color: #ffffff;
-  box-shadow: 0 7px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -384,7 +384,7 @@ aside.panel .grid.two > div {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 aside.panel strong {
@@ -414,7 +414,7 @@ aside.panel .grid.two .hint {
   font-weight: 800;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 .error-message {
@@ -422,7 +422,7 @@ aside.panel .grid.two .hint {
 }
 
 .success-message {
-  border-color: rgba(16, 185, 129, 0.2);
+  border-color: rgba(245, 158, 11, 0.22);
 }
 
 .hint {
@@ -444,7 +444,7 @@ aside.panel .grid.two .hint {
   border: 2px solid #000000;
   border-radius: 6px;
   background: #ffffff;
-  box-shadow: 0 2px 0 #000000;
+  box-shadow: none;
   appearance: none;
   cursor: pointer;
 }
@@ -467,7 +467,7 @@ aside.panel .grid.two .hint {
 }
 
 .checkbox-label input[type='checkbox']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48), 0 2px 0 #000000;
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .empty-state {
@@ -477,7 +477,7 @@ aside.panel .grid.two .hint {
   border: 2px dashed #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 @media (max-width: 1024px) {
@@ -486,3 +486,7 @@ aside.panel .grid.two .hint {
   }
 }
 </style>
+
+
+
+

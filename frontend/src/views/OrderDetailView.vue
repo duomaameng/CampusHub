@@ -741,7 +741,7 @@ onMounted(load)
 
 <style scoped>
 .order-detail-view {
-  --order-green: #7dbe8e;
+  --order-green: #ffb454;
   --order-dark: #191a23;
   --order-grey: #f3f3f3;
 }
@@ -757,7 +757,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -807,14 +807,14 @@ onMounted(load)
   padding: 5px 12px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: var(--order-green);
+  background: transparent;
   color: #000000;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.18;
   font-size: 32px;
   -webkit-text-fill-color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .panel h2 {
@@ -839,14 +839,14 @@ onMounted(load)
   background: #ffffff;
   color: #000000;
   font-weight: 900;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 .grid.two > .panel {
   padding: 22px;
   border-radius: 22px;
   background: var(--order-grey);
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .grid.two > .panel strong {
@@ -869,7 +869,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 18px;
   background: var(--order-grey);
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 .timeline li::before {
@@ -905,7 +905,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 .message-bubble p {
@@ -928,14 +928,14 @@ onMounted(load)
 .field textarea:focus,
 .field select:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .button {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .button.primary,
@@ -948,7 +948,7 @@ onMounted(load)
 .button.secondary:hover {
   background: var(--order-green);
   color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .button.ghost {
@@ -1004,7 +1004,7 @@ onMounted(load)
   background: #ffffff;
   color: #000000;
   font-weight: 900;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 .star-button.active,
@@ -1017,14 +1017,14 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 .success-message,
 .error-message {
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 
@@ -1074,3 +1074,7 @@ onMounted(load)
   color: var(--primary-700);
 }
 </style>
+
+
+
+

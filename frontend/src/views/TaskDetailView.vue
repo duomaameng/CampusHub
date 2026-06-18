@@ -514,7 +514,7 @@ onMounted(load)
 
 <style scoped>
 .task-detail-view {
-  --task-green: #7dbe8e;
+  --task-green: #ffb454;
   --task-dark: #191a23;
   --task-grey: #f3f3f3;
 }
@@ -781,7 +781,7 @@ aside .panel textarea {
 .field select:focus,
 aside .panel textarea:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
   background: #ffffff;
 }
 
@@ -845,3 +845,7 @@ aside .panel textarea::placeholder {
   }
 }
 </style>
+
+
+
+

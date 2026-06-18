@@ -111,7 +111,7 @@ onMounted(loadFavorites)
 
 <style scoped>
 .task-favorites-view {
-  --favorite-green: #7dbe8e;
+  --favorite-green: #ffb454;
   --favorite-dark: #191a23;
   --favorite-grey: #f3f3f3;
 }
@@ -192,7 +192,7 @@ onMounted(loadFavorites)
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .toolbar .field label {
@@ -394,3 +394,8 @@ onMounted(loadFavorites)
   }
 }
 </style>
+
+
+
+
+

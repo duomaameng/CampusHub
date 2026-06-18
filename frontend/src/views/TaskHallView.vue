@@ -202,7 +202,7 @@ onMounted(loadTasks)
 <style scoped>
 section {
   --card-hover-lift: -6px;
-  --task-green: #7dbe8e;
+  --task-green: #ffb454;
   --task-dark: #191a23;
   --task-grey: #f3f3f3;
 }
@@ -409,7 +409,7 @@ section {
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .toolbar .field label {
@@ -512,9 +512,9 @@ section {
 }
 
 .item-card .status-tag.success {
-  background: linear-gradient(135deg, var(--success-bg), rgba(16, 185, 129, 0.08));
-  color: #047857;
-  border-color: rgba(16, 185, 129, 0.28);
+  background: linear-gradient(135deg, var(--success-bg), rgba(245, 158, 11, 0.08));
+  color: #9a3412;
+  border-color: rgba(245, 158, 11, 0.28);
 }
 
 .item-card .status-tag.info {
@@ -608,7 +608,7 @@ section {
   width: 40px;
   height: 10px;
   border-radius: 999px;
-  background: #7dbe8e;
+  background: #ffb454;
 }
 
 .visual-dot {
@@ -619,7 +619,7 @@ section {
   height: 46px;
   border: 2px solid #000000;
   border-radius: 50%;
-  background: #7dbe8e;
+  background: #ffb454;
 }
 
 .visual-line {
@@ -741,3 +741,7 @@ section {
   }
 }
 </style>
+
+
+
+

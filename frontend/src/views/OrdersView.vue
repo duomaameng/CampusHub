@@ -278,7 +278,7 @@ onMounted(loadOrders)
 
 <style scoped>
 .orders-view {
-  --order-green: #7dbe8e;
+  --order-green: #ffb454;
   --order-dark: #191a23;
   --order-grey: #f3f3f3;
 }
@@ -391,7 +391,7 @@ onMounted(loadOrders)
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .toolbar .field label {
@@ -635,3 +635,7 @@ onMounted(loadOrders)
   }
 }
 </style>
+
+
+
+

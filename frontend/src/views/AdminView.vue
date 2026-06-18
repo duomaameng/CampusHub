@@ -597,7 +597,7 @@ onMounted(async () => {
 
 <style scoped>
 .admin-view {
-  --admin-green: #7dbe8e;
+  --admin-green: #ffb454;
   --admin-dark: #191a23;
   --admin-grey: #f3f3f3;
   --admin-line: #000000;
@@ -609,7 +609,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 94% 18%, rgba(125, 190, 142, 0.76) 0 58px, transparent 60px),
+    radial-gradient(circle at 94% 18%, rgba(255, 180, 84, 0.76) 0 58px, transparent 60px),
     #ffffff;
   box-shadow: none;
 }
@@ -711,7 +711,7 @@ onMounted(async () => {
 .admin-view :deep(.field textarea:focus),
 .report-actions textarea:focus {
   border-color: var(--admin-line);
-  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.55);
 }
 
 .admin-view :deep(.button) {
@@ -886,3 +886,8 @@ onMounted(async () => {
   }
 }
 </style>
+
+
+
+
+

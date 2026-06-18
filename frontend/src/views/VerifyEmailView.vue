@@ -96,7 +96,7 @@ async function resend() {
 
 <style scoped>
 .verify-email-view {
-  --verify-green: #7dbe8e;
+  --verify-green: #ffb454;
   --verify-dark: #191a23;
   --verify-grey: #f3f3f3;
   position: relative;
@@ -220,7 +220,7 @@ async function resend() {
 
 .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .button {
@@ -237,7 +237,7 @@ async function resend() {
 
 .button.primary:hover:not(:disabled) {
   color: #000000;
-  background: var(--verify-green);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -280,3 +280,7 @@ async function resend() {
   }
 }
 </style>
+
+
+
+

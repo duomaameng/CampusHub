@@ -84,7 +84,7 @@ function goExplore() {
 
 <style scoped>
 .landing-root {
-  --positivus-green: #7dbe8e;
+  --positivus-green: #ffb454;
   --positivus-dark: #191a23;
   --positivus-grey: #f3f3f3;
   --positivus-line: #000000;
@@ -340,7 +340,7 @@ function goExplore() {
 
 .landing-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 4px rgba(125, 190, 142, 0.65);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.65);
 }
 
 .landing-btn-secondary {
@@ -437,3 +437,5 @@ function goExplore() {
   }
 }
 </style>
+
+

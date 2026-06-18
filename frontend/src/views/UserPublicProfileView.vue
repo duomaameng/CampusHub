@@ -124,7 +124,7 @@ onMounted(load)
 
 <style scoped>
 .user-public-profile-view {
-  --public-green: #7dbe8e;
+  --public-green: #ffb454;
   --public-dark: #191a23;
   --public-grey: #f3f3f3;
 }
@@ -225,7 +225,7 @@ aside.panel h3 {
   height: 92px;
   border: 2px solid #000000;
   border-radius: 22px;
-  background: var(--public-green);
+  background: transparent;
   box-shadow: none;
   color: #000000;
   font-size: 32px;
@@ -385,3 +385,7 @@ aside.panel > .hint {
   }
 }
 </style>
+
+
+
+

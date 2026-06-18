@@ -357,7 +357,7 @@ onMounted(load)
 
 <style scoped>
 .order-chat-view {
-  --chat-green: #b9ff66;
+  --chat-green: #ffb454;
   --chat-dark: #191a23;
   --chat-grey: #f3f3f3;
 }
@@ -573,7 +573,7 @@ onMounted(load)
   display: grid;
   place-items: center;
   border: 2px solid #000000;
-  background: transparent;
+  background: var(--chat-green);
   color: #000000;
   font-weight: 900;
   flex-shrink: 0;
@@ -776,7 +776,7 @@ onMounted(load)
 }
 
 .composer textarea:focus {
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .button {
@@ -882,3 +882,8 @@ onMounted(load)
   }
 }
 </style>
+
+
+
+
+
