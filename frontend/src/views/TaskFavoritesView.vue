@@ -88,7 +88,7 @@ onMounted(loadFavorites)
     <div v-else-if="!filteredFavorites.length" class="empty-state">暂无符合筛选条件的收藏</div>
 
     <div v-else class="cards-grid">
-      <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
+      <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :class="{ 'has-image': task.imageUrls && task.imageUrls.length }" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
         <div class="item-title">
           <h2>{{ task.title }}</h2>
           <span :class="['tag', task.status === 'OPEN' ? 'success' : 'warning']">{{ taskStatusText[task.status] }}</span>
@@ -103,6 +103,7 @@ onMounted(loadFavorites)
           <span><Users class="meta-icon" aria-hidden="true" />申请 {{ task.applicationCount }}</span>
           <span><Bookmark class="meta-icon" aria-hidden="true" />收藏 {{ task.favoriteCount }}</span>
         </div>
+        <img v-if="task.imageUrls && task.imageUrls.length" :src="task.imageUrls[0]" alt="" class="card-image" />
       </RouterLink>
     </div>
   </section>
@@ -110,7 +111,7 @@ onMounted(loadFavorites)
 
 <style scoped>
 .task-favorites-view {
-  --favorite-green: #b9ff66;
+  --favorite-green: #7dbe8e;
   --favorite-dark: #191a23;
   --favorite-grey: #f3f3f3;
 }
@@ -185,13 +186,13 @@ onMounted(loadFavorites)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #f8ffe8;
+  background: #e8f5ec;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .toolbar .field label {
@@ -232,6 +233,28 @@ onMounted(loadFavorites)
   opacity: 1;
   transform: rotate(-6deg);
   transition: transform var(--transition-fast);
+}
+
+.item-card.has-image::after {
+  display: none;
+}
+
+.card-image {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
+  z-index: 0;
+}
+
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
 }
 
 .item-card:hover::after {
@@ -338,22 +361,14 @@ onMounted(loadFavorites)
 
 .task-favorites-view .cards-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   grid-auto-rows: auto;
   gap: 22px;
-}
-
-.task-favorites-view .cards-grid .item-card:nth-child(3n + 1) {
-  grid-row: span 2;
 }
 
 @media (max-width: 768px) {
   .task-favorites-view .cards-grid {
     grid-template-columns: 1fr;
-  }
-
-  .task-favorites-view .cards-grid .item-card:nth-child(3n + 1) {
-    grid-row: span 1;
   }
 
   .toolbar {
@@ -367,6 +382,15 @@ onMounted(loadFavorites)
 
   .item-card::after {
     display: none;
+  }
+
+  .card-image {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    border-radius: 16px;
   }
 }
 </style>

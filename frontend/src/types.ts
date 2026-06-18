@@ -195,6 +195,7 @@ export interface OrderItem {
   status: OrderStatus
   cancelReason?: string
   createdAt: string
+  taskImageUrl?: string
 }
 
 export interface OrderDetail extends OrderItem {

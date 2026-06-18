@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { CheckCheck, MessageSquareText, Star, XCircle } from '@lucide/vue'
+import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -21,9 +21,13 @@ const reviews = ref<ReviewItem[]>([])
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
+const message = ref('')
 const cancelReason = ref('')
 const reviewRating = ref(1)
 const reviewContent = ref('')
+const chatImageUploading = ref(false)
+const chatImageError = ref('')
+const uploadedChatImage = ref<UploadedFileItem | null>(null)
 const completionProofUploading = ref(false)
 const completionProofError = ref('')
 const uploadedCompletionProof = ref<UploadedFileItem | null>(null)
@@ -79,15 +83,6 @@ const canReviewOrder = computed(() => order.value?.status === 'COMPLETED')
 const shouldShowReviews = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED'].includes(order.value.status)))
 const isOrderTerminal = computed(() => Boolean(order.value && ['COMPLETED', 'REVIEWED', 'CANCELLED', 'TIMEOUT', 'PENDING_CONFIRM'].includes(order.value.status)))
 const canEditTask = computed(() => Boolean(task.value && task.value.status === 'OPEN' && task.value.applicationCount === 0))
-const latestMessage = computed(() => {
-  const messages = order.value?.messages || []
-  return messages[messages.length - 1]
-})
-const chatTargetName = computed(() => {
-  if (!order.value) return '对方'
-  if (isPublisher.value) return order.value.serviceProviderNickname || '服务方'
-  return order.value.publisherNickname
-})
 
 const statusClass: Record<string, string> = {
   IN_PROGRESS: 'info',
@@ -152,6 +147,35 @@ async function runAction(action: () => Promise<unknown>, messageText: string) {
   } catch (err) {
     error.value = err instanceof Error ? err.message : '操作失败'
   }
+}
+
+async function sendMessage() {
+  if (!message.value.trim()) return
+  await runAction(() => orderApi.sendMessage(orderId.value, message.value.trim()), '消息已发送')
+  message.value = ''
+}
+
+async function handleChatImageChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  chatImageError.value = ''
+  chatImageUploading.value = true
+  try {
+    uploadedChatImage.value = await fileApi.upload(file, 'CHAT_IMAGE')
+  } catch (err) {
+    chatImageError.value = err instanceof Error ? err.message : '聊天图片上传失败'
+  } finally {
+    chatImageUploading.value = false
+    input.value = ''
+  }
+}
+
+async function sendImageMessage() {
+  if (!uploadedChatImage.value) return
+  await runAction(() => orderApi.sendImage(orderId.value, uploadedChatImage.value!.id), '图片消息已发送')
+  uploadedChatImage.value = null
 }
 
 async function handleCompletionProofChange(event: Event) {
@@ -444,24 +468,43 @@ onMounted(load)
           </ul>
         </section>
 
-        <section class="chat-entry">
-          <div>
-            <h2>联系对方</h2>
-            <p v-if="isAwaitingNewProvider" class="hint">暂无服务方，确认接单后即可开启订单聊天。</p>
-            <p v-else-if="latestMessage" class="chat-preview">
-              {{ latestMessage.senderNickname }}：
-              {{ latestMessage.content || '[图片]' }}
-            </p>
-            <p v-else class="hint">还没有聊天记录，可以先向 {{ chatTargetName }} 发送消息。</p>
+        <section class="grid">
+          <h2>订单留言</h2>
+          <div class="messages">
+            <div v-if="!order.messages.length" class="hint">暂无留言</div>
+            <div v-for="item in order.messages" :key="item.id" class="message-bubble">
+              <strong><RouterLink :to="{ name: 'user-public-profile', params: { id: item.senderId } }">{{ item.senderNickname }}</RouterLink></strong>
+              <p v-if="item.content">{{ item.content }}</p>
+              <img v-if="item.imageUrl" class="message-image" :src="resolveAssetUrl(item.imageUrl)" alt="聊天图片" />
+              <span class="hint">{{ new Date(item.createdAt).toLocaleString() }}</span>
+            </div>
           </div>
-          <RouterLink
-            v-if="!isAwaitingNewProvider"
-            class="button secondary"
-            :to="{ name: 'order-chat', params: { id: order.id } }"
-          >
-            <MessageSquareText class="button-icon" aria-hidden="true" />
-            <span>联系对方</span>
-          </RouterLink>
+          <form v-if="!isAwaitingNewProvider" class="actions" @submit.prevent="sendMessage">
+            <div class="field" style="flex:1;margin-bottom:0">
+              <input v-model.trim="message" placeholder="输入订单留言" />
+            </div>
+            <button class="button secondary" type="submit">
+              <Send class="button-icon" aria-hidden="true" />
+              <span>发送</span>
+            </button>
+          </form>
+          <div v-if="!isAwaitingNewProvider" class="grid">
+            <label class="button ghost upload-trigger">
+              <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleChatImageChange" />
+              <span>{{ chatImageUploading ? '上传中...' : '上传聊天图片' }}</span>
+            </label>
+            <p v-if="chatImageError" class="error-message">{{ chatImageError }}</p>
+            <div v-if="uploadedChatImage" class="upload-card inline">
+              <img :src="resolveAssetUrl(uploadedChatImage.url)" :alt="uploadedChatImage.fileName" />
+              <div class="upload-card-meta">
+                <strong>{{ uploadedChatImage.fileName }}</strong>
+                <div class="actions">
+                  <button class="button secondary" type="button" @click="sendImageMessage">发送图片</button>
+                  <button class="button ghost" type="button" @click="uploadedChatImage = null">取消</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </article>
 
@@ -698,7 +741,7 @@ onMounted(load)
 
 <style scoped>
 .order-detail-view {
-  --order-green: #b9ff66;
+  --order-green: #7dbe8e;
   --order-dark: #191a23;
   --order-grey: #f3f3f3;
 }
@@ -714,7 +757,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 6px 0 #000000;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -764,14 +807,14 @@ onMounted(load)
   padding: 5px 12px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: transparent;
+  background: var(--order-green);
   color: #000000;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.18;
   font-size: 32px;
   -webkit-text-fill-color: #000000;
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .panel h2 {
@@ -796,14 +839,14 @@ onMounted(load)
   background: #ffffff;
   color: #000000;
   font-weight: 900;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
 }
 
 .grid.two > .panel {
   padding: 22px;
   border-radius: 22px;
   background: var(--order-grey);
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .grid.two > .panel strong {
@@ -826,7 +869,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 18px;
   background: var(--order-grey);
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
 }
 
 .timeline li::before {
@@ -854,31 +897,6 @@ onMounted(load)
   font-weight: 700;
 }
 
-.chat-entry {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 20px 22px;
-  border: 2px solid #000000;
-  border-radius: 22px;
-  background: var(--order-grey);
-  box-shadow: none;
-}
-
-.chat-entry h2 {
-  margin-bottom: 8px;
-}
-
-.chat-preview {
-  max-width: 680px;
-  color: #343743;
-  font-weight: 800;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .messages {
   gap: 12px;
 }
@@ -887,7 +905,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
 }
 
 .message-bubble p {
@@ -910,14 +928,14 @@ onMounted(load)
 .field textarea:focus,
 .field select:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .button {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .button.primary,
@@ -930,7 +948,7 @@ onMounted(load)
 .button.secondary:hover {
   background: var(--order-green);
   color: #000000;
-  box-shadow: none;
+  box-shadow: 0 5px 0 #000000;
 }
 
 .button.ghost {
@@ -986,7 +1004,7 @@ onMounted(load)
   background: #ffffff;
   color: #000000;
   font-weight: 900;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
 }
 
 .star-button.active,
@@ -999,14 +1017,14 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
 }
 
 .success-message,
 .error-message {
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
   font-weight: 800;
 }
 
@@ -1054,16 +1072,5 @@ onMounted(load)
 .panel p a:hover,
 .item-card h3 a:hover {
   color: var(--primary-700);
-}
-
-@media (max-width: 768px) {
-  .chat-entry {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .chat-preview {
-    white-space: normal;
-  }
 }
 </style>

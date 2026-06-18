@@ -27,6 +27,7 @@ const form = reactive<TaskForm>({
 })
 
 const loading = ref(false)
+const submitted = ref(false)
 const error = ref('')
 const uploadError = ref('')
 const imageUploading = ref(false)
@@ -108,6 +109,7 @@ onUnmounted(() => {
 })
 
 async function submit() {
+  if (submitted.value) return
   error.value = ''
   if (!validateDeadline()) {
     return
@@ -116,11 +118,13 @@ async function submit() {
     if (!validateCategoryDateTimeField(key)) return
   }
   loading.value = true
+  submitted.value = true
   try {
     const result = await taskApi.create(form)
     router.push(`/tasks/${result.id}`)
   } catch (err) {
     error.value = err instanceof Error ? err.message : '发布失败'
+    submitted.value = false
   } finally {
     loading.value = false
   }
@@ -330,9 +334,9 @@ async function removeUploadedImage(imageId: number) {
 
       <p v-if="error" class="error-message">{{ error }}</p>
       <div class="actions">
-        <button class="button primary" type="submit" :disabled="loading">
+        <button class="button primary" type="submit" :disabled="loading || submitted">
           <Send class="button-icon" aria-hidden="true" />
-          <span>{{ loading ? '发布中' : '发布需求' }}</span>
+          <span>{{ loading || submitted ? '发布中' : '发布需求' }}</span>
         </button>
       </div>
     </form>
@@ -341,7 +345,7 @@ async function removeUploadedImage(imageId: number) {
 
 <style scoped>
 .task-publish-view {
-  --publish-green: #b9ff66;
+  --publish-green: #7dbe8e;
   --publish-dark: #191a23;
   --publish-grey: #f3f3f3;
   position: relative;
@@ -351,7 +355,7 @@ async function removeUploadedImage(imageId: number) {
   background:
     radial-gradient(circle at 96% 4%, var(--publish-green) 0 78px, transparent 79px),
     #ffffff;
-  box-shadow: none;
+  box-shadow: 0 8px 0 #000000;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -374,14 +378,14 @@ async function removeUploadedImage(imageId: number) {
   padding: 5px 14px;
   border-radius: 18px;
   border: 2px solid #000000;
-  background: transparent;
+  background: var(--publish-green);
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .page-title p {
@@ -401,7 +405,7 @@ async function removeUploadedImage(imageId: number) {
   background:
     radial-gradient(circle at 96% 0%, var(--publish-green) 0 58px, transparent 59px),
     var(--publish-grey);
-  box-shadow: none;
+  box-shadow: 0 5px 0 #000000;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -447,7 +451,7 @@ async function removeUploadedImage(imageId: number) {
 .field input:hover,
 .field select:hover,
 .field textarea:hover {
-  background-color: #f8ffe8;
+  background-color: #e8f5ec;
 }
 
 .field input:focus,
@@ -455,14 +459,14 @@ async function removeUploadedImage(imageId: number) {
 .field textarea:focus {
   border-color: #000000;
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .button {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .button.primary,
@@ -475,7 +479,7 @@ async function removeUploadedImage(imageId: number) {
 .button.secondary:hover:not(:disabled) {
   color: #000000;
   background: var(--publish-green);
-  box-shadow: none;
+  box-shadow: 0 5px 0 #000000;
   transform: translateY(-2px);
 }
 
@@ -486,7 +490,7 @@ async function removeUploadedImage(imageId: number) {
 
 .button.ghost:hover:not(:disabled) {
   background: var(--publish-green);
-  box-shadow: none;
+  box-shadow: 0 5px 0 #000000;
 }
 
 .button:disabled {
@@ -508,13 +512,13 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
   transition: all var(--transition-fast);
 }
 
 .upload-card:hover {
   border-color: #000000;
-  box-shadow: none;
+  box-shadow: 0 5px 0 #000000;
   transform: translateY(-2px);
 }
 
@@ -543,7 +547,7 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 6px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 2px 0 #000000;
   appearance: none;
   cursor: pointer;
 }
@@ -565,14 +569,14 @@ async function removeUploadedImage(imageId: number) {
 }
 
 .checkbox-label input[type='checkbox']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48), 0 2px 0 #000000;
 }
 
 .error-message {
   padding: 12px 16px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: none;
+  box-shadow: 0 3px 0 #000000;
   font-weight: 800;
 }
 

@@ -333,7 +333,8 @@ onMounted(load)
         <div class="page-title">
           <div>
             <h1>{{ task.title }}</h1>
-            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p v-if="task.anonymous">匿名用户 · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p v-else><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
           <div class="task-actions">
             <span class="tag">{{ categoryText[task.category] }}</span>
@@ -513,7 +514,7 @@ onMounted(load)
 
 <style scoped>
 .task-detail-view {
-  --task-green: #b9ff66;
+  --task-green: #7dbe8e;
   --task-dark: #191a23;
   --task-grey: #f3f3f3;
 }
@@ -643,7 +644,7 @@ onMounted(load)
 }
 
 .panel .page-title p a:hover {
-  color: #365600;
+  color: #2d5a3d;
 }
 
 .panel > p {
@@ -780,7 +781,7 @@ aside .panel textarea {
 .field select:focus,
 aside .panel textarea:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
   background: #ffffff;
 }
 
@@ -809,7 +810,7 @@ aside .panel textarea::placeholder {
 }
 
 .item-card h3 a:hover {
-  color: #365600;
+  color: #2d5a3d;
 }
 
 .empty-state {

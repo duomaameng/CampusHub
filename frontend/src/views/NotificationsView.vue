@@ -93,7 +93,7 @@ onMounted(load)
 
 <style scoped>
 .notifications-view {
-  --notice-green: #b9ff66;
+  --notice-green: #7dbe8e;
   --notice-dark: #191a23;
   --notice-grey: #f3f3f3;
   --notice-line: #000000;
@@ -104,9 +104,9 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 94% 10%, rgba(185, 255, 102, 0.82) 0 56px, transparent 58px),
+    radial-gradient(circle at 94% 10%, rgba(125, 190, 142, 0.82) 0 56px, transparent 58px),
     #ffffff;
-  box-shadow: none;
+  box-shadow: 0 6px 0 var(--notice-line);
 }
 
 .notifications-view :deep(.page-title h1) {
@@ -115,7 +115,7 @@ onMounted(load)
   padding: 5px 10px;
   border-radius: 24px;
   border: 2px solid #000000;
-  background: transparent;
+  background: var(--notice-green);
   background-clip: border-box;
   -webkit-background-clip: border-box;
   color: #000000;
@@ -123,7 +123,7 @@ onMounted(load)
   font-size: 34px;
   line-height: 1.12;
   letter-spacing: 0;
-  box-shadow: none;
+  box-shadow: 0 4px 0 #000000;
 }
 
 .notifications-view :deep(.page-title p) {
@@ -162,7 +162,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 3px 0 var(--notice-line);
   position: relative;
   transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
 }
@@ -173,13 +173,13 @@ onMounted(load)
 }
 
 .notification-item.unread {
-  background: linear-gradient(135deg, #ffffff 0%, #f7ffe8 100%);
-  box-shadow: none;
+  background: linear-gradient(135deg, #ffffff 0%, #e8f5ec 100%);
+  box-shadow: 0 3px 0 var(--notice-line);
 }
 
 .notification-item:hover {
   border-color: var(--notice-line);
-  box-shadow: none;
+  box-shadow: 0 4px 0 var(--notice-line);
   transform: translateY(-1px);
 }
 

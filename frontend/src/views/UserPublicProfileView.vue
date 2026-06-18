@@ -124,7 +124,7 @@ onMounted(load)
 
 <style scoped>
 .user-public-profile-view {
-  --public-green: #b9ff66;
+  --public-green: #7dbe8e;
   --public-dark: #191a23;
   --public-grey: #f3f3f3;
 }

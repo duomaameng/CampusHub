@@ -9,6 +9,7 @@ import {
   PlusCircle,
   Search,
   Tag,
+  UserRound,
   Users
 } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -173,7 +174,8 @@ onMounted(loadTasks)
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>
           <span><Tag class="meta-icon" aria-hidden="true" />{{ rewardText[task.rewardType] }}</span>
-          <span><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink></span>
+          <span v-if="task.anonymous"><UserRound class="meta-icon" aria-hidden="true" />匿名用户</span>
+          <span v-else><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink></span>
           <span><Clock class="meta-icon" aria-hidden="true" />{{ new Date(task.deadline).toLocaleString() }} 截止</span>
         </div>
         <div class="meta-line">
@@ -185,7 +187,8 @@ onMounted(loadTasks)
           查看详情
           <ArrowRight class="meta-icon" aria-hidden="true" />
         </span>
-        <span class="task-visual" aria-hidden="true">
+        <img v-if="task.imageUrls && task.imageUrls.length" :src="task.imageUrls[0]" alt="" class="card-image" />
+        <span v-else class="task-visual" aria-hidden="true">
           <span class="visual-window" />
           <span class="visual-dot" />
           <span class="visual-line visual-line-1" />
@@ -199,7 +202,7 @@ onMounted(loadTasks)
 <style scoped>
 section {
   --card-hover-lift: -6px;
-  --task-green: #b9ff66;
+  --task-green: #7dbe8e;
   --task-dark: #191a23;
   --task-grey: #f3f3f3;
 }
@@ -400,13 +403,13 @@ section {
 .toolbar .field select:hover,
 .toolbar .field input:hover {
   border-color: #000000;
-  background: #f8ffe8;
+  background: #e8f5ec;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .toolbar .field label {
@@ -442,13 +445,9 @@ section {
 .cards-grid {
   position: relative;
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   grid-auto-rows: auto;
   gap: 22px;
-}
-
-.cards-grid .item-card:nth-child(3n + 1) {
-  grid-row: span 2;
 }
 
 .item-card {
@@ -557,7 +556,7 @@ section {
 }
 
 .item-card .meta-line a:hover {
-  color: #365600;
+  color: #2d5a3d;
 }
 
 .item-card .card-action {
@@ -609,7 +608,7 @@ section {
   width: 40px;
   height: 10px;
   border-radius: 999px;
-  background: #b9ff66;
+  background: #7dbe8e;
 }
 
 .visual-dot {
@@ -620,7 +619,7 @@ section {
   height: 46px;
   border: 2px solid #000000;
   border-radius: 50%;
-  background: #b9ff66;
+  background: #7dbe8e;
 }
 
 .visual-line {
@@ -702,16 +701,39 @@ section {
     grid-template-columns: 1fr;
   }
 
-  .cards-grid .item-card:nth-child(3n + 1) {
-    grid-row: span 1;
-  }
-
   .item-card {
     padding: var(--space-5);
   }
 
-  .task-visual {
+.card-image {
+  position: absolute;
+  right: 28px;
+  top: 28px;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
+  z-index: 0;
+}
+
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
+}
+
+.task-visual {
     display: none;
+  }
+
+  .card-image {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    border-radius: 16px;
   }
 
   .toolbar {

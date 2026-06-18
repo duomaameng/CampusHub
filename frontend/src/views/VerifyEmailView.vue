@@ -96,7 +96,7 @@ async function resend() {
 
 <style scoped>
 .verify-email-view {
-  --verify-green: #b9ff66;
+  --verify-green: #7dbe8e;
   --verify-dark: #191a23;
   --verify-grey: #f3f3f3;
   position: relative;
@@ -220,7 +220,7 @@ async function resend() {
 
 .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(125, 190, 142, 0.48);
 }
 
 .button {
