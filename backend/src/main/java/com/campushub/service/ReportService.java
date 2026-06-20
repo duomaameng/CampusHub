@@ -109,6 +109,9 @@ public class ReportService {
         if (task == null) {
             throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
         }
+        if (currentUserId.equals(task.getPublisherId())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不能举报自己发布的任务");
+        }
 
         Report report = new Report();
         report.setReporterId(currentUserId);

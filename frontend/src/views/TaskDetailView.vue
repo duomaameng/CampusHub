@@ -1,11 +1,12 @@
 ﻿<script setup lang="ts">
+import { AlertTriangle, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
+import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
-import type { ApplicationItem, OrderItem, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
+import type { ApplicationItem, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -15,7 +16,6 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const task = ref<TaskItem>()
-const relatedOrder = ref<OrderItem | null>(null)
 const applications = ref<ApplicationItem[]>([])
 const applyMessage = ref('')
 const loading = ref(false)
@@ -26,6 +26,7 @@ const reportUploadError = ref('')
 const reportSubmitting = ref(false)
 const reportEvidenceUploading = ref(false)
 const reportEvidenceFiles = ref<UploadedFileItem[]>([])
+const reportDialogOpen = ref(false)
 const editMode = ref(false)
 const savingTask = ref(false)
 const deletingTask = ref(false)
@@ -47,17 +48,22 @@ const editForm = reactive<TaskUpdatePayload>({
 
 const taskId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => Boolean(task.value && auth.user?.id === task.value.publisherId))
-const canApply = computed(() => Boolean(auth.isAuthenticated && auth.user?.verified && applyMessage.value))
-const canEditTask = computed(() => Boolean(isPublisher.value && task.value?.status === 'OPEN' && task.value.applicationCount === 0))
+const canApply = computed(() => Boolean(
+  task.value?.category !== 'TEAM_UP' &&
+  auth.isAuthenticated &&
+  auth.user?.verified &&
+  applyMessage.value
+))
+const canEditTask = computed(() => Boolean(
+  isPublisher.value &&
+  task.value?.status === 'OPEN' &&
+  (task.value.category === 'TEAM_UP' || task.value.applicationCount === 0)
+))
 const canReportTask = computed(() => Boolean(
   auth.isAuthenticated &&
+  auth.user?.id &&
   task.value &&
-  ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status) &&
-  relatedOrder.value &&
-  (
-    relatedOrder.value.publisherId === auth.user?.id ||
-    relatedOrder.value.serviceProviderId === auth.user?.id
-  )
+  task.value.publisherId !== auth.user.id
 ))
 const isFavorited = computed(() => Boolean(task.value?.isFavorited || (task.value as (TaskItem & { favorited?: boolean }) | undefined)?.favorited))
 
@@ -143,12 +149,7 @@ async function load() {
   loading.value = true
   try {
     task.value = await taskApi.get(taskId.value)
-    relatedOrder.value = null
-    if (auth.isAuthenticated && ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status)) {
-      const orders = await orderApi.list({ page: 1, size: 100 })
-      relatedOrder.value = orders.records.find((item) => item.taskId === task.value?.id) || null
-    }
-    if (isPublisher.value) {
+    if (isPublisher.value && task.value.category !== 'TEAM_UP') {
       applications.value = await taskApi.applications(taskId.value)
     }
   } catch (err) {
@@ -216,9 +217,11 @@ async function deleteTask() {
   }
   const currentTask = task.value
   dangerDialog.request({
-    title: '删除这条需求？',
-    description: `“${currentTask.title}”删除后无法恢复，收藏和相关申请也会受到影响。`,
-    confirmText: '确认删除'
+    title: currentTask.category === 'TEAM_UP' ? '取消这条组队帖？' : '删除这条需求？',
+    description: currentTask.category === 'TEAM_UP'
+      ? `“${currentTask.title}”取消后将不再展示，且无法恢复。`
+      : `“${currentTask.title}”删除后无法恢复，收藏和相关申请也会受到影响。`,
+    confirmText: currentTask.category === 'TEAM_UP' ? '确认取消' : '确认删除'
   }, async () => {
     error.value = ''
     deletingTask.value = true
@@ -317,6 +320,18 @@ function removeReportEvidence(fileId: number) {
   reportEvidenceFiles.value = reportEvidenceFiles.value.filter((item) => item.id !== fileId)
 }
 
+function openReportDialog() {
+  if (!canReportTask.value) return
+  error.value = ''
+  reportUploadError.value = ''
+  reportDialogOpen.value = true
+}
+
+function closeReportDialog() {
+  if (reportSubmitting.value) return
+  reportDialogOpen.value = false
+}
+
 async function submitReport() {
   if (!task.value || !reportReason.value.trim()) return
 
@@ -331,6 +346,7 @@ async function submitReport() {
     )
     reportReason.value = ''
     reportEvidenceFiles.value = []
+    reportDialogOpen.value = false
     success.value = '举报已提交'
   } catch (err) {
     error.value = err instanceof Error ? err.message : '举报提交失败'
@@ -355,16 +371,49 @@ onBeforeUnmount(() => {
     <p v-if="error" class="error-message">{{ error }}</p>
     <div v-if="loading" class="empty-state">正在加载需求</div>
 
-    <div v-else-if="task" class="detail-layout">
+    <div v-else-if="task" :class="['detail-layout', { 'single-column': task.category === 'TEAM_UP' }]">
       <article class="panel grid">
         <div class="page-title">
           <div>
-            <h1>{{ task.title }}</h1>
+            <div class="task-title-row">
+              <h1>{{ task.title }}</h1>
+              <button
+                v-if="canReportTask"
+                class="report-icon-button"
+                type="button"
+                title="举报任务"
+                aria-label="举报任务"
+                @click="openReportDialog"
+              >
+                <AlertTriangle aria-hidden="true" />
+              </button>
+            </div>
             <p v-if="task.anonymous">匿名用户 · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
             <p v-else><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
           <div class="task-actions">
             <span class="tag">{{ categoryText[task.category] }}</span>
+            <button
+              v-if="isPublisher && !editMode"
+              class="button secondary"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :aria-disabled="!canEditTask"
+              @click="startEdit"
+            >
+              编辑
+            </button>
+            <button
+              v-if="isPublisher && !editMode"
+              class="button danger"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :disabled="deletingTask"
+              :aria-disabled="!canEditTask"
+              @click="deleteTask"
+            >
+              {{ deletingTask ? (task.category === 'TEAM_UP' ? '取消中...' : '删除中...') : (task.category === 'TEAM_UP' ? '取消帖子' : '删除') }}
+            </button>
             <button
               v-if="auth.isAuthenticated && !isPublisher"
               :class="['button', 'favorite-button', isFavorited ? 'active' : '']"
@@ -377,9 +426,65 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <p>{{ task.description }}</p>
+        <form v-if="editMode" class="main-edit-form grid" @submit.prevent="saveTask">
+          <div class="field">
+            <label for="edit-title">标题</label>
+            <input id="edit-title" v-model.trim="editForm.title" required maxlength="100" />
+          </div>
+          <div class="field">
+            <label for="edit-description">描述</label>
+            <textarea id="edit-description" v-model.trim="editForm.description" required maxlength="2000" />
+          </div>
+          <div class="grid two">
+            <div class="field">
+              <label for="edit-campus">校区</label>
+              <input id="edit-campus" v-model.trim="editForm.campus" required />
+            </div>
+            <div class="field">
+              <label for="edit-reward">报酬类型</label>
+              <select id="edit-reward" v-model="editForm.rewardType" required>
+                <option value="CASH">现金</option>
+                <option value="NEGOTIABLE">面议</option>
+                <option value="CREDIT_INTENT">积分意向</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="edit-deadline">截止时间</label>
+            <input id="edit-deadline" v-model="editForm.deadline" type="datetime-local" required />
+          </div>
+          <div v-if="editForm.category === 'TEAM_UP'" class="grid two">
+            <div class="field">
+              <label for="edit-activity-type">活动类型</label>
+              <input id="edit-activity-type" v-model.trim="editForm.categoryFields.activityType" required />
+            </div>
+            <div class="field">
+              <label for="edit-required-count">人数需求</label>
+              <input id="edit-required-count" v-model.number="editForm.categoryFields.requiredCount" type="number" min="1" step="1" required />
+            </div>
+            <div class="field">
+              <label for="edit-activity-time">活动时间</label>
+              <input id="edit-activity-time" v-model="editForm.categoryFields.activityTime" type="datetime-local" required />
+            </div>
+            <div class="field">
+              <label for="edit-contact-info">联系方式</label>
+              <input id="edit-contact-info" v-model.trim="editForm.categoryFields.contactInfo" required />
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input v-model="editForm.anonymous" type="checkbox" />
+            <span>匿名发布</span>
+          </label>
+          <div class="actions">
+            <button class="button primary" type="submit" :disabled="savingTask">{{ savingTask ? '保存中...' : '保存修改' }}</button>
+            <button class="button ghost" type="button" @click="editMode = false">取消</button>
+          </div>
+        </form>
 
-        <div v-if="task.imageUrls.length" class="upload-grid">
+        <template v-else>
+          <p>{{ task.description }}</p>
+
+          <div v-if="task.imageUrls.length" class="upload-grid">
           <button
             v-for="url in task.imageUrls"
             :key="url"
@@ -390,9 +495,9 @@ onBeforeUnmount(() => {
           >
             <img :src="resolveAssetUrl(url)" alt="任务配图" />
           </button>
-        </div>
+          </div>
 
-        <div class="grid two">
+          <div class="grid two">
           <div class="panel">
             <strong>报酬类型</strong>
             <p>{{ rewardText[task.rewardType] }}</p>
@@ -401,81 +506,21 @@ onBeforeUnmount(() => {
             <strong>截止时间</strong>
             <p>{{ new Date(task.deadline).toLocaleString() }}</p>
           </div>
-        </div>
-
-        <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
-          <h2>订单相关信息</h2>
-          <div class="meta-line">
-            <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
-              {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
-            </span>
           </div>
-        </div>
+
+          <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
+            <h2>{{ task.category === 'TEAM_UP' ? '组队帖子信息' : '订单相关信息' }}</h2>
+            <div class="meta-line">
+              <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
+                {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
+              </span>
+            </div>
+          </div>
+        </template>
       </article>
 
-      <aside class="grid">
-        <section v-if="isPublisher" class="panel grid">
-          <h2>需求管理</h2>
-          <p v-if="!canEditTask" class="hint">只有未接单、且没有接单申请的开放需求可以编辑或删除。</p>
-          <form v-if="editMode" class="grid" @submit.prevent="saveTask">
-            <div class="field">
-              <label for="edit-title">标题</label>
-              <input id="edit-title" v-model.trim="editForm.title" required maxlength="100" />
-            </div>
-            <div class="field">
-              <label for="edit-description">描述</label>
-              <textarea id="edit-description" v-model.trim="editForm.description" required maxlength="2000" />
-            </div>
-            <div class="grid two">
-              <div class="field">
-                <label for="edit-campus">校区</label>
-                <input id="edit-campus" v-model.trim="editForm.campus" required />
-              </div>
-              <div class="field">
-                <label for="edit-reward">报酬类型</label>
-                <select id="edit-reward" v-model="editForm.rewardType" required>
-                  <option value="CASH">现金</option>
-                  <option value="NEGOTIABLE">面议</option>
-                  <option value="CREDIT_INTENT">积分意向</option>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <label for="edit-deadline">截止时间</label>
-              <input id="edit-deadline" v-model="editForm.deadline" type="datetime-local" required />
-            </div>
-            <label class="checkbox-label">
-              <input v-model="editForm.anonymous" type="checkbox" />
-              <span>匿名发布</span>
-            </label>
-            <div class="actions">
-              <button class="button primary" type="submit" :disabled="savingTask">{{ savingTask ? '保存中...' : '保存修改' }}</button>
-              <button class="button ghost" type="button" @click="editMode = false">取消</button>
-            </div>
-          </form>
-          <div v-else class="actions">
-            <button
-              class="button secondary"
-              :class="{ 'is-soft-disabled': !canEditTask }"
-              type="button"
-              :aria-disabled="!canEditTask"
-              @click="startEdit"
-            >
-              编辑
-            </button>
-            <button
-              class="button danger"
-              :class="{ 'is-soft-disabled': !canEditTask }"
-              type="button"
-              :disabled="deletingTask"
-              :aria-disabled="!canEditTask"
-              @click="deleteTask"
-            >
-              {{ deletingTask ? '删除中...' : '删除' }}
-            </button>
-          </div>
-        </section>
-        <section v-if="!isPublisher" class="panel grid">
+      <aside v-if="task.category !== 'TEAM_UP'" class="grid">
+        <section v-if="!isPublisher && task.category !== 'TEAM_UP'" class="panel grid">
           <h2>申请接单</h2>
           <div class="field">
             <textarea v-model.trim="applyMessage" placeholder="说明你的时间、位置或服务能力" />
@@ -486,32 +531,7 @@ onBeforeUnmount(() => {
           <p v-if="success" class="success-message">{{ success }}</p>
         </section>
 
-        <section v-if="canReportTask" class="panel grid">
-          <h2>举报任务</h2>
-          <div class="field">
-            <textarea v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" />
-          </div>
-          <label class="button ghost upload-trigger">
-            <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleReportEvidenceChange" />
-            <span>{{ reportEvidenceUploading ? '上传中...' : '上传举报证据' }}</span>
-          </label>
-          <p class="hint">支持截图或照片证据，每张不超过 5MB。</p>
-          <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
-          <div v-if="reportEvidenceFiles.length" class="upload-grid">
-            <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
-              <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
-              <div class="upload-card-meta">
-                <strong>{{ item.fileName }}</strong>
-                <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
-              </div>
-            </article>
-          </div>
-          <button class="button danger" type="button" :disabled="reportSubmitting || !reportReason" @click="submitReport">
-            {{ reportSubmitting ? '提交中...' : '提交举报' }}
-          </button>
-        </section>
-
-        <section v-if="isPublisher" class="panel grid">
+        <section v-if="isPublisher && task.category !== 'TEAM_UP'" class="panel grid">
           <h2>接单申请</h2>
           <div v-if="!applications.length" class="empty-state">暂无申请</div>
           <div v-for="application in applications" :key="application.id" class="item-card">
@@ -550,6 +570,49 @@ onBeforeUnmount(() => {
         <img :src="previewImageUrl" alt="任务配图大图预览" @click="closeImagePreview" />
       </div>
     </Teleport>
+    <Teleport to="body">
+      <div v-if="reportDialogOpen && task" class="report-modal-backdrop" role="presentation" @click.self="closeReportDialog">
+        <section class="report-modal" role="dialog" aria-modal="true" aria-labelledby="task-report-modal-title">
+          <header class="report-modal-header">
+            <div>
+              <p class="report-modal-eyebrow">任务举报</p>
+              <h2 id="task-report-modal-title">举报“{{ task.title }}”</h2>
+            </div>
+            <button class="report-modal-close" type="button" aria-label="关闭举报弹窗" :disabled="reportSubmitting" @click="closeReportDialog">
+              <X aria-hidden="true" />
+            </button>
+          </header>
+          <form class="report-modal-form grid" @submit.prevent="submitReport">
+            <div class="field">
+              <label for="task-report-reason">举报原因</label>
+              <textarea id="task-report-reason" v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" required />
+            </div>
+            <label class="button ghost upload-trigger">
+              <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleReportEvidenceChange" />
+              <span>{{ reportEvidenceUploading ? '上传中...' : '上传举报证据' }}</span>
+            </label>
+            <p class="hint">支持截图或照片证据，每张不超过 5MB。</p>
+            <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
+            <p v-if="error" class="error-message">{{ error }}</p>
+            <div v-if="reportEvidenceFiles.length" class="upload-grid">
+              <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
+                <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
+                <div class="upload-card-meta">
+                  <strong>{{ item.fileName }}</strong>
+                  <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
+                </div>
+              </article>
+            </div>
+            <div class="report-modal-actions">
+              <button class="button ghost" type="button" :disabled="reportSubmitting" @click="closeReportDialog">取消</button>
+              <button class="button danger" type="submit" :disabled="reportSubmitting || !reportReason">
+                {{ reportSubmitting ? '提交中...' : '提交举报' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </Teleport>
     <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
@@ -566,6 +629,10 @@ onBeforeUnmount(() => {
   gap: 26px;
 }
 
+.detail-layout.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .button.is-soft-disabled {
   opacity: 0.48;
   filter: grayscale(0.18);
@@ -580,8 +647,62 @@ onBeforeUnmount(() => {
 .task-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.task-title-row h1 {
+  min-width: 0;
+}
+
+.report-icon-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #c1121f;
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.report-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.report-icon-button:hover {
+  background: #ffe8e8;
+  transform: translateY(-2px);
+}
+
+.report-icon-button:focus-visible {
+  outline: 3px solid rgba(255, 180, 84, 0.65);
+  outline-offset: 2px;
+}
+
+.main-edit-form {
+  margin-top: 4px;
+  padding-top: 24px;
+  border-top: 2px solid #000000;
+}
+
+.main-edit-form textarea {
+  min-height: 140px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .favorite-button {
@@ -684,6 +805,120 @@ onBeforeUnmount(() => {
   font-size: 32px;
   line-height: 1;
   cursor: pointer;
+}
+
+.report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(25, 26, 35, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.report-modal {
+  isolation: isolate;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 3px solid #000000;
+  border-radius: 28px;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at 100% 0%, #ffb454 0 70px, transparent 71px);
+  color: #000000;
+  box-shadow: none;
+}
+
+.report-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.report-modal-eyebrow {
+  margin-bottom: 5px;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.report-modal-header h2 {
+  max-width: 430px;
+  font-size: 26px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.report-modal-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+}
+
+.report-modal-close:hover:not(:disabled) {
+  background: #ffe8e8;
+  color: #c1121f;
+}
+
+.report-modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.report-modal-form textarea {
+  min-height: 150px;
+  padding: 13px 15px;
+  background: #ffffff;
+  color: #000000;
+  line-height: 1.6;
+}
+
+.report-modal-form .field label {
+  color: #343743;
+  font-weight: 900;
+}
+
+.report-modal-form .hint {
+  color: #6f7485;
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 2px solid #000000;
+}
+
+@media (max-width: 620px) {
+  .report-modal-backdrop {
+    padding: 14px;
+  }
+
+  .report-modal {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .report-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .panel h1 {

@@ -132,7 +132,7 @@ public class TaskService {
         task.setDeadline(request.getDeadline());
         task.setStatus(TaskStatus.OPEN);
         task.setAnonymous(Boolean.TRUE.equals(request.getAnonymous()));
-        task.setCategoryFields(toJson(request.getCategoryFields()));
+        task.setCategoryFields(toJson(normalizeCategoryFields(request.getCategory(), request.getCategoryFields())));
         taskMapper.insert(task);
 
         bindTaskImages(task.getId(), request.getImageIds());
@@ -144,6 +144,9 @@ public class TaskService {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Task task = requireFreshTask(taskId);
 
+        if (TaskCategory.TEAM_UP.equals(task.getCategory())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "组队搭子是信息帖，不能申请接单，请通过帖子中的联系方式联系发布者");
+        }
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
@@ -202,6 +205,9 @@ public class TaskService {
         }
 
         Task task = requireFreshTask(application.getTaskId());
+        if (TaskCategory.TEAM_UP.equals(task.getCategory())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "组队搭子是信息帖，不能确认接单申请");
+        }
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(task.getPublisherId(), currentUserId)) {
             throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
@@ -265,7 +271,9 @@ public class TaskService {
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
-        ensureNoApplications(taskId);
+        if (!TaskCategory.TEAM_UP.equals(task.getCategory())) {
+            ensureNoApplications(taskId);
+        }
 
         if (request.getCategory() != null) {
             task.setCategory(request.getCategory());
@@ -289,7 +297,9 @@ public class TaskService {
             task.setAnonymous(request.getAnonymous());
         }
         if (request.getCategoryFields() != null) {
-            task.setCategoryFields(toJson(request.getCategoryFields()));
+            task.setCategoryFields(toJson(normalizeCategoryFields(task.getCategory(), request.getCategoryFields())));
+        } else if (TaskCategory.TEAM_UP.equals(task.getCategory())) {
+            task.setCategoryFields(toJson(normalizeCategoryFields(task.getCategory(), parseCategoryFields(task.getCategoryFields()))));
         }
         taskMapper.updateById(task);
 
@@ -310,7 +320,9 @@ public class TaskService {
         if (!TaskStatus.OPEN.equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
-        ensureNoApplications(taskId);
+        if (!TaskCategory.TEAM_UP.equals(task.getCategory())) {
+            ensureNoApplications(taskId);
+        }
 
         List<Order> orders = orderMapper.selectList(
                 new LambdaQueryWrapper<Order>().eq(Order::getTaskId, taskId));
@@ -588,6 +600,36 @@ public class TaskService {
             return objectMapper.writeValueAsString(fields);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "分类扩展字段格式无效");
+        }
+    }
+
+    private Map<String, Object> normalizeCategoryFields(TaskCategory category, Map<String, Object> fields) {
+        if (!TaskCategory.TEAM_UP.equals(category)) {
+            return fields;
+        }
+
+        Map<String, Object> normalized = fields == null ? new LinkedHashMap<>() : new LinkedHashMap<>(fields);
+        Object contactInfo = normalized.get("contactInfo");
+        if (contactInfo == null || contactInfo.toString().isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "组队搭子帖子必须填写联系方式");
+        }
+        normalized.put("contactInfo", contactInfo.toString().trim());
+
+        Object requiredCount = normalized.get("requiredCount");
+        if (requiredCount == null || requiredCount.toString().isBlank()) {
+            normalized.put("requiredCount", 1);
+            return normalized;
+        }
+
+        try {
+            int value = Integer.parseInt(requiredCount.toString());
+            if (value < 1) {
+                throw new NumberFormatException();
+            }
+            normalized.put("requiredCount", value);
+            return normalized;
+        } catch (NumberFormatException exception) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "人数需求必须是大于等于 1 的整数");
         }
     }
 

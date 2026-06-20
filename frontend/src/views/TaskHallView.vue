@@ -92,7 +92,7 @@ onMounted(loadTasks)
           任务大厅
         </span>
         <strong>浏览校园互助任务，找到适合你的机会。</strong>
-        <span>筛选分类与校区，进入详情页查看完整信息并提交接单申请；发布者确认后即可开始协作。</span>
+        <span>筛选分类与校区，普通需求可进入详情页提交接单申请；组队搭子帖请通过发布者留下的联系方式沟通。</span>
       </div>
       <div class="metric-card">
         <span class="metric-icon">

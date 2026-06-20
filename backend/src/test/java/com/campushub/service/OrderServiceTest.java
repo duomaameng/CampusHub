@@ -45,6 +45,7 @@ class OrderServiceTest {
     @Mock private ApplicationMapper applicationMapper;
     @Mock private ReviewMapper reviewMapper;
     @Mock private CreditLogMapper creditLogMapper;
+    @Mock private TaskImageMapper taskImageMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
 

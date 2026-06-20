@@ -86,7 +86,8 @@ const categoryFields = computed(() => {
     return [
       ['activityType', '活动类型'],
       ['requiredCount', '人数需求'],
-      ['activityTime', '活动时间']
+      ['activityTime', '活动时间'],
+      ['contactInfo', '联系方式']
     ]
   }
   return []
@@ -94,8 +95,8 @@ const categoryFields = computed(() => {
 
 watch(
   () => form.category,
-  () => {
-    form.categoryFields = {}
+  (category) => {
+    form.categoryFields = category === 'TEAM_UP' ? { requiredCount: 1 } : {}
   }
 )
 
@@ -158,6 +159,21 @@ function validateCategoryDateTimeField(key: string) {
   return true
 }
 
+function validateRequiredCount(key: string) {
+  if (key !== 'requiredCount') return true
+  const value = Number(form.categoryFields[key])
+  if (!Number.isInteger(value) || value < 1) {
+    form.categoryFields[key] = 1
+    return false
+  }
+  return true
+}
+
+function adjustRequiredCount(delta: number) {
+  const current = Number(form.categoryFields.requiredCount)
+  form.categoryFields.requiredCount = Math.max(1, (Number.isInteger(current) ? current : 1) + delta)
+}
+
 async function handleTaskImageChange(event: Event) {
   const input = event.target as HTMLInputElement
   const files = Array.from(input.files || [])
@@ -204,7 +220,8 @@ async function removeUploadedImage(imageId: number) {
     <div class="page-title">
       <div>
         <h1>发布需求</h1>
-        <p>填写任务信息后会进入任务大厅，等待其他同学申请接单。</p>
+        <p v-if="form.category === 'TEAM_UP'">填写组队信息和联系方式后会作为帖子发布，感兴趣的同学可直接联系你。</p>
+        <p v-else>填写任务信息后会进入任务大厅，等待其他同学申请接单。</p>
       </div>
     </div>
 
@@ -311,11 +328,33 @@ async function removeUploadedImage(imageId: number) {
             <option value="LIKE_NEW">几乎全新</option>
             <option value="USED">有使用痕迹</option>
           </select>
+          <div v-else-if="key === 'requiredCount'" class="number-stepper">
+            <input
+              :id="key"
+              v-model="form.categoryFields[key]"
+              type="number"
+              min="1"
+              step="1"
+              required
+              @input="validateRequiredCount(key)"
+              @change="validateRequiredCount(key)"
+              @blur="validateRequiredCount(key)"
+            />
+            <span class="number-stepper-controls">
+              <button type="button" aria-label="增加人数" @click="adjustRequiredCount(1)">▲</button>
+              <button
+                type="button"
+                aria-label="减少人数"
+                :disabled="Number(form.categoryFields.requiredCount) <= 1"
+                @click="adjustRequiredCount(-1)"
+              >▼</button>
+            </span>
+          </div>
           <input
             v-else
             :id="key"
             v-model="form.categoryFields[key]"
-            :type="key.includes('Time') ? 'datetime-local' : key === 'price' || key === 'requiredCount' ? 'number' : 'text'"
+            :type="key.includes('Time') ? 'datetime-local' : key === 'price' ? 'number' : 'text'"
             :min="requiresFutureDateTime(key) ? minDeadline : undefined"
             required
             @input="validateCategoryDateTimeField(key)"
@@ -452,6 +491,55 @@ async function removeUploadedImage(imageId: number) {
 .field select:hover,
 .field textarea:hover {
   background-color: #fff1df;
+}
+
+.number-stepper {
+  position: relative;
+}
+
+.field .number-stepper input {
+  width: 100%;
+  padding-right: 48px;
+  appearance: textfield;
+}
+
+.number-stepper input::-webkit-inner-spin-button,
+.number-stepper input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.number-stepper-controls {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  bottom: 8px;
+  display: grid;
+  width: 26px;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.number-stepper-controls button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: #ffffff;
+  color: #6f7485;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.number-stepper-controls button:hover:not(:disabled) {
+  color: #000000;
+  background: #f3f3f3;
+}
+
+.number-stepper-controls button:disabled {
+  color: #c7c9cf;
+  cursor: not-allowed;
 }
 
 .field input:focus,

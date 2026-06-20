@@ -140,7 +140,7 @@ class AdminServiceTest {
     void shouldRejectAnonymizedStatusForAdminStatusUpdate() {
         assertThatThrownBy(() -> adminService.updateUserStatus(2L, UserStatus.ANONYMIZED, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ACTIVE or DISABLED");
+                .hasMessageContaining("正常或禁用");
     }
 
     private User createUser(Long id, String email, UserRole role, UserStatus status) {

@@ -108,11 +108,12 @@ public class OrderService {
         if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单有未处理的取消申请，不能提交完成");
         }
-
-        if (request.getProofImageId() != null) {
-            FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
-            order.setCompletionProofUrl(proof.getFileUrl());
+        if (request.getProofImageId() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "必须上传完成凭证后才能提交完成");
         }
+
+        FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
+        order.setCompletionProofUrl(proof.getFileUrl());
         order.setStatus(OrderStatus.PENDING_COMPLETION);
         orderMapper.updateById(order);
         saveStatusLog(
