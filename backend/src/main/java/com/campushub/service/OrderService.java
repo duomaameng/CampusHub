@@ -433,6 +433,7 @@ public class OrderService {
         } else {
             vo.setPublisherId(order.getPublisherId());
             vo.setPublisherNickname(findNickname(order.getPublisherId()));
+            vo.setPublisherAvatarUrl(findAvatarUrl(order.getPublisherId()));
         }
         if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
             vo.setServiceProviderId(null);
@@ -440,6 +441,7 @@ public class OrderService {
         } else {
             vo.setServiceProviderId(order.getServiceProviderId());
             vo.setServiceProviderNickname(findNickname(order.getServiceProviderId()));
+            vo.setServiceProviderAvatarUrl(findAvatarUrl(order.getServiceProviderId()));
         }
         vo.setStatus(order.getStatus());
         vo.setCancelReason(order.getCancelReason());
@@ -467,6 +469,7 @@ public class OrderService {
                 message.getOrderId(),
                 message.getSenderId(),
                 findNickname(message.getSenderId()),
+                findAvatarUrl(message.getSenderId()),
                 message.getMessageType(),
                 message.getContent(),
                 message.getImageUrl(),
@@ -558,5 +561,13 @@ public class OrderService {
                 .eq(UserProfile::getUserId, userId)
                 .last("LIMIT 1"));
         return profile != null ? profile.getNickname() : "CampusHub 用户";
+    }
+
+    private String findAvatarUrl(Long userId) {
+        if (userId == null) return null;
+        UserProfile profile = userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfile>()
+                .eq(UserProfile::getUserId, userId)
+                .last("LIMIT 1"));
+        return profile != null ? profile.getAvatarUrl() : null;
     }
 }

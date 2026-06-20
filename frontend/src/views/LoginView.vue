@@ -378,7 +378,7 @@ async function submit() {
 }
 
 .signup-strip a:hover {
-  color: #2d5a3d;
+  color: #b45309;
 }
 
 @media (max-width: 980px) {

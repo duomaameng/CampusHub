@@ -451,7 +451,7 @@ async function removeUploadedImage(imageId: number) {
 .field input:hover,
 .field select:hover,
 .field textarea:hover {
-  background-color: #e8f5ec;
+  background-color: #fff1df;
 }
 
 .field input:focus,

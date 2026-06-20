@@ -5,7 +5,7 @@ import { RouterLink } from 'vue-router'
 
 import { taskApi } from '@/services/api'
 import { taskStatusText } from '@/types'
-import type { PageData, TaskItem } from '@/types'
+import type { PageData, TaskItem, TaskStatus } from '@/types'
 
 const page = ref<PageData<TaskItem>>()
 const loading = ref(false)
@@ -15,6 +15,14 @@ const filters = reactive({
   keyword: '',
   sort: 'latest'
 })
+
+const statusTagClass: Record<TaskStatus, string> = {
+  OPEN: 'success',
+  IN_PROGRESS: 'info',
+  COMPLETED: 'warning',
+  CANCELLED: 'danger',
+  EXPIRED: 'danger'
+}
 
 const filteredFavorites = computed(() => {
   const keyword = filters.keyword.trim().toLowerCase()
@@ -91,7 +99,7 @@ onMounted(loadFavorites)
       <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :class="{ 'has-image': task.imageUrls && task.imageUrls.length }" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
         <div class="item-title">
           <h2>{{ task.title }}</h2>
-          <span :class="['tag', task.status === 'OPEN' ? 'success' : 'warning']">{{ taskStatusText[task.status] }}</span>
+          <span :class="['tag', 'status-tag', statusTagClass[task.status]]">{{ taskStatusText[task.status] }}</span>
         </div>
         <p>{{ task.description }}</p>
         <div class="meta-line">
@@ -186,7 +194,7 @@ onMounted(loadFavorites)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #e8f5ec;
+  background: #fff1df;
 }
 
 .toolbar .field select:focus,
@@ -332,11 +340,35 @@ onMounted(loadFavorites)
   border-radius: 999px;
   background: #ffffff;
   color: #000000;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 0;
-  padding: 5px 12px;
+  padding: 4px 12px;
   box-shadow: none;
+}
+
+.item-card .status-tag.success {
+  background: linear-gradient(135deg, var(--success-bg), rgba(245, 158, 11, 0.08));
+  color: #9a3412;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.info {
+  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.08));
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.item-card .status-tag.warning {
+  background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.08));
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.danger {
+  background: linear-gradient(135deg, var(--danger-bg), rgba(239, 68, 68, 0.08));
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 .empty-state {

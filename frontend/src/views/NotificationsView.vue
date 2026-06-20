@@ -3,6 +3,8 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { notificationApi } from '@/services/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useAuthStore } from '@/stores/auth'
 import type { NotificationItem, PageData } from '@/types'
 
@@ -10,6 +12,7 @@ const auth = useAuthStore()
 const page = ref<PageData<NotificationItem>>()
 const error = ref('')
 const loading = ref(false)
+const dangerDialog = useConfirmDialog()
 
 async function load() {
   loading.value = true
@@ -34,14 +37,26 @@ async function readAll() {
   await load()
 }
 
-async function deleteOne(notificationId: number) {
-  await notificationApi.delete(notificationId)
-  await load()
+function deleteOne(item: NotificationItem) {
+  dangerDialog.request({
+    title: '删除这条通知？',
+    description: `“${item.title}”删除后无法恢复。`,
+    confirmText: '确认删除'
+  }, async () => {
+    await notificationApi.delete(item.id)
+    await load()
+  })
 }
 
-async function deleteAllRead() {
-  await notificationApi.deleteRead()
-  await load()
+function deleteAllRead() {
+  dangerDialog.request({
+    title: '清空所有已读通知？',
+    description: '所有已读通知都会被永久删除，未读通知不受影响。',
+    confirmText: '确认清空'
+  }, async () => {
+    await notificationApi.deleteRead()
+    await load()
+  })
 }
 
 function targetLink(item: NotificationItem) {
@@ -84,10 +99,11 @@ onMounted(load)
         <div class="actions">
           <RouterLink class="button ghost" :to="targetLink(item)">查看</RouterLink>
           <button class="button secondary" type="button" :disabled="item.read" @click="markRead(item.id)">标记已读</button>
-          <button class="button danger-outline" type="button" @click="deleteOne(item.id)">删除</button>
+          <button class="button danger-outline" type="button" @click="deleteOne(item)">删除</button>
         </div>
       </article>
     </div>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 

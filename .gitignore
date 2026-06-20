@@ -58,7 +58,6 @@ logs/
 *.log
 .codex-logs/
 
-uploads/
 
 # Local generated architecture graph
 docs/architecture-graph.md

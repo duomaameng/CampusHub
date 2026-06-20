@@ -19,7 +19,7 @@ INSERT INTO `verification_code` (`id`, `email`, `code`, `purpose`, `expires_at`,
 (2, 'student.demo1@smail.nju.edu.cn', '123456', 'RESET_PASSWORD', DATE_ADD(NOW(), INTERVAL 1 DAY), 0);
 
 INSERT INTO `task` (`id`, `publisher_id`, `category`, `title`, `description`, `campus`, `location_detail`, `reward_type`, `reward_amount`, `deadline`, `status`, `anonymous`, `category_fields`, `version`) VALUES
-(1, 3, 'EXPRESS', '帮忙取快递', '需要帮忙从快递站取一个包裹并送到宿舍。', '仙林', '快递站到 9 栋宿舍', 'CASH', 5.00, '2026-08-08 18:00:00', 'OPEN', 0, JSON_OBJECT('pickupCode', 'ABCD1234', 'building', '9 栋宿舍'), 0),
+(1, 3, 'EXPRESS', '帮忙取快递', '需要帮忙从快递站取一个包裹并送到宿舍。', '仙林', '快递站到 9 栋宿舍', 'CASH', 5.00, '2026-08-08 18:00:00', 'OPEN', 0, JSON_OBJECT('pickupCode', '46-1-7995', 'building', '9 栋宿舍'), 0),
 (2, 2, 'SECOND_HAND', '出一本二手高数教材', '一本品相良好的二手高等数学教材，可线下交易。', '鼓楼', '教学楼 A 附近', 'CASH', 18.00, '2026-08-12 20:00:00', 'OPEN', 0, JSON_OBJECT('condition', '九成新', 'priceNote', '可小刀'), 0),
 (3, 3, 'CONSULTATION', '匿名咨询保研复试经验', '想咨询复试准备和申请流程相关经验。', '仙林', '线上交流', 'NEGOTIABLE', NULL, '2026-08-10 20:00:00', 'OPEN', 1, JSON_OBJECT('topic', '保研复试'), 0),
 (4, 2, 'ERRAND', '打印并送资料', '需要有人帮忙打印材料并送到图书馆门口。', '仙林', '打印店到图书馆', 'CASH', 8.00, '2026-08-05 18:00:00', 'IN_PROGRESS', 0, JSON_OBJECT('pages', 24), 1);

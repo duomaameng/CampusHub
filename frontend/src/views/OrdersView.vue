@@ -56,7 +56,8 @@ const statusClass: Record<string, string> = {
   TIMEOUT: 'danger',
   DISPUTE: 'warning',
   REVIEWED: 'warning',
-  PENDING_CONFIRM: 'success'
+  PENDING_CONFIRM: 'success',
+  CANCELLED: 'danger'
 }
 
 const statusRank: Record<OrderStatus, number> = {
@@ -244,7 +245,7 @@ onMounted(loadOrders)
             <span :class="['relation-pill', card.relationClass]">{{ card.relationLabel }}</span>
             <h2>{{ card.title }}</h2>
           </div>
-          <span :class="['tag', statusClass[card.status]]">{{ orderStatusText[card.status] }}</span>
+          <span :class="['tag', 'status-tag', statusClass[card.status]]">{{ orderStatusText[card.status] }}</span>
         </div>
         <div class="meta-line">
           <span>
@@ -337,7 +338,7 @@ onMounted(loadOrders)
 }
 
 .role-tab:hover {
-  background: #e8f5ec;
+  background: #fff1df;
   transform: translateY(-2px);
 }
 
@@ -385,7 +386,7 @@ onMounted(loadOrders)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #e8f5ec;
+  background: #fff1df;
 }
 
 .toolbar .field select:focus,
@@ -466,7 +467,7 @@ onMounted(loadOrders)
 .card-image {
   position: absolute;
   right: 24px;
-  top: 22px;
+  top: 54px;
   z-index: 0;
   width: 120px;
   height: 90px;
@@ -555,11 +556,35 @@ onMounted(loadOrders)
   border-radius: 999px;
   background: #ffffff;
   color: #000000;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 0;
-  padding: 5px 12px;
+  padding: 4px 12px;
   box-shadow: none;
+}
+
+.item-card .status-tag.success {
+  background: linear-gradient(135deg, var(--success-bg), rgba(245, 158, 11, 0.08));
+  color: #9a3412;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.info {
+  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.08));
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.item-card .status-tag.warning {
+  background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.08));
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.danger {
+  background: linear-gradient(135deg, var(--danger-bg), rgba(239, 68, 68, 0.08));
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 .item-card .meta-line {
@@ -574,7 +599,7 @@ onMounted(loadOrders)
 }
 
 .item-card .meta-line a:hover {
-  color: #2d5a3d;
+  color: #b45309;
 }
 
 .item-card .hint {

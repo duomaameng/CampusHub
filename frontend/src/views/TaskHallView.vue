@@ -403,7 +403,7 @@ section {
 .toolbar .field select:hover,
 .toolbar .field input:hover {
   border-color: #000000;
-  background: #e8f5ec;
+  background: #fff1df;
 }
 
 .toolbar .field select:focus,
@@ -556,7 +556,7 @@ section {
 }
 
 .item-card .meta-line a:hover {
-  color: #2d5a3d;
+  color: #b45309;
 }
 
 .item-card .card-action {

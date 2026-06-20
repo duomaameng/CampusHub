@@ -14,6 +14,7 @@ public class OrderMessageVO {
     private Long orderId;
     private Long senderId;
     private String senderNickname;
+    private String senderAvatarUrl;
     private MessageType messageType;
     private String content;
     private String imageUrl;

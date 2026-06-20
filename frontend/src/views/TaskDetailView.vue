@@ -7,6 +7,8 @@ import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
 import type { ApplicationItem, OrderItem, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,10 +29,10 @@ const reportEvidenceFiles = ref<UploadedFileItem[]>([])
 const editMode = ref(false)
 const savingTask = ref(false)
 const deletingTask = ref(false)
-const deleteConfirming = ref(false)
 const favoriteLoading = ref(false)
 const actionLoadingApplicationId = ref<number | null>(null)
 const previewImageUrl = ref('')
+const dangerDialog = useConfirmDialog()
 const editForm = reactive<TaskUpdatePayload>({
   category: 'EXPRESS',
   title: '',
@@ -169,7 +171,6 @@ function startEdit() {
     success.value = ''
     return
   }
-  deleteConfirming.value = false
   editForm.category = task.value.category
   editForm.title = task.value.title
   editForm.description = task.value.description
@@ -213,21 +214,24 @@ async function deleteTask() {
     success.value = ''
     return
   }
-  if (!deleteConfirming.value) {
-    deleteConfirming.value = true
-    return
-  }
-  error.value = ''
-  deletingTask.value = true
-  try {
-    await taskApi.remove(task.value.id)
-    router.push('/tasks')
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '需求删除失败'
-  } finally {
-    deletingTask.value = false
-    deleteConfirming.value = false
-  }
+  const currentTask = task.value
+  dangerDialog.request({
+    title: '删除这条需求？',
+    description: `“${currentTask.title}”删除后无法恢复，收藏和相关申请也会受到影响。`,
+    confirmText: '确认删除'
+  }, async () => {
+    error.value = ''
+    deletingTask.value = true
+    try {
+      await taskApi.remove(currentTask.id)
+      await router.push('/tasks')
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '需求删除失败'
+      throw err
+    } finally {
+      deletingTask.value = false
+    }
+  })
 }
 
 async function toggleFavorite() {
@@ -467,7 +471,7 @@ onBeforeUnmount(() => {
               :aria-disabled="!canEditTask"
               @click="deleteTask"
             >
-              {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
+              {{ deletingTask ? '删除中...' : '删除' }}
             </button>
           </div>
         </section>
@@ -546,6 +550,7 @@ onBeforeUnmount(() => {
         <img :src="previewImageUrl" alt="任务配图大图预览" @click="closeImagePreview" />
       </div>
     </Teleport>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 
@@ -735,7 +740,7 @@ onBeforeUnmount(() => {
 }
 
 .panel .page-title p a:hover {
-  color: #2d5a3d;
+  color: #b45309;
 }
 
 .panel > p {
@@ -901,7 +906,7 @@ aside .panel textarea::placeholder {
 }
 
 .item-card h3 a:hover {
-  color: #2d5a3d;
+  color: #b45309;
 }
 
 .empty-state {

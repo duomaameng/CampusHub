@@ -1,106 +1,44 @@
-# 数据库初始化说明
+# CampusHub 数据库脚本
 
-本目录存放 CampusHub 本地开发使用的数据库脚本。
+数据库脚本已经整合为四个入口，不需要再按多个零散补丁逐个执行。
 
 ## 文件说明
 
-- `01-schema.sql`
-  - 创建 `campus_hub` 数据库
-  - 创建项目核心表结构
+- `01-schema.sql`：创建数据库以及当前版本的全部表结构。
+- `02-seed.sql`：插入本地开发使用的演示账号、任务、订单和业务数据。
+- `03-reset-dev-data.sql`：清空开发数据，保留表结构。
+- `04-upgrade-existing-db.sql`：将已经存在的旧版开发数据库升级到当前结构，并保留现有数据。
 
-- `02-seed.sql`
-  - 插入测试账号
-  - 插入示例任务、申请、订单、通知、评价、举报、公告等测试数据
+## 全新初始化
 
-- `03-reset-dev-data.sql`
-  - 清空当前开发测试数据
-  - 适合在需要重新导入 `02-seed.sql` 前执行
+依次执行：
 
-## 当前测试账号
+1. `01-schema.sql`
+2. `02-seed.sql`
 
-当前共享测试密码统一为：
+`01-schema.sql` 会重建表结构，不要对需要保留数据的数据库执行。
 
-`CampusHub123!`
+## 升级当前数据库
 
-测试账号如下：
+如果本地已经有 `campus_hub` 数据和账号，只执行：
 
-- `admin.demo@smail.nju.edu.cn`
-- `student.demo1@smail.nju.edu.cn`
-- `student.demo2@smail.nju.edu.cn`
-- `student.pending@smail.nju.edu.cn`
+1. `04-upgrade-existing-db.sql`
 
-## 手动执行顺序
+该脚本会补齐订单超时举报等当前结构，并更新演示任务配图，不会清空现有业务数据。
 
-首次初始化数据库：
+## 重置开发数据
 
-1. 执行 `01-schema.sql`
-2. 执行 `02-seed.sql`
+依次执行：
 
-如果需要重置测试数据：
+1. `03-reset-dev-data.sql`
+2. `02-seed.sql`
 
-1. 执行 `03-reset-dev-data.sql`
-2. 再执行 `02-seed.sql`
+## 数据库连接
 
-## 使用 MySQL Workbench 导入
-
-如果你们组员都使用 MySQL Workbench，可以按下面步骤操作：
-
-1. 打开 MySQL Workbench
-2. 连接本地 MySQL 实例
-3. 打开 `01-schema.sql`
-4. 点击执行，完成建库建表
-5. 再打开 `02-seed.sql`
-6. 点击执行，导入测试数据
-
-如果后续要重置测试数据：
-
-1. 先执行 `03-reset-dev-data.sql`
-2. 再执行 `02-seed.sql`
-
-## 后端数据库密码配置
-
-后端推荐通过环境变量配置数据库密码，不要直接把真实密码写死在 `application.yml` 里。
-
-`application.yml` 中推荐写法如下：
-
-```yml
-spring:
-  datasource:
-    password: ${DB_PASSWORD}
-```
-
-### 在 IDEA 中配置 `DB_PASSWORD`
-
-1. 打开 IDEA
-2. 点击右上角运行配置下拉框，选择 `编辑配置`
-3. 选择 `CampusHubApplication`
-4. 在右侧点击 `环境变量`
-5. 新增一条变量：
+后端通过环境变量读取 MySQL 密码：
 
 ```text
-DB_PASSWORD=你的 MySQL 密码
+DB_PASSWORD=你的MySQL密码
 ```
 
-6. 点击 `确定`
-7. 回到运行配置窗口后再次点击 `确定`
-8. 重启 `CampusHubApplication`
-
-这样后端启动时就会自动读取数据库密码。
-
-## PowerShell 辅助脚本
-
-如果不想在 Workbench 里手动执行，也可以使用脚本：
-
-- 初始化数据库：
-
-```powershell
-.\scripts\init-db.ps1 -Mode init -Username root -Password "你的MySQL密码"
-```
-
-- 重置开发测试数据：
-
-```powershell
-.\scripts\init-db.ps1 -Mode reset-seed -Username root -Password "你的MySQL密码"
-```
-
-如果 MySQL 安装在常见路径下，一般不需要额外传 `-MySqlExePath`。
+配置完成后重启后端。

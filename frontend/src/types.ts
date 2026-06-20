@@ -190,8 +190,10 @@ export interface OrderItem {
   taskTitle: string
   publisherId: number
   publisherNickname: string
+  publisherAvatarUrl?: string
   serviceProviderId?: number | null
   serviceProviderNickname?: string
+  serviceProviderAvatarUrl?: string
   status: OrderStatus
   cancelReason?: string
   createdAt: string
@@ -223,6 +225,7 @@ export interface OrderMessage {
   orderId: number
   senderId: number
   senderNickname: string
+  senderAvatarUrl?: string
   messageType: MessageType
   content?: string
   imageUrl?: string

@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { CheckCheck, MessageSquareText, Send, Star, XCircle } from '@lucide/vue'
+import { CheckCheck, MessageSquareText, Star, XCircle } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -8,6 +8,8 @@ import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText, orderStatusText } from '@/types'
 import type { ApplicationItem, OrderDetail, OrderStatusLog, ReviewItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,13 +23,9 @@ const reviews = ref<ReviewItem[]>([])
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
-const message = ref('')
 const cancelReason = ref('')
 const reviewRating = ref(1)
 const reviewContent = ref('')
-const chatImageUploading = ref(false)
-const chatImageError = ref('')
-const uploadedChatImage = ref<UploadedFileItem | null>(null)
 const completionProofUploading = ref(false)
 const completionProofError = ref('')
 const uploadedCompletionProof = ref<UploadedFileItem | null>(null)
@@ -39,8 +37,8 @@ const reportEvidenceFiles = ref<UploadedFileItem[]>([])
 const editMode = ref(false)
 const savingTask = ref(false)
 const deletingTask = ref(false)
-const deleteConfirming = ref(false)
 const actionLoadingApplicationId = ref<number | null>(null)
+const dangerDialog = useConfirmDialog()
 const editForm = reactive<TaskUpdatePayload>({
   category: 'EXPRESS',
   title: '',
@@ -147,35 +145,6 @@ async function runAction(action: () => Promise<unknown>, messageText: string) {
   } catch (err) {
     error.value = err instanceof Error ? err.message : '操作失败'
   }
-}
-
-async function sendMessage() {
-  if (!message.value.trim()) return
-  await runAction(() => orderApi.sendMessage(orderId.value, message.value.trim()), '消息已发送')
-  message.value = ''
-}
-
-async function handleChatImageChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  chatImageError.value = ''
-  chatImageUploading.value = true
-  try {
-    uploadedChatImage.value = await fileApi.upload(file, 'CHAT_IMAGE')
-  } catch (err) {
-    chatImageError.value = err instanceof Error ? err.message : '聊天图片上传失败'
-  } finally {
-    chatImageUploading.value = false
-    input.value = ''
-  }
-}
-
-async function sendImageMessage() {
-  if (!uploadedChatImage.value) return
-  await runAction(() => orderApi.sendImage(orderId.value, uploadedChatImage.value!.id), '图片消息已发送')
-  uploadedChatImage.value = null
 }
 
 async function handleCompletionProofChange(event: Event) {
@@ -297,14 +266,30 @@ async function cancelOrder() {
     success.value = ''
     return
   }
-  const successText = isProvider.value && !isPublisher.value ? '取消申请已提交，等待发布方处理' : '订单已取消'
-  await runAction(() => orderApi.cancel(order.value!.id, cancelReason.value), successText)
-  cancelReason.value = ''
+  const currentOrder = order.value
+  const reason = cancelReason.value.trim()
+  const providerRequest = isProvider.value && !isPublisher.value
+  dangerDialog.request({
+    title: providerRequest ? '提交取消服务申请？' : '取消这个订单？',
+    description: providerRequest
+      ? `取消原因：“${reason}”。提交后将等待发布方审核。`
+      : `取消原因：“${reason}”。订单取消后将无法继续履约。`,
+    confirmText: providerRequest ? '提交申请' : '确认取消'
+  }, async () => {
+    const successText = providerRequest ? '取消申请已提交，等待发布方处理' : '订单已取消'
+    await runAction(() => orderApi.cancel(currentOrder.id, reason), successText)
+    cancelReason.value = ''
+  })
 }
 
-async function approveCancelRequest() {
+function approveCancelRequest() {
   if (!order.value) return
-  await runAction(() => orderApi.approveCancelRequest(order.value!.id), '已同意取消申请，需求已重新开放')
+  const currentOrder = order.value
+  dangerDialog.request({
+    title: '同意取消订单？',
+    description: '同意后当前订单将被取消，原需求会重新开放并等待新的服务方。',
+    confirmText: '同意取消'
+  }, () => runAction(() => orderApi.approveCancelRequest(currentOrder.id), '已同意取消申请，需求已重新开放'))
 }
 
 async function rejectCancelRequest() {
@@ -325,7 +310,6 @@ function startEdit() {
     success.value = ''
     return
   }
-  deleteConfirming.value = false
   editForm.category = task.value.category
   editForm.title = task.value.title
   editForm.description = task.value.description
@@ -376,21 +360,24 @@ async function deleteTask() {
     success.value = ''
     return
   }
-  if (!deleteConfirming.value) {
-    deleteConfirming.value = true
-    return
-  }
-  error.value = ''
-  deletingTask.value = true
-  try {
-    await taskApi.remove(task.value.id)
-    router.push('/tasks')
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '需求删除失败'
-  } finally {
-    deletingTask.value = false
-    deleteConfirming.value = false
-  }
+  const currentTask = task.value
+  dangerDialog.request({
+    title: '删除这条需求？',
+    description: `“${currentTask.title}”删除后无法恢复。`,
+    confirmText: '确认删除'
+  }, async () => {
+    error.value = ''
+    deletingTask.value = true
+    try {
+      await taskApi.remove(currentTask.id)
+      await router.push('/tasks')
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '需求删除失败'
+      throw err
+    } finally {
+      deletingTask.value = false
+    }
+  })
 }
 
 async function confirmApplication(applicationId: number) {
@@ -468,44 +455,14 @@ onMounted(load)
           </ul>
         </section>
 
-        <section class="grid">
-          <h2>订单留言</h2>
-          <div class="messages">
-            <div v-if="!order.messages.length" class="hint">暂无留言</div>
-            <div v-for="item in order.messages" :key="item.id" class="message-bubble">
-              <strong><RouterLink :to="{ name: 'user-public-profile', params: { id: item.senderId } }">{{ item.senderNickname }}</RouterLink></strong>
-              <p v-if="item.content">{{ item.content }}</p>
-              <img v-if="item.imageUrl" class="message-image" :src="resolveAssetUrl(item.imageUrl)" alt="聊天图片" />
-              <span class="hint">{{ new Date(item.createdAt).toLocaleString() }}</span>
-            </div>
-          </div>
-          <form v-if="!isAwaitingNewProvider" class="actions" @submit.prevent="sendMessage">
-            <div class="field" style="flex:1;margin-bottom:0">
-              <input v-model.trim="message" placeholder="输入订单留言" />
-            </div>
-            <button class="button secondary" type="submit">
-              <Send class="button-icon" aria-hidden="true" />
-              <span>发送</span>
-            </button>
-          </form>
-          <div v-if="!isAwaitingNewProvider" class="grid">
-            <label class="button ghost upload-trigger">
-              <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleChatImageChange" />
-              <span>{{ chatImageUploading ? '上传中...' : '上传聊天图片' }}</span>
-            </label>
-            <p v-if="chatImageError" class="error-message">{{ chatImageError }}</p>
-            <div v-if="uploadedChatImage" class="upload-card inline">
-              <img :src="resolveAssetUrl(uploadedChatImage.url)" :alt="uploadedChatImage.fileName" />
-              <div class="upload-card-meta">
-                <strong>{{ uploadedChatImage.fileName }}</strong>
-                <div class="actions">
-                  <button class="button secondary" type="button" @click="sendImageMessage">发送图片</button>
-                  <button class="button ghost" type="button" @click="uploadedChatImage = null">取消</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <RouterLink
+          v-if="!isAwaitingNewProvider"
+          class="button secondary contact-button"
+          :to="{ name: 'order-chat', params: { id: order.id } }"
+        >
+          <MessageSquareText class="button-icon" aria-hidden="true" />
+          <span>联系对方</span>
+        </RouterLink>
       </article>
 
       <aside class="grid">
@@ -566,7 +523,7 @@ onMounted(load)
               :aria-disabled="!canEditTask"
               @click="deleteTask"
             >
-              {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
+              {{ deletingTask ? '删除中...' : '删除' }}
             </button>
           </div>
         </section>
@@ -736,6 +693,7 @@ onMounted(load)
         </section>
       </aside>
     </div>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 
@@ -936,6 +894,12 @@ onMounted(load)
   border-radius: 14px;
   font-weight: 900;
   box-shadow: none;
+}
+
+.contact-button {
+  width: max-content;
+  min-width: 150px;
+  padding: 12px 22px;
 }
 
 .button.primary,

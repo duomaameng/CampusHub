@@ -3,6 +3,8 @@ import { Edit3, Megaphone, RefreshCcw, Search, ShieldAlert, Trash2, UserRoundCog
 import { onMounted, reactive, ref } from 'vue'
 
 import { adminApi } from '@/services/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { announcementPriorityText, reportStatusText, reportTargetTypeText, userStatusText } from '@/types'
 import type {
   AdminReportItem,
@@ -18,6 +20,7 @@ import type {
 type AdminTab = 'users' | 'reports' | 'announcements'
 
 const activeTab = ref<AdminTab>('users')
+const dangerDialog = useConfirmDialog()
 
 const userFilters = reactive({
   keyword: '',
@@ -219,19 +222,24 @@ async function toggleAnnouncement(item: AnnouncementItem) {
   }
 }
 
-async function deleteAnnouncement(item: AnnouncementItem) {
-  if (!window.confirm(`确定删除公告"${item.title}"？`)) return
-
-  announcementsError.value = ''
-  announcementsSuccess.value = ''
-  try {
-    await adminApi.deleteAnnouncement(item.id)
-    announcementsSuccess.value = '公告已删除'
-    if (editingAnnouncementId.value === item.id) resetAnnouncementForm()
-    await loadAnnouncements()
-  } catch (err) {
-    announcementsError.value = err instanceof Error ? err.message : '公告删除失败'
-  }
+function deleteAnnouncement(item: AnnouncementItem) {
+  dangerDialog.request({
+    title: '删除这条公告？',
+    description: `“${item.title}”删除后将不再对用户展示，且无法恢复。`,
+    confirmText: '确认删除'
+  }, async () => {
+    announcementsError.value = ''
+    announcementsSuccess.value = ''
+    try {
+      await adminApi.deleteAnnouncement(item.id)
+      announcementsSuccess.value = '公告已删除'
+      if (editingAnnouncementId.value === item.id) resetAnnouncementForm()
+      await loadAnnouncements()
+    } catch (err) {
+      announcementsError.value = err instanceof Error ? err.message : '公告删除失败'
+      throw err
+    }
+  })
 }
 
 async function goAnnouncementPage(nextPage: number) {
@@ -592,6 +600,7 @@ onMounted(async () => {
         </section>
       </div>
     </section>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 
@@ -811,7 +820,7 @@ onMounted(async () => {
 }
 
 .table-wrapper :deep(tbody tr:hover td) {
-  background: #e8f5ec;
+  background: #fff1df;
 }
 
 .announcement-summary {

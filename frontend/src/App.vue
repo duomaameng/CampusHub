@@ -19,12 +19,15 @@ import { computed, onMounted } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
+const logoutDialog = useConfirmDialog()
 
 onMounted(async () => {
   document.documentElement.setAttribute('data-theme', 'light')
@@ -39,9 +42,15 @@ onMounted(async () => {
   }
 })
 
-async function handleLogout() {
-  await auth.logout()
-  router.push('/login')
+function handleLogout() {
+  logoutDialog.request({
+    title: '退出当前账号？',
+    description: '退出后需要重新登录才能查看订单、消息和个人资料。',
+    confirmText: '确认退出'
+  }, async () => {
+    await auth.logout()
+    await router.push('/login')
+  })
 }
 </script>
 
@@ -141,6 +150,7 @@ async function handleLogout() {
       </main>
     </section>
   </div>
+  <ConfirmDialog v-bind="logoutDialog.state" @confirm="logoutDialog.confirm" @cancel="logoutDialog.cancel" />
 </template>
 
 <style scoped>

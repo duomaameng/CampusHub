@@ -14,6 +14,7 @@ type ConversationItem = {
   taskTitle: string
   participantId?: number | null
   participantNickname: string
+  participantAvatarUrl?: string
   participantRole: string
   status: OrderDetail['status']
   lastMessageText: string
@@ -35,6 +36,7 @@ const uploadError = ref('')
 const message = ref('')
 const uploadedImage = ref<UploadedFileItem | null>(null)
 const messagesPanel = ref<HTMLElement | null>(null)
+let loadRequestId = 0
 
 const orderId = computed(() => Number(route.params.id))
 const hasOrderId = computed(() => Number.isFinite(orderId.value))
@@ -46,12 +48,14 @@ const chatTarget = computed(() => {
     return {
       id: order.value.serviceProviderId,
       nickname: order.value.serviceProviderNickname || '服务方',
+      avatarUrl: order.value.serviceProviderAvatarUrl,
       role: '服务方'
     }
   }
   return {
     id: order.value.publisherId,
     nickname: order.value.publisherNickname,
+    avatarUrl: order.value.publisherAvatarUrl,
     role: '发布者'
   }
 })
@@ -60,6 +64,8 @@ const sortedMessages = computed(() => [...(order.value?.messages || [])].sort((a
 ))
 
 async function load() {
+  const requestId = ++loadRequestId
+  const requestedOrderId = orderId.value
   error.value = ''
   loading.value = true
   try {
@@ -70,13 +76,17 @@ async function load() {
       }
       return
     }
-    order.value = await orderApi.get(orderId.value)
-    await loadConversations()
+    const nextOrder = await orderApi.get(requestedOrderId)
+    if (requestId !== loadRequestId) return
+
+    order.value = nextOrder
+    if (!conversations.value.length) await loadConversations()
     await scrollToBottom()
   } catch (err) {
+    if (requestId !== loadRequestId) return
     error.value = err instanceof Error ? err.message : '聊天加载失败'
   } finally {
-    loading.value = false
+    if (requestId === loadRequestId) loading.value = false
   }
 }
 
@@ -109,6 +119,9 @@ function buildConversationItem(item: OrderDetail): ConversationItem | null {
   const participantNickname = currentUserIsPublisher
     ? item.serviceProviderNickname || '服务方'
     : item.publisherNickname
+  const participantAvatarUrl = currentUserIsPublisher
+    ? item.serviceProviderAvatarUrl
+    : item.publisherAvatarUrl
   const participantRole = currentUserIsPublisher ? '服务方' : '发布者'
   const orderedMessages = [...item.messages].sort((a, b) =>
     new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -122,6 +135,7 @@ function buildConversationItem(item: OrderDetail): ConversationItem | null {
     taskTitle: item.taskTitle,
     participantId,
     participantNickname,
+    participantAvatarUrl,
     participantRole,
     status: item.status,
     lastMessageText: latest?.content || (latest?.imageUrl ? '[图片]' : '还没有消息'),
@@ -166,7 +180,7 @@ async function refreshCurrentOrderSilently() {
 }
 
 async function sendTextMessage() {
-  if (!message.value.trim() || sending.value || isAwaitingNewProvider.value) return
+  if (!message.value.trim() || sending.value || loading.value || isAwaitingNewProvider.value) return
 
   const content = message.value.trim()
   sending.value = true
@@ -204,7 +218,7 @@ async function handleImageChange(event: Event) {
 }
 
 async function sendImageMessage() {
-  if (!uploadedImage.value || sending.value || isAwaitingNewProvider.value) return
+  if (!uploadedImage.value || sending.value || loading.value || isAwaitingNewProvider.value) return
 
   sending.value = true
   error.value = ''
@@ -233,7 +247,14 @@ function initials(name?: string) {
   return (name || '用户').slice(0, 1)
 }
 
-watch(orderId, load)
+watch(orderId, (nextOrderId, previousOrderId) => {
+  if (nextOrderId !== previousOrderId) {
+    message.value = ''
+    uploadedImage.value = null
+    uploadError.value = ''
+  }
+  void load()
+})
 watch(sortedMessages, scrollToBottom)
 onMounted(load)
 </script>
@@ -246,7 +267,7 @@ onMounted(load)
     </RouterLink>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载聊天</div>
+    <div v-if="loading && !order" class="empty-state">正在加载聊天</div>
     <div v-else-if="!order" class="empty-state">暂无聊天记录</div>
 
     <div v-else-if="order" class="chat-layout">
@@ -262,9 +283,12 @@ onMounted(load)
             v-for="item in conversations"
             :key="item.orderId"
             :to="{ name: 'order-chat', params: { id: item.orderId } }"
-            :class="['contact-item', { active: item.orderId === order.id }]"
+            :class="['contact-item', { active: item.orderId === orderId }]"
           >
-            <span class="contact-avatar">{{ initials(item.participantNickname) }}</span>
+            <span class="contact-avatar">
+              <img v-if="item.participantAvatarUrl" :src="resolveAssetUrl(item.participantAvatarUrl)" alt="" />
+              <span v-else>{{ initials(item.participantNickname) }}</span>
+            </span>
             <span class="contact-copy">
               <strong>{{ item.participantNickname }}</strong>
               <span>{{ item.participantRole }} · {{ item.taskTitle }}</span>
@@ -278,9 +302,13 @@ onMounted(load)
         </section>
       </aside>
 
-      <article class="chat-panel">
+      <article :class="['chat-panel', { 'is-switching': loading }]">
+        <div v-if="loading" class="chat-switch-indicator">正在切换会话...</div>
         <header class="chat-header">
-          <div class="chat-avatar">{{ initials(chatTarget?.nickname) }}</div>
+          <div class="chat-avatar">
+            <img v-if="chatTarget?.avatarUrl" :src="resolveAssetUrl(chatTarget.avatarUrl)" alt="" />
+            <span v-else>{{ initials(chatTarget?.nickname) }}</span>
+          </div>
           <div>
             <h2>{{ chatTarget?.nickname || '对方' }}</h2>
             <p v-if="isAwaitingNewProvider" class="hint">暂无服务方，暂不能发起聊天</p>
@@ -300,7 +328,10 @@ onMounted(load)
             :key="item.id"
             :class="['chat-row', { mine: item.senderId === auth.user?.id }]"
           >
-            <div class="sender-avatar">{{ initials(item.senderNickname) }}</div>
+            <div class="sender-avatar">
+              <img v-if="item.senderAvatarUrl" :src="resolveAssetUrl(item.senderAvatarUrl)" alt="" />
+              <span v-else>{{ initials(item.senderNickname) }}</span>
+            </div>
             <div class="bubble-wrap">
               <div class="bubble-meta">
                 <strong>{{ item.senderNickname }}</strong>
@@ -323,16 +354,16 @@ onMounted(load)
           <button class="button ghost icon-button" type="button" aria-label="取消图片" @click="uploadedImage = null">
             <X class="button-icon" aria-hidden="true" />
           </button>
-          <button class="button secondary" type="button" :disabled="sending" @click="sendImageMessage">发送图片</button>
+          <button class="button secondary" type="button" :disabled="sending || loading" @click="sendImageMessage">发送图片</button>
         </div>
         <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
 
         <form class="composer" @submit.prevent="sendTextMessage">
-          <label class="button ghost upload-trigger" :class="{ disabled: imageUploading || isAwaitingNewProvider }">
+          <label class="button ghost upload-trigger" :class="{ disabled: imageUploading || loading || isAwaitingNewProvider }">
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              :disabled="imageUploading || isAwaitingNewProvider"
+              :disabled="imageUploading || loading || isAwaitingNewProvider"
               @change="handleImageChange"
             />
             <ImagePlus class="button-icon" aria-hidden="true" />
@@ -340,12 +371,12 @@ onMounted(load)
           </label>
           <textarea
             v-model.trim="message"
-            :disabled="isAwaitingNewProvider"
+            :disabled="loading || isAwaitingNewProvider"
             rows="1"
             placeholder="输入消息，Enter 发送"
             @keydown="handleComposerKeydown"
           />
-          <button class="button secondary send-button" type="submit" :disabled="sending || !message.trim() || isAwaitingNewProvider">
+          <button class="button secondary send-button" type="submit" :disabled="sending || loading || !message.trim() || isAwaitingNewProvider">
             <Send class="button-icon" aria-hidden="true" />
             <span>{{ sending ? '发送中...' : '发送' }}</span>
           </button>
@@ -501,6 +532,7 @@ onMounted(load)
   background: var(--chat-green);
   color: #000000;
   font-weight: 900;
+  overflow: hidden;
 }
 
 .contact-item.active .contact-avatar,
@@ -577,6 +609,16 @@ onMounted(load)
   color: #000000;
   font-weight: 900;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.contact-avatar img,
+.chat-avatar img,
+.sender-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .avatar-mark {
@@ -586,10 +628,37 @@ onMounted(load)
 }
 
 .chat-panel {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(360px, 1fr) auto auto auto;
   border-radius: 26px;
   overflow: hidden;
+}
+
+.chat-panel > * {
+  transition: opacity 160ms ease;
+}
+
+.chat-panel.is-switching > :not(.chat-switch-indicator) {
+  opacity: 0.68;
+  pointer-events: none;
+}
+
+.chat-switch-indicator {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 5;
+  width: max-content;
+  padding: 7px 14px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: var(--chat-green);
+  color: #000000;
+  font-size: 12px;
+  font-weight: 900;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 18px rgba(25, 26, 35, 0.16);
 }
 
 .chat-header {
