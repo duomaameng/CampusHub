@@ -649,6 +649,24 @@ section {
   transform: translateX(4px);
 }
 
+.card-image {
+  position: absolute;
+  right: 28px;
+  top: 112px;
+  width: 160px;
+  height: 120px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
+  z-index: 0;
+}
+
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
+}
+
 .page-title .button.primary {
   padding: 12px 24px;
   color: #ffffff;
@@ -705,25 +723,7 @@ section {
     padding: var(--space-5);
   }
 
-.card-image {
-  position: absolute;
-  right: 28px;
-  top: 28px;
-  width: 120px;
-  height: 90px;
-  object-fit: cover;
-  border: 2px solid #000000;
-  border-radius: 22px;
-  transform: rotate(-4deg);
-  transition: transform var(--transition-fast);
-  z-index: 0;
-}
-
-.item-card:hover .card-image {
-  transform: rotate(-2deg);
-}
-
-.task-visual {
+  .task-visual {
     display: none;
   }
 
@@ -734,6 +734,10 @@ section {
     height: 160px;
     margin-bottom: 12px;
     border-radius: 16px;
+  }
+
+  .item-card:hover .card-image {
+    transform: none;
   }
 
   .toolbar {

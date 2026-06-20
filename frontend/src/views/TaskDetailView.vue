@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
@@ -30,6 +30,7 @@ const deletingTask = ref(false)
 const deleteConfirming = ref(false)
 const favoriteLoading = ref(false)
 const actionLoadingApplicationId = ref<number | null>(null)
+const previewImageUrl = ref('')
 const editForm = reactive<TaskUpdatePayload>({
   category: 'EXPRESS',
   title: '',
@@ -57,6 +58,20 @@ const canReportTask = computed(() => Boolean(
   )
 ))
 const isFavorited = computed(() => Boolean(task.value?.isFavorited || (task.value as (TaskItem & { favorited?: boolean }) | undefined)?.favorited))
+
+function openImagePreview(url: string) {
+  previewImageUrl.value = resolveAssetUrl(url)
+  document.body.style.overflow = 'hidden'
+}
+
+function closeImagePreview() {
+  previewImageUrl.value = ''
+  document.body.style.overflow = ''
+}
+
+function handlePreviewKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && previewImageUrl.value) closeImagePreview()
+}
 
 const categoryText: Record<string, string> = {
   EXPRESS: '快递代取',
@@ -320,7 +335,15 @@ async function submitReport() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  window.addEventListener('keydown', handlePreviewKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handlePreviewKeydown)
+  document.body.style.overflow = ''
+})
 </script>
 
 <template>
@@ -353,9 +376,16 @@ onMounted(load)
         <p>{{ task.description }}</p>
 
         <div v-if="task.imageUrls.length" class="upload-grid">
-          <article v-for="url in task.imageUrls" :key="url" class="upload-card">
+          <button
+            v-for="url in task.imageUrls"
+            :key="url"
+            class="upload-card task-image-button"
+            type="button"
+            aria-label="全屏预览任务配图"
+            @click="openImagePreview(url)"
+          >
             <img :src="resolveAssetUrl(url)" alt="任务配图" />
-          </article>
+          </button>
         </div>
 
         <div class="grid two">
@@ -509,6 +539,13 @@ onMounted(load)
         </section>
       </aside>
     </div>
+
+    <Teleport to="body">
+      <div v-if="previewImageUrl" class="image-preview-overlay" role="dialog" aria-modal="true" aria-label="任务配图预览" @click.self="closeImagePreview">
+        <button class="image-preview-close" type="button" aria-label="关闭图片预览" @click="closeImagePreview">×</button>
+        <img :src="previewImageUrl" alt="任务配图大图预览" @click="closeImagePreview" />
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -588,6 +625,60 @@ onMounted(load)
   background:
     radial-gradient(circle at 94% 10%, var(--task-green) 0 72px, transparent 73px),
     #ffffff;
+}
+
+.task-image-button {
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: zoom-in;
+}
+
+.task-image-button img {
+  transition: transform var(--transition-fast);
+}
+
+.task-image-button:hover img {
+  transform: scale(1.03);
+}
+
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.image-preview-overlay img {
+  display: block;
+  max-width: min(94vw, 1440px);
+  max-height: 90vh;
+  object-fit: contain;
+  border: 2px solid #ffffff;
+  border-radius: 18px;
+  cursor: zoom-out;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.image-preview-close {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #191a23;
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .panel h1 {

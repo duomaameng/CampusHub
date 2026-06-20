@@ -25,8 +25,7 @@ INSERT INTO `task` (`id`, `publisher_id`, `category`, `title`, `description`, `c
 (4, 2, 'ERRAND', '打印并送资料', '需要有人帮忙打印材料并送到图书馆门口。', '仙林', '打印店到图书馆', 'CASH', 8.00, '2026-08-05 18:00:00', 'IN_PROGRESS', 0, JSON_OBJECT('pages', 24), 1);
 
 INSERT INTO `task_image` (`id`, `task_id`, `image_url`, `sort_order`) VALUES
-(1, 2, '/uploads/tasks/book-1.jpg', 1),
-(2, 4, '/uploads/tasks/print-order.jpg', 1);
+(1, 2, '/uploads/image_editor_1781931903418..jpg', 1);
 
 INSERT INTO `favorite` (`id`, `user_id`, `task_id`) VALUES
 (1, 2, 1),
