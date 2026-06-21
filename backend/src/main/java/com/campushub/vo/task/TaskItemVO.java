@@ -25,7 +25,10 @@ public class TaskItemVO {
     private TaskStatus status;
     private Boolean anonymous;
     private List<String> imageUrls;
+    private List<TaskFileVO> files;
+    private boolean fileDownloadAllowed;
     private long applicationCount;
+    private boolean hasUnreadApplications;
     private long favoriteCount;
     private boolean isFavorited;
     private LocalDateTime createdAt;

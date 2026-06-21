@@ -23,6 +23,8 @@ public class OrderMessage {
 
     private String imageUrl;
 
+    private Long fileId;
+
     private Boolean isRead;
 
     @TableField(fill = FieldFill.INSERT)

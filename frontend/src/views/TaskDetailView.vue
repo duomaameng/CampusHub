@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { AlertTriangle, X } from '@lucide/vue'
+import { AlertTriangle, Download, FileText, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -36,6 +36,7 @@ const favoriteLoading = ref(false)
 const actionLoadingApplicationId = ref<number | null>(null)
 const previewImageUrl = ref('')
 const dangerDialog = useConfirmDialog()
+let applicationIndicatorTimer: number | undefined
 const editForm = reactive<TaskUpdatePayload>({
   category: 'EXPRESS',
   title: '',
@@ -78,6 +79,21 @@ function openImagePreview(url: string) {
 function closeImagePreview() {
   previewImageUrl.value = ''
   document.body.style.overflow = ''
+}
+
+async function downloadTaskFile(file: { id: number; fileName: string }) {
+  if (!task.value?.fileDownloadAllowed) return
+  try {
+    const blob = await taskApi.downloadFile(taskId.value, file.id)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.fileName
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '文件下载失败'
+  }
 }
 
 function handlePreviewKeydown(event: KeyboardEvent) {
@@ -275,10 +291,31 @@ async function applyTask() {
   }
 }
 
-function openApplicationDialog() {
+async function openApplicationDialog() {
   error.value = ''
   success.value = ''
   applicationDialogOpen.value = true
+  if (isPublisher.value && task.value?.hasUnreadApplications) {
+    task.value = { ...task.value, hasUnreadApplications: false }
+    try {
+      await taskApi.markApplicationsViewed(taskId.value)
+    } catch (err) {
+      if (task.value) task.value = { ...task.value, hasUnreadApplications: true }
+      error.value = err instanceof Error ? err.message : '申请查看状态更新失败'
+    }
+  }
+}
+
+async function refreshApplicationIndicator() {
+  if (!isPublisher.value || applicationDialogOpen.value) return
+  try {
+    const latest = await taskApi.get(taskId.value)
+    if (task.value) {
+      task.value = { ...task.value, applicationCount: latest.applicationCount, hasUnreadApplications: latest.hasUnreadApplications }
+    }
+  } catch {
+    // Keep the current page state when a background refresh fails.
+  }
 }
 
 function closeApplicationDialog() {
@@ -375,10 +412,12 @@ async function submitReport() {
 
 onMounted(() => {
   void load()
+  applicationIndicatorTimer = window.setInterval(refreshApplicationIndicator, 15000)
   window.addEventListener('keydown', handlePreviewKeydown)
 })
 
 onBeforeUnmount(() => {
+  if (applicationIndicatorTimer) window.clearInterval(applicationIndicatorTimer)
   window.removeEventListener('keydown', handlePreviewKeydown)
   document.body.style.overflow = ''
 })
@@ -516,6 +555,20 @@ onBeforeUnmount(() => {
           </button>
           </div>
 
+          <section v-if="task.files?.length" class="task-files-section">
+            <h2>任务文件</h2>
+            <div class="task-files-list">
+              <article v-for="file in task.files" :key="file.id" class="task-file-row">
+                <FileText aria-hidden="true" />
+                <strong>{{ file.fileName }}</strong>
+                <button class="button ghost" type="button" :disabled="!task.fileDownloadAllowed" @click="downloadTaskFile(file)">
+                  <Download class="button-icon" aria-hidden="true" />
+                  <span>{{ task.fileDownloadAllowed ? '下载' : '仅服务方可下载' }}</span>
+                </button>
+              </article>
+            </div>
+          </section>
+
           <div class="grid two">
           <div class="panel">
             <strong>报酬类型</strong>
@@ -536,6 +589,7 @@ onBeforeUnmount(() => {
               @click="openApplicationDialog"
             >
               {{ isPublisher ? '查看接单申请' : '申请接单' }}
+              <span v-if="isPublisher && task.hasUnreadApplications" class="application-unread-dot" aria-label="有新的接单申请" />
             </button>
 
             <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
@@ -669,8 +723,21 @@ onBeforeUnmount(() => {
 }
 
 .order-application-button {
+  position: relative;
   justify-self: start;
   min-width: 150px;
+}
+
+.application-unread-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #dc2626;
+  box-shadow: 0 0 0 2px #000000;
 }
 
 .button.is-soft-disabled {
@@ -1143,6 +1210,38 @@ onBeforeUnmount(() => {
 
 .upload-grid {
   gap: var(--space-3);
+}
+
+.task-files-section,
+.task-files-list {
+  display: grid;
+  gap: 12px;
+}
+
+.task-file-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  background: var(--task-grey);
+}
+
+.task-file-row > svg {
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  background: var(--task-green);
+}
+
+.task-file-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .upload-card {

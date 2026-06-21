@@ -41,6 +41,7 @@ public class OrderService {
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
     private final TaskImageMapper taskImageMapper;
+    private final TaskFileMapper taskFileMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
 
@@ -298,6 +299,13 @@ public class OrderService {
                 throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "图片文件不存在");
             }
             message.setImageUrl(image.getFileUrl());
+            message.setFileId(image.getId());
+        } else if (MessageType.FILE.equals(request.getMessageType())) {
+            FileRecord file = request.getFileId() == null ? null : fileService.requireOwnedFile(request.getFileId(), UploadBusinessType.CHAT_FILE);
+            if (file == null) {
+                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "附件不存在");
+            }
+            message.setFileId(file.getId());
         }
 
         orderMessageMapper.insert(message);
@@ -306,10 +314,25 @@ public class OrderService {
                 ? order.getServiceProviderId()
                 : order.getPublisherId();
         String senderNickname = findNickname(currentUserId);
-        String preview = MessageType.IMAGE.equals(request.getMessageType())
-                ? "发送了一张图片"
-                : message.getContent();
+        String preview = switch (request.getMessageType()) {
+            case IMAGE -> "发送了一张图片";
+            case FILE -> "发送了一个文件";
+            default -> message.getContent();
+        };
         notificationService.createOrderMessageNotification(receiverId, order.getId(), senderNickname, preview);
+    }
+
+    public FileRecord requireMessageAttachment(Long orderId, Long messageId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        OrderMessage message = orderMessageMapper.selectOne(new LambdaQueryWrapper<OrderMessage>()
+                .eq(OrderMessage::getId, messageId)
+                .eq(OrderMessage::getOrderId, orderId)
+                .last("LIMIT 1"));
+        if (message == null || message.getFileId() == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "消息附件不存在");
+        }
+        return fileService.requireFile(message.getFileId());
     }
 
     @Transactional
@@ -405,6 +428,10 @@ public class OrderService {
         vo.setRewardType(task.getRewardType());
         vo.setProofImageUrl(order.getCompletionProofUrl());
         vo.setCompletionNote(findCompletionNote(statusLogs));
+        vo.setTaskImageUrls(taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()
+                        .eq(TaskImage::getTaskId, order.getTaskId())
+                        .orderByAsc(TaskImage::getSortOrder))
+                .stream().map(TaskImage::getImageUrl).toList());
         vo.setStatusLogs(statusLogs.stream()
                 .map(this::toStatusLogVO)
                 .toList());
@@ -414,6 +441,16 @@ public class OrderService {
                 .stream()
                 .map(this::toOrderMessageVO)
                 .toList());
+        vo.setTaskFiles(taskFileMapper.selectList(new LambdaQueryWrapper<TaskFile>()
+                        .eq(TaskFile::getTaskId, order.getTaskId())
+                        .orderByAsc(TaskFile::getSortOrder))
+                .stream()
+                .map(item -> {
+                    FileRecord file = fileService.requireFile(item.getFileRecordId());
+                    return new com.campushub.vo.task.TaskFileVO(item.getId(), file.getFileName(), file.getFileSize());
+                })
+                .toList());
+        vo.setTaskFileDownloadAllowed(Objects.equals(SecurityUtils.getCurrentUserId().orElse(null), order.getServiceProviderId()));
         return vo;
     }
 
@@ -465,6 +502,7 @@ public class OrderService {
     }
 
     private OrderMessageVO toOrderMessageVO(OrderMessage message) {
+        FileRecord file = message.getFileId() == null ? null : fileService.requireFile(message.getFileId());
         return new OrderMessageVO(
                 message.getId(),
                 message.getOrderId(),
@@ -474,6 +512,9 @@ public class OrderService {
                 message.getMessageType(),
                 message.getContent(),
                 message.getImageUrl(),
+                file == null ? null : file.getId(),
+                file == null ? null : file.getFileName(),
+                file == null ? null : file.getFileSize(),
                 message.getCreatedAt()
         );
     }

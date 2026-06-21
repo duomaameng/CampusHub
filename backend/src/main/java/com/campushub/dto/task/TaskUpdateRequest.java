@@ -29,5 +29,7 @@ public class TaskUpdateRequest {
 
     private List<Long> imageIds;
 
+    private List<Long> fileIds;
+
     private Map<String, Object> categoryFields;
 }

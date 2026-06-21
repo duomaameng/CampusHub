@@ -53,6 +53,7 @@ campus-hub:
   file:
     upload-path: ${FILE_UPLOAD_PATH:./uploads}
     allowed-extensions: jpg,jpeg,png,gif,webp
+    allowed-document-extensions: pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip
     max-file-size: 10485760
 
 springdoc:

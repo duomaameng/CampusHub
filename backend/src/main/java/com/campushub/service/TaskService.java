@@ -18,6 +18,7 @@ import com.campushub.entity.OrderStatusLog;
 import com.campushub.entity.Review;
 import com.campushub.entity.Task;
 import com.campushub.entity.TaskImage;
+import com.campushub.entity.TaskFile;
 import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
 import com.campushub.enums.ApplicationStatus;
@@ -32,6 +33,7 @@ import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.OrderStatusLogMapper;
 import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.TaskImageMapper;
+import com.campushub.mapper.TaskFileMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
@@ -42,6 +44,7 @@ import com.campushub.vo.task.FavoriteToggleVO;
 import com.campushub.vo.task.TaskApplyVO;
 import com.campushub.vo.task.TaskCreateVO;
 import com.campushub.vo.task.TaskItemVO;
+import com.campushub.vo.task.TaskFileVO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +68,7 @@ public class TaskService {
 
     private final TaskMapper taskMapper;
     private final TaskImageMapper taskImageMapper;
+    private final TaskFileMapper taskFileMapper;
     private final ApplicationMapper applicationMapper;
     private final OrderMapper orderMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
@@ -108,7 +112,10 @@ public class TaskService {
     }
 
     public TaskItemVO getTask(Long taskId) {
-        return toTaskItemVO(requireFreshTask(taskId));
+        TaskItemVO vo = toTaskItemVO(requireFreshTask(taskId));
+        vo.setFiles(listTaskFiles(taskId));
+        vo.setFileDownloadAllowed(canCurrentUserDownloadTaskFiles(taskId));
+        return vo;
     }
 
     @Transactional
@@ -136,6 +143,7 @@ public class TaskService {
         taskMapper.insert(task);
 
         bindTaskImages(task.getId(), request.getImageIds());
+        bindTaskFiles(task.getId(), request.getFileIds());
         return new TaskCreateVO(task.getId(), task.getStatus(), task.getCreatedAt());
     }
 
@@ -192,6 +200,19 @@ public class TaskService {
                 .stream()
                 .map(this::toApplicationItemVO)
                 .toList();
+    }
+
+    @Transactional
+    public void markApplicationsViewed(Long taskId) {
+        Task task = requireTask(taskId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(task.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
+        }
+        applicationMapper.update(null, new LambdaUpdateWrapper<Application>()
+                .eq(Application::getTaskId, taskId)
+                .eq(Application::getPublisherViewed, false)
+                .set(Application::getPublisherViewed, true));
     }
 
     @Transactional
@@ -307,7 +328,14 @@ public class TaskService {
             taskImageMapper.delete(new LambdaQueryWrapper<TaskImage>().eq(TaskImage::getTaskId, taskId));
             bindTaskImages(taskId, request.getImageIds());
         }
-        return toTaskItemVO(task);
+        if (request.getFileIds() != null) {
+            taskFileMapper.delete(new LambdaQueryWrapper<TaskFile>().eq(TaskFile::getTaskId, taskId));
+            bindTaskFiles(taskId, request.getFileIds());
+        }
+        TaskItemVO vo = toTaskItemVO(task);
+        vo.setFiles(listTaskFiles(taskId));
+        vo.setFileDownloadAllowed(canCurrentUserDownloadTaskFiles(taskId));
+        return vo;
     }
 
     @Transactional
@@ -332,6 +360,8 @@ public class TaskService {
         }
 
         applicationMapper.delete(new LambdaQueryWrapper<Application>().eq(Application::getTaskId, taskId));
+
+        taskFileMapper.delete(new LambdaQueryWrapper<TaskFile>().eq(TaskFile::getTaskId, taskId));
 
         taskMapper.deleteById(taskId);
     }
@@ -477,6 +507,11 @@ public class TaskService {
                 new LambdaQueryWrapper<Application>()
                         .eq(Application::getTaskId, task.getId())
                         .in(Application::getStatus, ApplicationStatus.PENDING, ApplicationStatus.APPROVED)));
+        if (Objects.equals(SecurityUtils.getCurrentUserId().orElse(null), task.getPublisherId())) {
+            vo.setHasUnreadApplications(applicationMapper.selectCount(new LambdaQueryWrapper<Application>()
+                    .eq(Application::getTaskId, task.getId())
+                    .eq(Application::getPublisherViewed, false)) > 0);
+        }
         vo.setFavoriteCount(favoriteMapper.selectCount(new LambdaQueryWrapper<Favorite>().eq(Favorite::getTaskId, task.getId())));
         vo.setFavorited(isFavoritedByCurrentUser(task.getId()));
         vo.setCreatedAt(task.getCreatedAt());
@@ -601,6 +636,55 @@ public class TaskService {
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "分类扩展字段格式无效");
         }
+    }
+
+    private void bindTaskFiles(Long taskId, List<Long> fileIds) {
+        if (fileIds == null || fileIds.isEmpty()) return;
+        int index = 0;
+        for (Long fileId : fileIds) {
+            FileRecord file = fileService.requireOwnedFile(fileId, UploadBusinessType.TASK_FILE);
+            TaskFile taskFile = new TaskFile();
+            taskFile.setTaskId(taskId);
+            taskFile.setFileRecordId(file.getId());
+            taskFile.setSortOrder(index++);
+            taskFileMapper.insert(taskFile);
+        }
+    }
+
+    public List<TaskFileVO> listTaskFiles(Long taskId) {
+        return taskFileMapper.selectList(new LambdaQueryWrapper<TaskFile>()
+                        .eq(TaskFile::getTaskId, taskId)
+                        .orderByAsc(TaskFile::getSortOrder))
+                .stream()
+                .map(item -> {
+                    FileRecord file = fileService.requireFile(item.getFileRecordId());
+                    return new TaskFileVO(item.getId(), file.getFileName(), file.getFileSize());
+                })
+                .toList();
+    }
+
+    public FileRecord requireTaskFileForProvider(Long taskId, Long taskFileId) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        TaskFile taskFile = taskFileMapper.selectOne(new LambdaQueryWrapper<TaskFile>()
+                .eq(TaskFile::getId, taskFileId)
+                .eq(TaskFile::getTaskId, taskId)
+                .last("LIMIT 1"));
+        Order order = orderMapper.selectOne(new LambdaQueryWrapper<Order>()
+                .eq(Order::getTaskId, taskId)
+                .last("LIMIT 1"));
+        if (taskFile == null || order == null || !Objects.equals(currentUserId, order.getServiceProviderId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "只有服务方可以下载任务文件");
+        }
+        return fileService.requireFile(taskFile.getFileRecordId());
+    }
+
+    private boolean canCurrentUserDownloadTaskFiles(Long taskId) {
+        Optional<Long> currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId.isEmpty()) return false;
+        Order order = orderMapper.selectOne(new LambdaQueryWrapper<Order>()
+                .eq(Order::getTaskId, taskId)
+                .last("LIMIT 1"));
+        return order != null && Objects.equals(currentUserId.get(), order.getServiceProviderId());
     }
 
     private Map<String, Object> normalizeCategoryFields(TaskCategory category, Map<String, Object> fields) {

@@ -22,8 +22,8 @@ export type OrderStatus =
   | 'REVIEWED'
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
 export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
-export type MessageType = 'TEXT' | 'IMAGE'
-export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
+export type MessageType = 'TEXT' | 'IMAGE' | 'FILE'
+export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'CHAT_FILE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
 export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'
 export type ReportTargetType = 'TASK' | 'ORDER_MESSAGE' | 'REVIEW' | 'USER'
 export type ReportReasonType = 'FRAUD' | 'ABUSE' | 'SPAM' | 'ILLEGAL' | 'TIMEOUT' | 'OTHER'
@@ -146,7 +146,10 @@ export interface TaskItem {
   status: TaskStatus
   anonymous: boolean
   imageUrls: string[]
+  files?: TaskFileItem[]
+  fileDownloadAllowed?: boolean
   applicationCount: number
+  hasUnreadApplications?: boolean
   favoriteCount: number
   isFavorited: boolean
   createdAt: string
@@ -163,6 +166,7 @@ export interface TaskForm {
   deadline: string
   anonymous: boolean
   imageIds: number[]
+  fileIds: number[]
   categoryFields: Record<string, string | number | boolean>
 }
 
@@ -208,6 +212,15 @@ export interface OrderDetail extends OrderItem {
   completionNote?: string
   statusLogs: OrderStatusLog[]
   messages: OrderMessage[]
+  taskFiles?: TaskFileItem[]
+  taskFileDownloadAllowed?: boolean
+  taskImageUrls?: string[]
+}
+
+export interface TaskFileItem {
+  id: number
+  fileName: string
+  fileSize: number
 }
 
 export interface OrderStatusLog {
@@ -229,6 +242,9 @@ export interface OrderMessage {
   messageType: MessageType
   content?: string
   imageUrl?: string
+  fileId?: number
+  fileName?: string
+  fileSize?: number
   createdAt: string
 }
 

@@ -18,5 +18,8 @@ public class OrderMessageVO {
     private MessageType messageType;
     private String content;
     private String imageUrl;
+    private Long fileId;
+    private String fileName;
+    private Long fileSize;
     private LocalDateTime createdAt;
 }

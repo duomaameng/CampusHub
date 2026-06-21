@@ -6,10 +6,18 @@ import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.dto.task.TaskCreateRequest;
 import com.campushub.dto.task.TaskUpdateRequest;
 import com.campushub.service.TaskService;
+import com.campushub.service.FileService;
+import com.campushub.entity.FileRecord;
 import com.campushub.vo.task.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.util.List;
 
@@ -19,6 +27,7 @@ import java.util.List;
 public class TaskController {
 
     private final TaskService taskService;
+    private final FileService fileService;
 
     @GetMapping("/tasks")
     public ApiResponse<PageResult<TaskItemVO>> list(@RequestParam(defaultValue = "1") int page,
@@ -35,6 +44,19 @@ public class TaskController {
         return ApiResponse.success(taskService.getTask(taskId));
     }
 
+    @GetMapping("/tasks/{taskId}/files/{taskFileId}/download")
+    public ResponseEntity<Resource> downloadTaskFile(@PathVariable Long taskId, @PathVariable Long taskFileId) {
+        FileRecord file = taskService.requireTaskFileForProvider(taskId, taskFileId);
+        Path path = fileService.resolveStoredFile(file);
+        String contentType;
+        try { contentType = Files.probeContentType(path); } catch (Exception ignored) { contentType = null; }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(file.getFileName(), StandardCharsets.UTF_8).build().toString())
+                .body(new FileSystemResource(path));
+    }
+
     @PostMapping("/tasks")
     public ApiResponse<TaskCreateVO> create(@Valid @RequestBody TaskCreateRequest request) {
         return ApiResponse.success(taskService.createTask(request));
@@ -48,6 +70,12 @@ public class TaskController {
     @GetMapping("/tasks/{taskId}/applications")
     public ApiResponse<List<ApplicationItemVO>> applications(@PathVariable Long taskId) {
         return ApiResponse.success(taskService.listApplications(taskId));
+    }
+
+    @PostMapping("/tasks/{taskId}/applications/viewed")
+    public ApiResponse<Void> markApplicationsViewed(@PathVariable Long taskId) {
+        taskService.markApplicationsViewed(taskId);
+        return ApiResponse.success();
     }
 
     @PatchMapping("/tasks/{taskId}")

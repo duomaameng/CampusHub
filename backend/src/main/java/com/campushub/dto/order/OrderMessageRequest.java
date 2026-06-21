@@ -13,4 +13,6 @@ public class OrderMessageRequest {
     private String content;
 
     private Long imageId;
+
+    private Long fileId;
 }

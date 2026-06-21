@@ -7,6 +7,7 @@ SET SQL_SAFE_UPDATES = 0;
 DELETE FROM `admin_operation_log`;
 DELETE FROM `announcement`;
 DELETE FROM `report_evidence`;
+DELETE FROM `task_file`;
 DELETE FROM `file_record`;
 DELETE FROM `report`;
 DELETE FROM `credit_log`;

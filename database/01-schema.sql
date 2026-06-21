@@ -10,6 +10,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS `admin_operation_log`;
 DROP TABLE IF EXISTS `announcement`;
 DROP TABLE IF EXISTS `report_evidence`;
+DROP TABLE IF EXISTS `task_file`;
 DROP TABLE IF EXISTS `file_record`;
 DROP TABLE IF EXISTS `report`;
 DROP TABLE IF EXISTS `credit_log`;
@@ -129,6 +130,7 @@ CREATE TABLE `application` (
   `applicant_id` BIGINT NOT NULL COMMENT 'applicant user id',
   `message` VARCHAR(500) NOT NULL COMMENT 'application message',
   `status` VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING APPROVED REJECTED or CANCELLED',
+  `publisher_viewed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'whether publisher has viewed this application',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -176,13 +178,15 @@ CREATE TABLE `order_message` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'order message id',
   `order_id` BIGINT NOT NULL COMMENT 'order id',
   `sender_id` BIGINT NOT NULL COMMENT 'sender user id',
-  `message_type` VARCHAR(8) NOT NULL COMMENT 'TEXT or IMAGE',
+  `message_type` VARCHAR(8) NOT NULL COMMENT 'TEXT IMAGE or FILE',
   `content` VARCHAR(2000) DEFAULT NULL COMMENT 'text content',
   `image_url` VARCHAR(512) DEFAULT NULL COMMENT 'image url',
+  `file_id` BIGINT DEFAULT NULL COMMENT 'chat attachment file record id',
   `is_read` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'read flag',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_order_message_order_time` (`order_id`, `created_at`),
+  KEY `idx_order_message_file_id` (`file_id`),
   CONSTRAINT `fk_order_message_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_order_message_sender` FOREIGN KEY (`sender_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='order message table';
@@ -268,6 +272,23 @@ CREATE TABLE `file_record` (
   KEY `idx_file_record_user_id` (`user_id`),
   CONSTRAINT `fk_file_record_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='file record table';
+
+ALTER TABLE `order_message`
+  ADD CONSTRAINT `fk_order_message_file`
+  FOREIGN KEY (`file_id`) REFERENCES `file_record` (`id`);
+
+CREATE TABLE `task_file` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'task file relation id',
+  `task_id` BIGINT NOT NULL COMMENT 'task id',
+  `file_record_id` BIGINT NOT NULL COMMENT 'file record id',
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_task_file_task_id` (`task_id`),
+  KEY `idx_task_file_record_id` (`file_record_id`),
+  CONSTRAINT `fk_task_file_task` FOREIGN KEY (`task_id`) REFERENCES `task` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_task_file_record` FOREIGN KEY (`file_record_id`) REFERENCES `file_record` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='task file relation table';
 
 CREATE TABLE `report_evidence` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'report evidence id',

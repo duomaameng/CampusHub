@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { AlertTriangle, CheckCheck, Eye, MessageSquareText, Star, X, XCircle } from '@lucide/vue'
+import { AlertTriangle, CheckCheck, Download, Eye, FileText, MessageSquareText, Star, X, XCircle } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -20,6 +20,7 @@ const task = ref<TaskItem>()
 const applications = ref<ApplicationItem[]>([])
 const statusLogs = ref<OrderStatusLog[]>([])
 const reviews = ref<ReviewItem[]>([])
+const taskImagePreviewUrl = ref('')
 const error = ref('')
 const success = ref('')
 const loading = ref(false)
@@ -512,6 +513,25 @@ async function rejectApplication(applicationId: number) {
   }
 }
 
+async function downloadTaskFile(file: { id: number; fileName: string }) {
+  if (!order.value?.taskFileDownloadAllowed) return
+  try {
+    const blob = await taskApi.downloadFile(order.value.taskId, file.id)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.fileName
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '文件下载失败'
+  }
+}
+
+function openTaskImagePreview(url: string) {
+  taskImagePreviewUrl.value = resolveAssetUrl(url)
+}
+
 onMounted(load)
 </script>
 
@@ -536,6 +556,26 @@ onMounted(load)
         </div>
 
         <p>{{ order.taskDescription }}</p>
+
+        <div v-if="order.taskImageUrls?.length" class="upload-grid">
+          <button v-for="url in order.taskImageUrls" :key="url" class="upload-card task-image-button" type="button" @click="openTaskImagePreview(url)">
+            <img :src="resolveAssetUrl(url)" alt="任务配图" />
+          </button>
+        </div>
+
+        <section v-if="order.taskFiles?.length" class="task-files-section">
+          <h2>任务文件</h2>
+          <div class="task-files-list">
+            <article v-for="file in order.taskFiles" :key="file.id" class="task-file-row">
+              <FileText aria-hidden="true" />
+              <strong>{{ file.fileName }}</strong>
+              <button class="button ghost" type="button" :disabled="!order.taskFileDownloadAllowed" @click="downloadTaskFile(file)">
+                <Download class="button-icon" aria-hidden="true" />
+                <span>{{ order.taskFileDownloadAllowed ? '下载' : '仅服务方可下载' }}</span>
+              </button>
+            </article>
+          </div>
+        </section>
 
         <div class="grid two">
           <div class="panel">
@@ -987,6 +1027,14 @@ onMounted(load)
       </div>
     </Teleport>
     <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
+    <Teleport to="body">
+      <div v-if="taskImagePreviewUrl" class="report-modal-backdrop" role="presentation" @click.self="taskImagePreviewUrl = ''">
+        <section class="report-modal completion-proof-viewer" role="dialog" aria-modal="true">
+          <header class="report-modal-header"><h2>任务配图</h2><button class="report-modal-close" type="button" aria-label="关闭" @click="taskImagePreviewUrl = ''"><X aria-hidden="true" /></button></header>
+          <img :src="taskImagePreviewUrl" alt="任务配图预览" />
+        </section>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -1584,6 +1632,13 @@ onMounted(load)
 .item-card h3 a:hover {
   color: var(--primary-700);
 }
+.task-files-section,
+.task-files-list { display: grid; gap: 12px; }
+.task-file-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px; border: 2px solid #000; border-radius: 18px; background: #f3f3f3; }
+.task-file-row > svg { width: 40px; height: 40px; padding: 8px; border: 2px solid #000; border-radius: 12px; background: #ffb454; }
+.task-file-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-image-button { padding: 0; color: inherit; cursor: zoom-in; }
+.task-image-button img { display: block; width: 100%; height: 180px; object-fit: cover; }
 </style>
 
 

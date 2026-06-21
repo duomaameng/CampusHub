@@ -42,6 +42,9 @@ public class FileService {
     @Value("${campus-hub.file.allowed-extensions:jpg,jpeg,png,gif,webp}")
     private String allowedExtensions;
 
+    @Value("${campus-hub.file.allowed-document-extensions:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip}")
+    private String allowedDocumentExtensions;
+
     @Value("${campus-hub.file.max-file-size:10485760}")
     private long maxFileSize;
 
@@ -54,11 +57,11 @@ public class FileService {
         String originalName = file.getOriginalFilename();
         String safeFileName = originalName == null || originalName.isBlank() ? "upload.bin" : originalName;
         String extension = extractExtension(safeFileName);
-        validateFile(file, extension);
+        validateFile(file, extension, businessType);
 
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         String storedFileName = UUID.randomUUID() + "." + extension;
-        Path targetDirectory = Paths.get(uploadPath).toAbsolutePath().normalize();
+        Path targetDirectory = storageDirectory(businessType.name());
         Path targetFile = targetDirectory.resolve(storedFileName);
 
         try {
@@ -68,7 +71,9 @@ public class FileService {
             throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "文件保存失败");
         }
 
-        String fileUrl = "/uploads/" + storedFileName;
+        String fileUrl = UploadBusinessType.CHAT_FILE.equals(businessType)
+                ? "/private-uploads/" + storedFileName
+                : "/uploads/" + storedFileName;
         FileRecord record = new FileRecord();
         record.setUserId(currentUserId);
         record.setFileName(safeFileName);
@@ -99,6 +104,29 @@ public class FileService {
             throw new BusinessException(ErrorCode.FORBIDDEN, "只能使用自己上传的文件");
         }
         return record;
+    }
+
+    public FileRecord requireFile(Long fileId) {
+        FileRecord record = fileRecordMapper.selectById(fileId);
+        if (record == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件记录不存在");
+        }
+        return record;
+    }
+
+    public Path resolveStoredFile(FileRecord record) {
+        String fileUrl = record.getFileUrl();
+        String storedFileName = fileUrl == null ? "" : fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+        if (storedFileName.isBlank()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件不存在");
+        }
+
+        Path targetDirectory = storageDirectory(record.getPurpose());
+        Path targetFile = targetDirectory.resolve(storedFileName).normalize();
+        if (!targetFile.startsWith(targetDirectory) || !Files.isRegularFile(targetFile)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "文件不存在");
+        }
+        return targetFile;
     }
 
     public FileRecord requireOwnedFile(Long fileId, UploadBusinessType expectedPurpose) {
@@ -140,7 +168,7 @@ public class FileService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "文件地址无效");
         }
 
-        Path targetDirectory = Paths.get(uploadPath).toAbsolutePath().normalize();
+        Path targetDirectory = storageDirectory(record.getPurpose());
         Path targetFile = targetDirectory.resolve(storedFileName).normalize();
         if (!targetFile.startsWith(targetDirectory)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "文件路径无效");
@@ -154,18 +182,24 @@ public class FileService {
         }
     }
 
-    private void validateFile(MultipartFile file, String extension) {
+    private void validateFile(MultipartFile file, String extension, UploadBusinessType businessType) {
         if (file.getSize() > maxFileSize) {
             throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
         }
 
-        if (!allowedExtensionSet().contains(extension.toLowerCase())) {
-            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 jpg、jpeg、png、gif、webp");
-        }
+        if (UploadBusinessType.CHAT_FILE.equals(businessType) || UploadBusinessType.TASK_FILE.equals(businessType)) {
+            if (!extensionSet(allowedDocumentExtensions).contains(extension.toLowerCase())) {
+                throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 pdf、doc、docx、xls、xlsx、ppt、pptx、txt、zip");
+            }
+        } else {
+            if (!extensionSet(allowedExtensions).contains(extension.toLowerCase())) {
+                throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持 jpg、jpeg、png、gif、webp");
+            }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !IMAGE_CONTENT_TYPES.contains(contentType.toLowerCase())) {
-            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持图片文件上传");
+            String contentType = file.getContentType();
+            if (contentType == null || !IMAGE_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+                throw new BusinessException(ErrorCode.FILE_TYPE_NOT_ALLOWED, "仅支持图片文件上传");
+            }
         }
     }
 
@@ -177,11 +211,20 @@ public class FileService {
         return fileName.substring(dotIndex + 1).toLowerCase();
     }
 
-    private Set<String> allowedExtensionSet() {
-        return Arrays.stream(allowedExtensions.split(","))
+    private Set<String> extensionSet(String extensions) {
+        return Arrays.stream(extensions.split(","))
                 .map(String::trim)
                 .filter(item -> !item.isBlank())
                 .map(String::toLowerCase)
                 .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private Path storageDirectory(String purpose) {
+        Path publicDirectory = Paths.get(uploadPath).toAbsolutePath().normalize();
+        if (UploadBusinessType.CHAT_FILE.name().equals(purpose) || UploadBusinessType.TASK_FILE.name().equals(purpose)) {
+            Path directoryName = publicDirectory.getFileName();
+            return publicDirectory.resolveSibling((directoryName == null ? "uploads" : directoryName.toString()) + "-private").normalize();
+        }
+        return publicDirectory;
     }
 }

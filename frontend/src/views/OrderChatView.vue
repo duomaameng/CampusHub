@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ArrowLeft, ImagePlus, MessageSquareText, Send, X } from '@lucide/vue'
+import { ArrowLeft, Download, FileText, MessageSquareText, Paperclip, Send, X } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -30,11 +30,11 @@ const order = ref<OrderDetail>()
 const conversations = ref<ConversationItem[]>([])
 const loading = ref(false)
 const sending = ref(false)
-const imageUploading = ref(false)
+const attachmentUploading = ref(false)
 const error = ref('')
 const uploadError = ref('')
 const message = ref('')
-const uploadedImage = ref<UploadedFileItem | null>(null)
+const uploadedAttachment = ref<UploadedFileItem | null>(null)
 const messagesPanel = ref<HTMLElement | null>(null)
 let loadRequestId = 0
 
@@ -138,7 +138,7 @@ function buildConversationItem(item: OrderDetail): ConversationItem | null {
     participantAvatarUrl,
     participantRole,
     status: item.status,
-    lastMessageText: latest?.content || (latest?.imageUrl ? '[图片]' : '还没有消息'),
+    lastMessageText: latest?.content || (latest?.imageUrl ? '[图片]' : latest?.fileName ? `[文件] ${latest.fileName}` : '还没有消息'),
     lastMessageAt: latest?.createdAt || item.createdAt,
     messageCount: orderedMessages.length
   }
@@ -200,41 +200,70 @@ async function sendTextMessage() {
   }
 }
 
-async function handleImageChange(event: Event) {
+async function handleAttachmentChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
 
   uploadError.value = ''
-  imageUploading.value = true
+  attachmentUploading.value = true
   try {
-    uploadedImage.value = await fileApi.upload(file, 'CHAT_IMAGE')
+    const businessType = file.type.startsWith('image/') ? 'CHAT_IMAGE' : 'CHAT_FILE'
+    uploadedAttachment.value = await fileApi.upload(file, businessType)
   } catch (err) {
-    uploadError.value = err instanceof Error ? err.message : '聊天图片上传失败'
+    uploadError.value = err instanceof Error ? err.message : '聊天附件上传失败'
   } finally {
-    imageUploading.value = false
+    attachmentUploading.value = false
     input.value = ''
   }
 }
 
-async function sendImageMessage() {
-  if (!uploadedImage.value || sending.value || loading.value || isAwaitingNewProvider.value) return
+async function sendAttachmentMessage() {
+  if (!uploadedAttachment.value || sending.value || loading.value || isAwaitingNewProvider.value) return
 
   sending.value = true
   error.value = ''
   try {
-    const sentMessage = await orderApi.sendImage(orderId.value, uploadedImage.value.id)
-    uploadedImage.value = null
+    const attachment = uploadedAttachment.value
+    const sentMessage = attachment.businessType === 'CHAT_IMAGE'
+      ? await orderApi.sendImage(orderId.value, attachment.id)
+      : await orderApi.sendFile(orderId.value, attachment.id)
+    uploadedAttachment.value = null
     if (isOrderMessage(sentMessage)) {
       appendMessage(sentMessage)
     } else {
       await refreshCurrentOrderSilently()
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '图片消息发送失败'
+    error.value = err instanceof Error ? err.message : '附件消息发送失败'
   } finally {
     sending.value = false
   }
+}
+
+async function downloadAttachment(item: OrderMessage) {
+  if (!item.fileId) return
+  error.value = ''
+  try {
+    const blob = await orderApi.downloadAttachment(orderId.value, item.id)
+    const objectUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = item.fileName || (item.messageType === 'IMAGE' ? '聊天图片' : '聊天附件')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(objectUrl)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '附件下载失败'
+  }
+}
+
+function formatFileSize(size?: number) {
+  if (!size) return '未知大小'
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
 }
 
 function handleComposerKeydown(event: KeyboardEvent) {
@@ -250,7 +279,7 @@ function initials(name?: string) {
 watch(orderId, (nextOrderId, previousOrderId) => {
   if (nextOrderId !== previousOrderId) {
     message.value = ''
-    uploadedImage.value = null
+    uploadedAttachment.value = null
     uploadError.value = ''
   }
   void load()
@@ -340,34 +369,47 @@ onMounted(load)
               <div class="chat-bubble">
                 <p v-if="item.content">{{ item.content }}</p>
                 <img v-if="item.imageUrl" :src="resolveAssetUrl(item.imageUrl)" alt="聊天图片" />
+                <button v-if="item.imageUrl && item.fileId" class="attachment-download image-download" type="button" @click="downloadAttachment(item)">
+                  <Download class="button-icon" aria-hidden="true" />
+                  <span>下载原图</span>
+                </button>
+                <button v-if="item.messageType === 'FILE'" class="file-message-card" type="button" @click="downloadAttachment(item)">
+                  <FileText class="file-message-icon" aria-hidden="true" />
+                  <span class="file-message-copy">
+                    <strong>{{ item.fileName || '聊天附件' }}</strong>
+                    <small>{{ formatFileSize(item.fileSize) }}</small>
+                  </span>
+                  <Download class="button-icon" aria-hidden="true" />
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <div v-if="uploadedImage" class="image-preview">
-          <img :src="resolveAssetUrl(uploadedImage.url)" :alt="uploadedImage.fileName" />
+        <div v-if="uploadedAttachment" class="image-preview attachment-preview">
+          <img v-if="uploadedAttachment.businessType === 'CHAT_IMAGE'" :src="resolveAssetUrl(uploadedAttachment.url)" :alt="uploadedAttachment.fileName" />
+          <span v-else class="attachment-preview-icon"><FileText aria-hidden="true" /></span>
           <div>
-            <strong>{{ uploadedImage.fileName }}</strong>
-            <p class="hint">图片已上传，确认后发送到聊天中。</p>
+            <strong>{{ uploadedAttachment.fileName }}</strong>
+            <p class="hint">{{ formatFileSize(uploadedAttachment.size) }} · 确认后发送到聊天中</p>
           </div>
-          <button class="button ghost icon-button" type="button" aria-label="取消图片" @click="uploadedImage = null">
+          <button class="button ghost icon-button" type="button" aria-label="取消附件" @click="uploadedAttachment = null">
             <X class="button-icon" aria-hidden="true" />
           </button>
-          <button class="button secondary" type="button" :disabled="sending || loading" @click="sendImageMessage">发送图片</button>
+          <button class="button secondary" type="button" :disabled="sending || loading" @click="sendAttachmentMessage">发送附件</button>
         </div>
         <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
 
         <form class="composer" @submit.prevent="sendTextMessage">
-          <label class="button ghost upload-trigger" :class="{ disabled: imageUploading || loading || isAwaitingNewProvider }">
+          <label class="button ghost upload-trigger" :class="{ disabled: attachmentUploading || loading || isAwaitingNewProvider }">
             <input
               type="file"
-              accept="image/png,image/jpeg,image/webp"
-              :disabled="imageUploading || loading || isAwaitingNewProvider"
-              @change="handleImageChange"
+              accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+              :disabled="attachmentUploading || loading || isAwaitingNewProvider"
+              @change="handleAttachmentChange"
             />
-            <ImagePlus class="button-icon" aria-hidden="true" />
-            <span>{{ imageUploading ? '上传中...' : '图片' }}</span>
+            <Paperclip class="button-icon" aria-hidden="true" />
+            <span>{{ attachmentUploading ? '上传中...' : '附件' }}</span>
           </label>
           <textarea
             v-model.trim="message"
@@ -797,6 +839,79 @@ onMounted(load)
   background: #ffffff;
 }
 
+.attachment-download,
+.file-message-card {
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  cursor: pointer;
+}
+
+.attachment-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.attachment-download:hover,
+.file-message-card:hover {
+  background: #fff1df;
+  transform: translateY(-1px);
+}
+
+.file-message-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  width: min(320px, 100%);
+  padding: 12px;
+  border-radius: 15px;
+  text-align: left;
+}
+
+.file-message-icon,
+.attachment-preview-icon {
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  background: var(--chat-green);
+  color: #000000;
+}
+
+.file-message-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-message-copy strong,
+.file-message-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-message-copy strong {
+  color: #000000;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.file-message-copy small {
+  color: #6f7485;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
 .image-preview {
   display: grid;
   grid-template-columns: 72px 1fr auto auto;
@@ -819,6 +934,20 @@ onMounted(load)
   color: #000000;
   font-weight: 900;
   word-break: break-all;
+}
+
+.attachment-preview-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.attachment-preview-icon svg {
+  width: 32px;
+  height: 32px;
 }
 
 .composer {

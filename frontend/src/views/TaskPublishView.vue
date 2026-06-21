@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { CalendarClock, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
+import { CalendarClock, FileText, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -18,6 +18,7 @@ const form = reactive<TaskForm>({
   deadline: '',
   anonymous: false,
   imageIds: [],
+  fileIds: [],
   categoryFields: {
     expressCompany: '',
     pickupLocation: '',
@@ -33,6 +34,9 @@ const uploadError = ref('')
 const imageUploading = ref(false)
 const removingImageIds = ref<number[]>([])
 const uploadedImages = ref<UploadedFileItem[]>([])
+const fileUploading = ref(false)
+const uploadedFiles = ref<UploadedFileItem[]>([])
+const removingFileIds = ref<number[]>([])
 const minDeadline = ref(createMinDeadline())
 let minDeadlineTimer: number | undefined
 
@@ -174,27 +178,6 @@ function adjustRequiredCount(delta: number) {
   form.categoryFields.requiredCount = Math.max(1, (Number.isInteger(current) ? current : 1) + delta)
 }
 
-async function handleTaskImageChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const files = Array.from(input.files || [])
-  if (!files.length) return
-
-  uploadError.value = ''
-  imageUploading.value = true
-  try {
-    for (const file of files) {
-      const uploaded = await fileApi.upload(file, 'TASK_IMAGE')
-      uploadedImages.value.push(uploaded)
-      form.imageIds.push(uploaded.id)
-    }
-  } catch (err) {
-    uploadError.value = err instanceof Error ? err.message : '任务配图上传失败'
-  } finally {
-    imageUploading.value = false
-    input.value = ''
-  }
-}
-
 async function removeUploadedImage(imageId: number) {
   if (removingImageIds.value.includes(imageId)) return
 
@@ -213,6 +196,48 @@ async function removeUploadedImage(imageId: number) {
     removingImageIds.value = removingImageIds.value.filter((item) => item !== imageId)
   }
 }
+
+async function handleTaskAttachmentChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+  uploadError.value = ''
+  imageUploading.value = files.some(file => file.type.startsWith('image/'))
+  fileUploading.value = files.some(file => !file.type.startsWith('image/'))
+  try {
+    for (const file of files) {
+      const isImage = file.type.startsWith('image/')
+      const uploaded = await fileApi.upload(file, isImage ? 'TASK_IMAGE' : 'TASK_FILE')
+      if (isImage) {
+        uploadedImages.value.push(uploaded)
+        form.imageIds.push(uploaded.id)
+      } else {
+        uploadedFiles.value.push(uploaded)
+        form.fileIds.push(uploaded.id)
+      }
+    }
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '图片或文件上传失败'
+  } finally {
+    imageUploading.value = false
+    fileUploading.value = false
+    input.value = ''
+  }
+}
+
+async function removeUploadedFile(fileId: number) {
+  if (removingFileIds.value.includes(fileId)) return
+  removingFileIds.value.push(fileId)
+  try {
+    await fileApi.remove(fileId)
+    uploadedFiles.value = uploadedFiles.value.filter(item => item.id !== fileId)
+    form.fileIds = form.fileIds.filter(id => id !== fileId)
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '任务文件移除失败'
+  } finally {
+    removingFileIds.value = removingFileIds.value.filter(id => id !== fileId)
+  }
+}
 </script>
 
 <template>
@@ -227,12 +252,15 @@ async function removeUploadedImage(imageId: number) {
 
     <form class="grid" @submit.prevent="submit">
       <section class="panel grid">
-        <h2>任务配图</h2>
-        <label class="button secondary upload-trigger">
-          <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleTaskImageChange" />
-          <span>{{ imageUploading ? '上传中...' : '上传任务配图' }}</span>
+        <h2>上传图片或文件</h2>
+        <label class="button secondary upload-trigger unified-upload-trigger">
+          <input multiple type="file" accept="image/png,image/jpeg,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" @change="handleTaskAttachmentChange" />
+          <span>{{ imageUploading || fileUploading ? '上传中...' : '上传' }}</span>
         </label>
-        <p class="hint">支持多张图片，每张不超过 5MB。</p>
+        <div class="upload-hints">
+          <p class="hint">配图支持 PNG、JPEG 和 WebP，每张不超过 5MB。</p>
+          <p class="hint">文件支持 PDF、Office、TXT 和 ZIP，仅接单后的服务方可以下载。</p>
+        </div>
         <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
         <div v-if="uploadedImages.length" class="upload-grid">
           <article v-for="item in uploadedImages" :key="item.id" class="upload-card">
@@ -248,6 +276,15 @@ async function removeUploadedImage(imageId: number) {
                 {{ removingImageIds.includes(item.id) ? '移除中...' : '移除' }}
               </button>
             </div>
+          </article>
+        </div>
+        <div v-if="uploadedFiles.length" class="task-file-list">
+          <article v-for="item in uploadedFiles" :key="item.id" class="task-file-card">
+            <FileText aria-hidden="true" />
+            <strong>{{ item.fileName }}</strong>
+            <button class="button ghost" type="button" :disabled="removingFileIds.includes(item.id)" @click="removeUploadedFile(item.id)">
+              {{ removingFileIds.includes(item.id) ? '移除中...' : '移除' }}
+            </button>
           </article>
         </div>
       </section>
@@ -670,6 +707,52 @@ async function removeUploadedImage(imageId: number) {
 
 .actions .button.primary {
   min-width: 160px;
+}
+
+.task-file-list {
+  display: grid;
+  gap: 10px;
+}
+
+.upload-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.upload-hints {
+  display: grid;
+  gap: 4px;
+}
+
+.upload-hints .hint {
+  margin: 0;
+}
+
+.task-file-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid #000000;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.task-file-card > svg {
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border: 2px solid #000000;
+  border-radius: 11px;
+  background: var(--publish-green);
+}
+
+.task-file-card strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

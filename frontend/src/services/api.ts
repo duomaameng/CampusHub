@@ -1,5 +1,5 @@
 import { mockApi } from './mock'
-import { request } from './http'
+import { http, request } from './http'
 
 import type {
   AdminReportItem,
@@ -158,6 +158,15 @@ export const taskApi = {
   rejectApplication(applicationId: number): Promise<null> {
     if (useMock) return mockApi.rejectApplication(applicationId)
     return request<null>({ method: 'POST', url: `/applications/${applicationId}/reject` })
+  },
+  markApplicationsViewed(taskId: number): Promise<null> {
+    if (useMock) return Promise.resolve(null)
+    return request<null>({ method: 'POST', url: `/tasks/${taskId}/applications/viewed` })
+  },
+  async downloadFile(taskId: number, taskFileId: number): Promise<Blob> {
+    if (useMock) throw new Error('请关闭 mock 模式后下载任务文件')
+    const response = await http.get<Blob>(`/tasks/${taskId}/files/${taskFileId}/download`, { responseType: 'blob' })
+    return response.data
   }
 }
 
@@ -205,6 +214,21 @@ export const orderApi = {
       url: `/orders/${orderId}/messages`,
       data: { messageType: 'IMAGE', imageId }
     })
+  },
+  sendFile(orderId: number, fileId: number) {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用文件消息'))
+    return request({
+      method: 'POST',
+      url: `/orders/${orderId}/messages`,
+      data: { messageType: 'FILE', fileId }
+    })
+  },
+  async downloadAttachment(orderId: number, messageId: number): Promise<Blob> {
+    if (useMock) throw new Error('请关闭 mock 模式后下载聊天附件')
+    const response = await http.get<Blob>(`/orders/${orderId}/messages/${messageId}/attachment`, {
+      responseType: 'blob'
+    })
+    return response.data
   },
   submitReview(orderId: number, rating: number, content: string) {
     if (useMock) return mockApi.submitReview(orderId, rating, content)

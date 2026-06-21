@@ -4,6 +4,8 @@ import com.campushub.common.ApiResponse;
 import com.campushub.common.PageResult;
 import com.campushub.dto.order.*;
 import com.campushub.enums.OrderStatus;
+import com.campushub.entity.FileRecord;
+import com.campushub.service.FileService;
 import com.campushub.service.OrderService;
 import com.campushub.vo.order.OrderDetailVO;
 import com.campushub.vo.order.OrderItemVO;
@@ -12,7 +14,16 @@ import com.campushub.vo.order.ReviewItemVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 @RestController
@@ -21,6 +32,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final FileService fileService;
 
     @GetMapping
     public ApiResponse<PageResult<OrderItemVO>> list(@RequestParam(defaultValue = "1") int page,
@@ -75,6 +87,25 @@ public class OrderController {
     @GetMapping("/{orderId}/messages")
     public ApiResponse<List<com.campushub.vo.order.OrderMessageVO>> messages(@PathVariable Long orderId) {
         return ApiResponse.success(orderService.listMessages(orderId));
+    }
+
+    @GetMapping("/{orderId}/messages/{messageId}/attachment")
+    public ResponseEntity<Resource> downloadMessageAttachment(@PathVariable Long orderId, @PathVariable Long messageId) {
+        FileRecord file = orderService.requireMessageAttachment(orderId, messageId);
+        Path path = fileService.resolveStoredFile(file);
+        String contentType;
+        try {
+            contentType = Files.probeContentType(path);
+        } catch (Exception ignored) {
+            contentType = null;
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(file.getFileName(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .body(new FileSystemResource(path));
     }
 
     @PostMapping("/{orderId}/reviews")
