@@ -724,6 +724,8 @@ onBeforeUnmount(() => {
 
 .order-application-button {
   position: relative;
+  overflow: visible;
+  isolation: isolate;
   justify-self: start;
   min-width: 150px;
 }
@@ -732,6 +734,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: -6px;
   right: -6px;
+  z-index: 2;
   width: 13px;
   height: 13px;
   border: 2px solid #ffffff;
