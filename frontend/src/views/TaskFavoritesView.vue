@@ -96,22 +96,27 @@ onMounted(loadFavorites)
     <div v-else-if="!filteredFavorites.length" class="empty-state">暂无符合筛选条件的收藏</div>
 
     <div v-else class="cards-grid">
-      <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :class="{ 'has-image': task.imageUrls && task.imageUrls.length }" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
+      <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
         <div class="item-title">
-          <h2>{{ task.title }}</h2>
+          <div>
+            <span class="relation-pill">收藏任务</span>
+            <h2>{{ task.title }}</h2>
+          </div>
           <span :class="['tag', 'status-tag', statusTagClass[task.status]]">{{ taskStatusText[task.status] }}</span>
         </div>
-        <p>{{ task.description }}</p>
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>
           <span><Tag class="meta-icon" aria-hidden="true" />{{ task.rewardType }}</span>
-          <span><Clock class="meta-icon" aria-hidden="true" />{{ new Date(task.deadline).toLocaleString() }}</span>
         </div>
         <div class="meta-line">
           <span><Users class="meta-icon" aria-hidden="true" />申请 {{ task.applicationCount }}</span>
           <span><Bookmark class="meta-icon" aria-hidden="true" />收藏 {{ task.favoriteCount }}</span>
         </div>
+        <p class="hint"><Clock class="meta-icon" aria-hidden="true" />截止时间 · {{ new Date(task.deadline).toLocaleString() }}</p>
         <img v-if="task.imageUrls && task.imageUrls.length" :src="task.imageUrls[0]" alt="" class="card-image" />
+        <span v-else class="order-card-visual" aria-hidden="true">
+          <span class="visual-dot" />
+        </span>
       </RouterLink>
     </div>
   </section>
@@ -212,7 +217,7 @@ onMounted(loadFavorites)
 }
 
 .item-card {
-  padding: 22px 26px;
+  padding: 22px 130px 22px 26px;
   border: 2px solid #000000;
   border-radius: 24px;
   background: #ffffff;
@@ -221,36 +226,40 @@ onMounted(loadFavorites)
   overflow: hidden;
 }
 
-.item-card::before {
+.item-card::after {
   display: none;
 }
 
-.item-card::after {
-  content: '';
+.order-card-visual {
   position: absolute;
-  right: 28px;
+  right: 30px;
   bottom: 24px;
-  width: 124px;
-  height: 72px;
+  z-index: 0;
+  width: 128px;
+  height: 74px;
   border: 2px solid #000000;
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 74% 28%, var(--favorite-green) 0 22px, transparent 23px),
-    #ffffff;
-  filter: none;
-  opacity: 1;
+  background: #ffffff;
   transform: rotate(-6deg);
   transition: transform var(--transition-fast);
+  pointer-events: none;
 }
 
-.item-card.has-image::after {
-  display: none;
+.order-card-visual .visual-dot {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--favorite-green);
 }
 
 .card-image {
   position: absolute;
-  right: 28px;
-  bottom: 24px;
+  right: 24px;
+  top: 54px;
+  z-index: 0;
   width: 120px;
   height: 90px;
   object-fit: cover;
@@ -258,81 +267,73 @@ onMounted(loadFavorites)
   border-radius: 22px;
   transform: rotate(-4deg);
   transition: transform var(--transition-fast);
-  z-index: 0;
 }
 
 .item-card:hover .card-image {
   transform: rotate(-2deg);
 }
 
-.item-card:hover::after {
-  opacity: 1;
+.item-card:hover .order-card-visual {
   transform: rotate(-3deg);
 }
 
-.item-title,
-.item-card p,
-.meta-line {
+.item-title {
   position: relative;
   z-index: 1;
-}
-
-.item-title {
-  position: static;
   align-items: flex-start;
   gap: 16px;
 }
 
-.item-title h2 {
+.item-title > div {
+  width: 100%;
+}
+
+.item-card h2 {
+  max-width: 100%;
+  margin-top: 8px;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.relation-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #000000;
+  background: var(--favorite-green);
+}
+
+.item-card .meta-line,
+.item-card > .hint {
   position: relative;
   z-index: 1;
 }
 
-.item-title > h2 {
-  margin-right: 0;
-}
-
-.item-card h2 {
-  max-width: calc(100% - 120px);
-  font-size: 21px;
-  font-weight: 900;
-  line-height: 1.18;
-}
-
-.item-card p {
-  max-width: 480px;
-  color: #343743;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.meta-line {
-  max-width: 520px;
-  font-size: 11.5px;
-  gap: 10px;
-}
-
-.meta-line span {
-  color: #6f7485;
-  font-weight: 800;
+.item-card .meta-line {
+  max-width: 620px;
+  font-size: 12.5px;
+  gap: 12px;
 }
 
 .item-card .tag {
   position: absolute;
-  right: 30px;
-  bottom: 28px;
-  z-index: 3;
+  top: 0;
+  left: 88px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: max-content;
   min-width: max-content;
   max-width: none;
+  margin-left: 0;
+  flex-shrink: 0;
+  z-index: 2;
   white-space: nowrap;
   writing-mode: horizontal-tb;
   text-orientation: mixed;
@@ -345,6 +346,12 @@ onMounted(loadFavorites)
   letter-spacing: 0;
   padding: 4px 12px;
   box-shadow: none;
+}
+
+.item-card .hint {
+  max-width: 620px;
+  color: #6f7485;
+  font-weight: 800;
 }
 
 .item-card .status-tag.success {
@@ -412,7 +419,7 @@ onMounted(loadFavorites)
     padding: var(--space-5);
   }
 
-  .item-card::after {
+  .order-card-visual {
     display: none;
   }
 
@@ -423,6 +430,10 @@ onMounted(loadFavorites)
     height: 160px;
     margin-bottom: 12px;
     border-radius: 16px;
+  }
+
+  .item-card:hover .card-image {
+    transform: none;
   }
 }
 </style>

@@ -18,6 +18,8 @@ const auth = useAuthStore()
 const task = ref<TaskItem>()
 const applications = ref<ApplicationItem[]>([])
 const applyMessage = ref('')
+const applicationDialogOpen = ref(false)
+const applying = ref(false)
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
@@ -50,6 +52,7 @@ const taskId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => Boolean(task.value && auth.user?.id === task.value.publisherId))
 const canApply = computed(() => Boolean(
   task.value?.category !== 'TEAM_UP' &&
+  task.value?.status === 'OPEN' &&
   auth.isAuthenticated &&
   auth.user?.verified &&
   applyMessage.value
@@ -258,14 +261,29 @@ async function toggleFavorite() {
 async function applyTask() {
   error.value = ''
   success.value = ''
+  applying.value = true
   try {
     await taskApi.apply(taskId.value, applyMessage.value)
     success.value = '接单申请已提交'
     applyMessage.value = ''
+    applicationDialogOpen.value = false
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err.message : '接单申请失败'
+  } finally {
+    applying.value = false
   }
+}
+
+function openApplicationDialog() {
+  error.value = ''
+  success.value = ''
+  applicationDialogOpen.value = true
+}
+
+function closeApplicationDialog() {
+  if (applying.value || actionLoadingApplicationId.value !== null) return
+  applicationDialogOpen.value = false
 }
 
 async function confirmApplication(applicationId: number) {
@@ -369,9 +387,10 @@ onBeforeUnmount(() => {
 <template>
   <section class="task-detail-view">
     <p v-if="error" class="error-message">{{ error }}</p>
+    <p v-if="success" class="success-message">{{ success }}</p>
     <div v-if="loading" class="empty-state">正在加载需求</div>
 
-    <div v-else-if="task" :class="['detail-layout', { 'single-column': task.category === 'TEAM_UP' }]">
+    <div v-else-if="task" class="detail-layout single-column">
       <article class="panel grid">
         <div class="page-title">
           <div>
@@ -508,66 +527,77 @@ onBeforeUnmount(() => {
           </div>
           </div>
 
-          <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
-            <h2>{{ task.category === 'TEAM_UP' ? '组队帖子信息' : '订单相关信息' }}</h2>
-            <div class="meta-line">
-              <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
-                {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
-              </span>
+          <div class="order-information-section">
+            <button
+              v-if="task.category !== 'TEAM_UP'"
+              class="button primary order-application-button"
+              type="button"
+              :disabled="!isPublisher && task.status !== 'OPEN'"
+              @click="openApplicationDialog"
+            >
+              {{ isPublisher ? '查看接单申请' : '申请接单' }}
+            </button>
+
+            <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
+              <h2>{{ task.category === 'TEAM_UP' ? '组队帖子信息' : '订单相关信息' }}</h2>
+              <div class="meta-line">
+                <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
+                  {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
+                </span>
+              </div>
             </div>
           </div>
         </template>
       </article>
-
-      <aside v-if="task.category !== 'TEAM_UP'" class="grid">
-        <section v-if="!isPublisher && task.category !== 'TEAM_UP'" class="panel grid">
-          <h2>申请接单</h2>
-          <div class="field">
-            <textarea v-model.trim="applyMessage" placeholder="说明你的时间、位置或服务能力" />
-          </div>
-          <button class="button primary" type="button" :disabled="!canApply" @click="applyTask">提交申请</button>
-          <p v-if="!auth.isAuthenticated" class="hint">登录后可申请接单。</p>
-          <p v-else-if="!auth.user?.verified" class="hint">完成邮箱验证后才能申请接单。</p>
-          <p v-if="success" class="success-message">{{ success }}</p>
-        </section>
-
-        <section v-if="isPublisher && task.category !== 'TEAM_UP'" class="panel grid">
-          <h2>接单申请</h2>
-          <div v-if="!applications.length" class="empty-state">暂无申请</div>
-          <div v-for="application in applications" :key="application.id" class="item-card">
-            <div class="item-title">
-              <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
-              <span class="tag">{{ applicationStatusText[application.status] }}</span>
-            </div>
-            <p>{{ application.message }}</p>
-            <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
-            <button
-              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
-              class="button secondary"
-              type="button"
-              :disabled="actionLoadingApplicationId === application.id"
-              @click="confirmApplication(application.id)"
-            >
-              确认接单
-            </button>
-            <button
-              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
-              class="button danger"
-              type="button"
-              :disabled="actionLoadingApplicationId === application.id"
-              @click="rejectApplication(application.id)"
-            >
-              拒绝申请
-            </button>
-          </div>
-        </section>
-      </aside>
     </div>
 
     <Teleport to="body">
       <div v-if="previewImageUrl" class="image-preview-overlay" role="dialog" aria-modal="true" aria-label="任务配图预览" @click.self="closeImagePreview">
         <button class="image-preview-close" type="button" aria-label="关闭图片预览" @click="closeImagePreview">×</button>
         <img :src="previewImageUrl" alt="任务配图大图预览" @click="closeImagePreview" />
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div v-if="applicationDialogOpen && task" class="application-modal-backdrop" role="presentation" @click.self="closeApplicationDialog">
+        <section class="application-modal" role="dialog" aria-modal="true" aria-labelledby="task-application-modal-title">
+          <header class="application-modal-header">
+            <h2 id="task-application-modal-title">{{ isPublisher ? '接单申请' : '申请接单' }}</h2>
+            <button class="application-modal-close" type="button" aria-label="关闭弹窗" :disabled="applying || actionLoadingApplicationId !== null" @click="closeApplicationDialog">
+              <X aria-hidden="true" />
+            </button>
+          </header>
+
+          <div v-if="isPublisher" class="application-modal-content grid">
+            <p v-if="success" class="success-message">{{ success }}</p>
+            <div v-if="!applications.length" class="empty-state">暂无申请</div>
+            <div v-for="application in applications" :key="application.id" class="item-card">
+              <div class="item-title">
+                <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
+                <span class="tag">{{ applicationStatusText[application.status] }}</span>
+              </div>
+              <p>{{ application.message }}</p>
+              <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
+              <div v-if="task.status === 'OPEN' && application.status === 'PENDING'" class="application-actions">
+                <button class="button secondary" type="button" :disabled="actionLoadingApplicationId === application.id" @click="confirmApplication(application.id)">确认接单</button>
+                <button class="button danger" type="button" :disabled="actionLoadingApplicationId === application.id" @click="rejectApplication(application.id)">拒绝申请</button>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="application-modal-content grid">
+            <div class="field">
+              <textarea v-model.trim="applyMessage" placeholder="说明你的时间、位置或服务能力" />
+            </div>
+            <p v-if="!auth.isAuthenticated" class="hint">登录后可申请接单。</p>
+            <p v-else-if="!auth.user?.verified" class="hint">完成邮箱验证后才能申请接单。</p>
+            <div class="application-modal-actions">
+              <button class="button ghost" type="button" :disabled="applying" @click="closeApplicationDialog">取消</button>
+              <button class="button primary" type="button" :disabled="!canApply || applying" @click="applyTask">
+                {{ applying ? '提交中...' : '确认申请' }}
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </Teleport>
     <Teleport to="body">
@@ -631,6 +661,16 @@ onBeforeUnmount(() => {
 
 .detail-layout.single-column {
   grid-template-columns: minmax(0, 1fr);
+}
+
+.order-information-section {
+  display: grid;
+  gap: 14px;
+}
+
+.order-application-button {
+  justify-self: start;
+  min-width: 150px;
 }
 
 .button.is-soft-disabled {
@@ -905,17 +945,109 @@ onBeforeUnmount(() => {
   border-top: 2px solid #000000;
 }
 
+.application-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(25, 26, 35, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.application-modal {
+  --task-green: #ffb454;
+  --task-dark: #191a23;
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 3px solid #000000;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 100% 0%, #ffb454 0 70px, transparent 71px),
+    #ffffff;
+  color: #000000;
+}
+
+.application-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.application-modal-header h2 {
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.application-modal-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+}
+
+.application-modal-close:hover:not(:disabled) {
+  background: #ffe8e8;
+  color: #c1121f;
+}
+
+.application-modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.application-modal-content textarea {
+  min-height: 140px;
+  padding: 13px 15px;
+  line-height: 1.6;
+}
+
+.application-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.application-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 2px solid #000000;
+}
+
 @media (max-width: 620px) {
-  .report-modal-backdrop {
+  .report-modal-backdrop,
+  .application-modal-backdrop {
     padding: 14px;
   }
 
-  .report-modal {
+  .report-modal,
+  .application-modal {
     padding: 22px;
     border-radius: 22px;
   }
 
   .report-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .application-modal-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }

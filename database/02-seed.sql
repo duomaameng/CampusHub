@@ -49,9 +49,6 @@ INSERT INTO `notification` (`id`, `receiver_id`, `type`, `title`, `content`, `is
 (1, 2, 'ORDER_STATUS', '订单已开始进行', '你的跑腿订单已进入进行中状态。', 0, 0, 1, 4),
 (2, 3, 'APPLICATION', '收到新的接单申请', '需求“帮忙取快递”收到了一条新的接单申请。', 0, 0, NULL, 1);
 
-INSERT INTO `review` (`id`, `order_id`, `reviewer_id`, `reviewee_id`, `rating`, `content`, `created_at`) VALUES
-(1, 1, 2, 3, 5, '沟通顺畅，响应很快。', DATE_SUB(NOW(), INTERVAL 1 DAY));
-
 INSERT INTO `credit_log` (`id`, `user_id`, `change_amount`, `score_before`, `score_after`, `reason`, `related_order_id`) VALUES
 (1, 3, 0, 100, 100, '订单完成奖励', 1);
 

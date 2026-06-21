@@ -825,7 +825,7 @@ onMounted(load)
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: end;
+  align-items: center;
   padding: 16px;
   border-top: 2px solid #000000;
   background: #ffffff;
