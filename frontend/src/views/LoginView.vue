@@ -10,8 +10,8 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const email = ref('student.demo1@smail.nju.edu.cn')
-const password = ref('CampusHub123!')
+const email = ref('')
+const password = ref('')
 const loading = ref(false)
 const error = ref('')
 

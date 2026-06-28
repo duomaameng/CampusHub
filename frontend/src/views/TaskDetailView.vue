@@ -37,7 +37,7 @@ const actionLoadingApplicationId = ref<number | null>(null)
 const previewImageUrl = ref('')
 const dangerDialog = useConfirmDialog()
 let applicationIndicatorTimer: number | undefined
-const editForm = reactive<TaskUpdatePayload>({
+const editForm = reactive<TaskUpdatePayload & { categoryFields: Record<string, string | number | boolean> }>({
   category: 'EXPRESS',
   title: '',
   description: '',

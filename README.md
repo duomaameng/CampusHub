@@ -115,7 +115,11 @@ mvn spring-boot:run
 
 | 变量 | 默认值/要求 | 说明 |
 |------|-------------|------|
-| `DB_PASSWORD` | 必填 | MySQL `root` 用户的密码；可写入 `backend/.env` |
+| `DB_HOST` | `localhost` | MySQL 主机名；Docker 部署时为 `db` |
+| `DB_PORT` | `3306` | MySQL 端口 |
+| `DB_NAME` | `campus_hub` | MySQL 数据库名 |
+| `DB_USERNAME` | `root` | MySQL 用户名 |
+| `DB_PASSWORD` | 必填 | `DB_USERNAME` 对应的 MySQL 密码；本地默认是 `root` 用户，可写入 `backend/.env` |
 | `JWT_SECRET` | 内置默认值 | JWT 签名密钥 |
 | `MAIL_DELIVERY_MODE` | `smtp` | 验证码发送方式，`smtp` 真发邮件，`log` 仅打印验证码 |
 | `MAIL_HOST` | `smtp.qq.com` | 邮件服务地址 |
@@ -180,6 +184,14 @@ VITE_ASSET_BASE_URL=https://api.example.com
 ```
 
 如果前端和后端部署在同一个域名下，也可以将 `VITE_ASSET_BASE_URL` 配为空或不配置，让 `/uploads/...` 走同源路径。修改 `.env.local` 或部署环境变量后，需要重新启动前端开发服务；生产构建需要重新执行 `npm run build`。
+
+---
+
+## 云服务器部署
+
+仓库提供 Docker Compose 生产部署配置，包含 Vue/Nginx、Spring Boot、MySQL，以及数据库和上传文件持久卷。没有域名时可直接使用云服务器公网 IP 访问。
+
+完整步骤见 [`deploy/README.md`](deploy/README.md)，其中包含现有数据库导出、迁移、恢复、备份和答辩证据清单。
 
 ---
 
