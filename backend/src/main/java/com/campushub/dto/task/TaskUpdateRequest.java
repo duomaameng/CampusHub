@@ -1,10 +1,12 @@
 package com.campushub.dto.task;
 
 import com.campushub.enums.RewardType;
+import com.campushub.enums.RewardPaymentMethod;
 import com.campushub.enums.TaskCategory;
 import jakarta.validation.constraints.Future;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,10 @@ public class TaskUpdateRequest {
     private String campus;
 
     private RewardType rewardType;
+
+    private BigDecimal rewardAmount;
+
+    private RewardPaymentMethod paymentMethod;
 
     @Future(message = "截止时间必须晚于当前时间")
     private LocalDateTime deadline;

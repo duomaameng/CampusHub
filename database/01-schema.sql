@@ -86,6 +86,7 @@ CREATE TABLE `task` (
   `location_detail` VARCHAR(128) DEFAULT NULL COMMENT 'location detail',
   `reward_type` VARCHAR(16) NOT NULL COMMENT 'reward type',
   `reward_amount` DECIMAL(10,2) DEFAULT NULL COMMENT 'reward amount',
+  `payment_method` VARCHAR(16) DEFAULT NULL COMMENT 'WECHAT ALIPAY or CASH when reward type is CASH',
   `deadline` DATETIME NOT NULL COMMENT 'deadline',
   `status` VARCHAR(20) NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN IN_PROGRESS COMPLETED CANCELLED or EXPIRED',
   `anonymous` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'anonymous flag',

@@ -6,7 +6,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
-import type { ApplicationItem, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
+import type { ApplicationItem, RewardPaymentMethod, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -43,6 +43,8 @@ const editForm = reactive<TaskUpdatePayload>({
   description: '',
   campus: '',
   rewardType: 'NEGOTIABLE',
+  rewardAmount: undefined,
+  paymentMethod: undefined,
   deadline: '',
   anonymous: false,
   imageIds: [],
@@ -112,9 +114,15 @@ const categoryText: Record<string, string> = {
 }
 
 const rewardText: Record<RewardType, string> = {
-  CASH: '现金',
+  CASH: '定价',
   NEGOTIABLE: '面议',
-  CREDIT_INTENT: '积分意向'
+  CREDIT_INTENT: '积分'
+}
+
+const paymentMethodText: Record<RewardPaymentMethod, string> = {
+  WECHAT: '微信',
+  ALIPAY: '支付宝',
+  CASH: '现金'
 }
 
 const categoryFieldText: Record<string, string> = {
@@ -196,6 +204,8 @@ function startEdit() {
   editForm.description = task.value.description
   editForm.campus = task.value.campus
   editForm.rewardType = task.value.rewardType
+  editForm.rewardAmount = task.value.rewardAmount
+  editForm.paymentMethod = task.value.paymentMethod
   editForm.deadline = toDatetimeLocal(task.value.deadline)
   editForm.anonymous = task.value.anonymous
   editForm.categoryFields = task.value.categoryFields || {}
@@ -214,6 +224,8 @@ async function saveTask() {
       description: editForm.description,
       campus: editForm.campus,
       rewardType: editForm.rewardType,
+      rewardAmount: editForm.rewardType === 'CASH' ? editForm.rewardAmount : undefined,
+      paymentMethod: editForm.rewardType === 'CASH' ? editForm.paymentMethod : undefined,
       deadline: editForm.deadline,
       anonymous: editForm.anonymous,
       categoryFields: editForm.categoryFields
@@ -499,11 +511,25 @@ onBeforeUnmount(() => {
               <input id="edit-campus" v-model.trim="editForm.campus" required />
             </div>
             <div class="field">
-              <label for="edit-reward">报酬类型</label>
+              <label for="edit-reward">{{ editForm.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</label>
               <select id="edit-reward" v-model="editForm.rewardType" required>
-                <option value="CASH">现金</option>
+                <option value="CASH">定价</option>
                 <option value="NEGOTIABLE">面议</option>
-                <option value="CREDIT_INTENT">积分意向</option>
+                <option value="CREDIT_INTENT">积分</option>
+              </select>
+            </div>
+          </div>
+          <div v-if="editForm.rewardType === 'CASH'" class="grid two">
+            <div class="field">
+              <label for="edit-reward-amount">{{ editForm.category === 'SECOND_HAND' ? '售价（元）' : '酬金金额（元）' }}</label>
+              <input id="edit-reward-amount" v-model.number="editForm.rewardAmount" type="number" min="0.01" step="0.01" required />
+            </div>
+            <div class="field">
+              <label for="edit-payment-method">{{ editForm.category === 'SECOND_HAND' ? '收款方式' : '支付方式' }}</label>
+              <select id="edit-payment-method" v-model="editForm.paymentMethod" required>
+                <option value="WECHAT">微信</option>
+                <option value="ALIPAY">支付宝</option>
+                <option value="CASH">现金</option>
               </select>
             </div>
           </div>
@@ -571,8 +597,13 @@ onBeforeUnmount(() => {
 
           <div class="grid two">
           <div class="panel">
-            <strong>报酬类型</strong>
-            <p>{{ rewardText[task.rewardType] }}</p>
+            <strong>{{ task.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</strong>
+            <p>
+              {{ rewardText[task.rewardType] }}
+              <template v-if="task.rewardType === 'CASH' && task.rewardAmount && task.paymentMethod">
+                · ¥{{ Number(task.rewardAmount).toFixed(2) }} · {{ paymentMethodText[task.paymentMethod] }}
+              </template>
+            </p>
           </div>
           <div class="panel">
             <strong>截止时间</strong>

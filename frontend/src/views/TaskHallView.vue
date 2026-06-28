@@ -33,9 +33,9 @@ const categories = [
 
 const categoryText: Record<string, string> = Object.fromEntries(categories.filter((item) => item.value).map((item) => [item.value, item.label]))
 const rewardText: Record<string, string> = {
-  CASH: '现金',
+  CASH: '定价',
   NEGOTIABLE: '面议',
-  CREDIT_INTENT: '积分意向'
+  CREDIT_INTENT: '积分'
 }
 const statusTagClass: Record<TaskStatus, string> = {
   OPEN: 'success',

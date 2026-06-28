@@ -15,6 +15,8 @@ const form = reactive<TaskForm>({
   description: '',
   campus: '仙林校区',
   rewardType: 'NEGOTIABLE',
+  rewardAmount: undefined,
+  paymentMethod: undefined,
   deadline: '',
   anonymous: false,
   imageIds: [],
@@ -73,8 +75,7 @@ const categoryFields = computed(() => {
   if (form.category === 'SECOND_HAND') {
     return [
       ['goodsCategory', '商品分类'],
-      ['condition', '新旧程度'],
-      ['price', '售价']
+      ['condition', '新旧程度']
     ]
   }
   if (form.category === 'LOST_FOUND') {
@@ -101,6 +102,16 @@ watch(
   () => form.category,
   (category) => {
     form.categoryFields = category === 'TEAM_UP' ? { requiredCount: 1 } : {}
+  }
+)
+
+watch(
+  () => form.rewardType,
+  (rewardType) => {
+    if (rewardType !== 'CASH') {
+      form.rewardAmount = undefined
+      form.paymentMethod = undefined
+    }
   }
 )
 
@@ -332,11 +343,11 @@ async function removeUploadedFile(fileId: number) {
 
       <div class="grid two">
         <div class="field">
-          <label for="reward">报酬类型</label>
+          <label for="reward">{{ form.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</label>
           <select id="reward" v-model="form.rewardType" required>
-            <option value="CASH">现金</option>
+            <option value="CASH">定价</option>
             <option value="NEGOTIABLE">面议</option>
-            <option value="CREDIT_INTENT">积分意向</option>
+            <option value="CREDIT_INTENT">积分</option>
           </select>
         </div>
         <div class="field">
@@ -354,6 +365,32 @@ async function removeUploadedFile(fileId: number) {
             @change="validateDeadline"
             @blur="validateDeadline"
           />
+        </div>
+      </div>
+
+      <div v-if="form.rewardType === 'CASH'" class="grid two">
+        <div class="field">
+          <label for="reward-amount">{{ form.category === 'SECOND_HAND' ? '售价（元）' : '酬金金额（元）' }}</label>
+          <input
+            id="reward-amount"
+            v-model.number="form.rewardAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            :placeholder="form.category === 'SECOND_HAND' ? '请输入售价' : '请输入酬金金额'"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="payment-method">{{ form.category === 'SECOND_HAND' ? '收款方式' : '支付方式' }}</label>
+          <select id="payment-method" v-model="form.paymentMethod" required>
+            <option disabled :value="undefined">
+              {{ form.category === 'SECOND_HAND' ? '请选择收款方式' : '请选择支付方式' }}
+            </option>
+            <option value="WECHAT">微信</option>
+            <option value="ALIPAY">支付宝</option>
+            <option value="CASH">现金</option>
+          </select>
         </div>
       </div>
 

@@ -24,6 +24,12 @@ const statusTagClass: Record<TaskStatus, string> = {
   EXPIRED: 'danger'
 }
 
+const rewardText: Record<TaskItem['rewardType'], string> = {
+  CASH: '定价',
+  NEGOTIABLE: '面议',
+  CREDIT_INTENT: '积分'
+}
+
 const filteredFavorites = computed(() => {
   const keyword = filters.keyword.trim().toLowerCase()
   const records = [...(page.value?.records || [])].filter((task) => {
@@ -106,7 +112,7 @@ onMounted(loadFavorites)
         </div>
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>
-          <span><Tag class="meta-icon" aria-hidden="true" />{{ task.rewardType }}</span>
+          <span><Tag class="meta-icon" aria-hidden="true" />{{ rewardText[task.rewardType] }}</span>
         </div>
         <div class="meta-line">
           <span><Users class="meta-icon" aria-hidden="true" />申请 {{ task.applicationCount }}</span>

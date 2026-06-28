@@ -69,7 +69,6 @@ async function submit() {
             <PasswordInput id="password" v-model="password" autocomplete="current-password" required />
           </div>
 
-          <p class="hint">演示账号：student.demo1@smail.nju.edu.cn / CampusHub123!</p>
           <p v-if="error" class="error-message">{{ error }}</p>
 
           <div class="actions">

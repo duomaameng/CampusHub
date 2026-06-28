@@ -21,6 +21,7 @@ export type OrderStatus =
   | 'DISPUTE'
   | 'REVIEWED'
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
+export type RewardPaymentMethod = 'WECHAT' | 'ALIPAY' | 'CASH'
 export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
 export type MessageType = 'TEXT' | 'IMAGE' | 'FILE'
 export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'CHAT_FILE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
@@ -142,6 +143,8 @@ export interface TaskItem {
   description: string
   campus: string
   rewardType: RewardType
+  rewardAmount?: number
+  paymentMethod?: RewardPaymentMethod
   deadline: string
   status: TaskStatus
   anonymous: boolean
@@ -163,6 +166,8 @@ export interface TaskForm {
   description: string
   campus: string
   rewardType: RewardType
+  rewardAmount?: number
+  paymentMethod?: RewardPaymentMethod
   deadline: string
   anonymous: boolean
   imageIds: number[]
@@ -208,6 +213,8 @@ export interface OrderDetail extends OrderItem {
   taskDescription: string
   campus: string
   rewardType: RewardType
+  rewardAmount?: number
+  paymentMethod?: RewardPaymentMethod
   proofImageUrl?: string
   completionNote?: string
   statusLogs: OrderStatusLog[]

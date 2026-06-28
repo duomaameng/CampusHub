@@ -426,6 +426,8 @@ public class OrderService {
         vo.setTaskDescription(task.getDescription());
         vo.setCampus(task.getCampus());
         vo.setRewardType(task.getRewardType());
+        vo.setRewardAmount(task.getRewardAmount());
+        vo.setPaymentMethod(task.getPaymentMethod());
         vo.setProofImageUrl(order.getCompletionProofUrl());
         vo.setCompletionNote(findCompletionNote(statusLogs));
         vo.setTaskImageUrls(taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()

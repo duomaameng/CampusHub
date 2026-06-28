@@ -73,13 +73,16 @@ CREATE TABLE verification_code (
 CREATE TABLE task (
     id              BIGINT          NOT NULL AUTO_INCREMENT  COMMENT '任务ID',
     publisher_id    BIGINT          NOT NULL                 COMMENT '发布者ID',
-    category        VARCHAR(16)     NOT NULL                 COMMENT '分类: EXPRESS/ERRAND/TUTORING/SECOND_HAND/LOST_FOUND/CONSULTATION/TEAM_UP/OTHER',
+    category        VARCHAR(32)     NOT NULL                 COMMENT '分类: EXPRESS/ERRAND/TUTORING/SECOND_HAND/LOST_FOUND/CONSULTATION/TEAM_UP/OTHER',
     title           VARCHAR(100)    NOT NULL                 COMMENT '标题',
     description     VARCHAR(2000)   NOT NULL                 COMMENT '描述',
     campus          VARCHAR(32)     NOT NULL                 COMMENT '校区/地点',
-    reward_type     VARCHAR(16)     NOT NULL                 COMMENT '报酬类型: CASH/NEGOTIABLE/CREDIT_INTENT',
+    location_detail VARCHAR(128)    DEFAULT NULL             COMMENT '详细地点',
+    reward_type     VARCHAR(16)     NOT NULL                 COMMENT '结算类型: CASH(定价)/NEGOTIABLE(面议)/CREDIT_INTENT(积分)',
+    reward_amount   DECIMAL(10,2)   DEFAULT NULL             COMMENT '定价金额，必须大于0',
+    payment_method  VARCHAR(16)     DEFAULT NULL             COMMENT '结算方式: WECHAT/ALIPAY/CASH',
     deadline        DATETIME        NOT NULL                 COMMENT '截止时间',
-    status          VARCHAR(16)     NOT NULL DEFAULT 'OPEN'  COMMENT '状态: OPEN/IN_PROGRESS/COMPLETED/CANCELLED/EXPIRED',
+    status          VARCHAR(20)     NOT NULL DEFAULT 'OPEN'  COMMENT '状态: OPEN/IN_PROGRESS/COMPLETED/CANCELLED/EXPIRED',
     anonymous       TINYINT(1)      NOT NULL DEFAULT 0       COMMENT '是否匿名发布',
     category_fields JSON            DEFAULT NULL             COMMENT '分类差异化字段 (JSON)',
     version         INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
@@ -88,8 +91,8 @@ CREATE TABLE task (
     PRIMARY KEY (id),
     KEY idx_task_publisher (publisher_id),
     KEY idx_task_hall (status, category, campus),
-    KEY idx_task_sort_latest (status, created_at),
-    KEY idx_task_sort_deadline (status, deadline),
+    KEY idx_task_created_at (status, created_at),
+    KEY idx_task_deadline (status, deadline),
     CONSTRAINT fk_task_publisher FOREIGN KEY (publisher_id) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='需求/任务表';
 

@@ -23,6 +23,8 @@ import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
 import com.campushub.enums.ApplicationStatus;
 import com.campushub.enums.OrderStatus;
+import com.campushub.enums.RewardPaymentMethod;
+import com.campushub.enums.RewardType;
 import com.campushub.enums.TaskCategory;
 import com.campushub.enums.TaskStatus;
 import com.campushub.enums.UploadBusinessType;
@@ -52,6 +54,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -136,6 +139,7 @@ public class TaskService {
         task.setDescription(request.getDescription().trim());
         task.setCampus(request.getCampus().trim());
         task.setRewardType(request.getRewardType());
+        applyReward(task, request.getRewardType(), request.getRewardAmount(), request.getPaymentMethod());
         task.setDeadline(request.getDeadline());
         task.setStatus(TaskStatus.OPEN);
         task.setAnonymous(Boolean.TRUE.equals(request.getAnonymous()));
@@ -310,6 +314,14 @@ public class TaskService {
         }
         if (request.getRewardType() != null) {
             task.setRewardType(request.getRewardType());
+        }
+        if (request.getRewardType() != null || request.getRewardAmount() != null || request.getPaymentMethod() != null) {
+            applyReward(
+                    task,
+                    task.getRewardType(),
+                    request.getRewardAmount() != null ? request.getRewardAmount() : task.getRewardAmount(),
+                    request.getPaymentMethod() != null ? request.getPaymentMethod() : task.getPaymentMethod()
+            );
         }
         if (request.getDeadline() != null) {
             task.setDeadline(request.getDeadline());
@@ -495,6 +507,8 @@ public class TaskService {
         vo.setDescription(task.getDescription());
         vo.setCampus(task.getCampus());
         vo.setRewardType(task.getRewardType());
+        vo.setRewardAmount(task.getRewardAmount());
+        vo.setPaymentMethod(task.getPaymentMethod());
         vo.setDeadline(task.getDeadline());
         vo.setStatus(task.getStatus());
         vo.setImageUrls(taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()
@@ -518,6 +532,27 @@ public class TaskService {
         vo.setUpdatedAt(task.getUpdatedAt());
         vo.setCategoryFields(parseCategoryFields(task.getCategoryFields()));
         return vo;
+    }
+
+    private void applyReward(
+            Task task,
+            RewardType rewardType,
+            BigDecimal rewardAmount,
+            RewardPaymentMethod paymentMethod
+    ) {
+        if (RewardType.CASH.equals(rewardType)) {
+            if (rewardAmount == null || rewardAmount.signum() <= 0) {
+                throw new BusinessException(ErrorCode.VALIDATION_ERROR, "金额必须大于 0");
+            }
+            if (paymentMethod == null) {
+                throw new BusinessException(ErrorCode.VALIDATION_ERROR, "请选择结算方式");
+            }
+            task.setRewardAmount(rewardAmount);
+            task.setPaymentMethod(paymentMethod);
+            return;
+        }
+        task.setRewardAmount(null);
+        task.setPaymentMethod(null);
     }
 
     private boolean isFavoritedByCurrentUser(Long taskId) {

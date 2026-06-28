@@ -55,6 +55,8 @@ const editForm = reactive<TaskUpdatePayload>({
   description: '',
   campus: '',
   rewardType: 'NEGOTIABLE',
+  rewardAmount: undefined,
+  paymentMethod: undefined,
   deadline: '',
   anonymous: false,
   imageIds: [],
@@ -420,6 +422,8 @@ function startEdit() {
   editForm.description = task.value.description
   editForm.campus = task.value.campus
   editForm.rewardType = task.value.rewardType
+  editForm.rewardAmount = task.value.rewardAmount
+  editForm.paymentMethod = task.value.paymentMethod
   editForm.deadline = toDatetimeLocal(task.value.deadline)
   editForm.anonymous = task.value.anonymous
   editForm.categoryFields = task.value.categoryFields || {}
@@ -438,6 +442,8 @@ async function saveTask() {
       description: editForm.description,
       campus: editForm.campus,
       rewardType: editForm.rewardType,
+      rewardAmount: editForm.rewardType === 'CASH' ? editForm.rewardAmount : undefined,
+      paymentMethod: editForm.rewardType === 'CASH' ? editForm.paymentMethod : undefined,
       deadline: editForm.deadline,
       anonymous: editForm.anonymous,
       categoryFields: editForm.categoryFields
@@ -447,7 +453,9 @@ async function saveTask() {
       taskTitle: task.value.title,
       taskDescription: task.value.description,
       campus: task.value.campus,
-      rewardType: task.value.rewardType
+      rewardType: task.value.rewardType,
+      rewardAmount: task.value.rewardAmount,
+      paymentMethod: task.value.paymentMethod
     }
     editMode.value = false
     success.value = '需求已更新'
@@ -730,11 +738,25 @@ onMounted(load)
                 <input id="edit-campus" v-model.trim="editForm.campus" required />
               </div>
               <div class="field">
-                <label for="edit-reward">报酬类型</label>
+                <label for="edit-reward">{{ editForm.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</label>
                 <select id="edit-reward" v-model="editForm.rewardType" required>
-                  <option value="CASH">现金</option>
+                  <option value="CASH">定价</option>
                   <option value="NEGOTIABLE">面议</option>
-                  <option value="CREDIT_INTENT">积分意向</option>
+                  <option value="CREDIT_INTENT">积分</option>
+                </select>
+              </div>
+            </div>
+            <div v-if="editForm.rewardType === 'CASH'" class="grid two">
+              <div class="field">
+                <label for="edit-reward-amount">{{ editForm.category === 'SECOND_HAND' ? '售价（元）' : '酬金金额（元）' }}</label>
+                <input id="edit-reward-amount" v-model.number="editForm.rewardAmount" type="number" min="0.01" step="0.01" required />
+              </div>
+              <div class="field">
+                <label for="edit-payment-method">{{ editForm.category === 'SECOND_HAND' ? '收款方式' : '支付方式' }}</label>
+                <select id="edit-payment-method" v-model="editForm.paymentMethod" required>
+                  <option value="WECHAT">微信</option>
+                  <option value="ALIPAY">支付宝</option>
+                  <option value="CASH">现金</option>
                 </select>
               </div>
             </div>
