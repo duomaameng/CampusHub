@@ -15,6 +15,7 @@ import com.campushub.mapper.FavoriteMapper;
 import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.OrderStatusLogMapper;
 import com.campushub.mapper.ReviewMapper;
+import com.campushub.mapper.TaskFileMapper;
 import com.campushub.mapper.TaskImageMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
@@ -44,6 +45,7 @@ class TaskServiceTest {
 
     @Mock private TaskMapper taskMapper;
     @Mock private TaskImageMapper taskImageMapper;
+    @Mock private TaskFileMapper taskFileMapper;
     @Mock private ApplicationMapper applicationMapper;
     @Mock private OrderMapper orderMapper;
     @Mock private OrderStatusLogMapper orderStatusLogMapper;
@@ -64,6 +66,7 @@ class TaskServiceTest {
         taskService = new TaskService(
                 taskMapper,
                 taskImageMapper,
+                taskFileMapper,
                 applicationMapper,
                 orderMapper,
                 orderStatusLogMapper,

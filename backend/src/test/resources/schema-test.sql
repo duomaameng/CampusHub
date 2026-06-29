@@ -67,6 +67,7 @@ CREATE TABLE task (
   location_detail VARCHAR(128),
   reward_type VARCHAR(16) NOT NULL,
   reward_amount DECIMAL(10,2),
+  payment_method VARCHAR(16),
   deadline TIMESTAMP NOT NULL,
   status VARCHAR(20) NOT NULL,
   anonymous BOOLEAN NOT NULL DEFAULT FALSE,
@@ -97,6 +98,7 @@ CREATE TABLE application (
   applicant_id BIGINT NOT NULL,
   message VARCHAR(500) NOT NULL,
   status VARCHAR(16) NOT NULL,
+  publisher_viewed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

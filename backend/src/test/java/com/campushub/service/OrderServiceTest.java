@@ -46,6 +46,7 @@ class OrderServiceTest {
     @Mock private ReviewMapper reviewMapper;
     @Mock private CreditLogMapper creditLogMapper;
     @Mock private TaskImageMapper taskImageMapper;
+    @Mock private TaskFileMapper taskFileMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
 
@@ -144,7 +145,13 @@ class OrderServiceTest {
             Order order = createOrder(1L, 10L, OTHER_USER_ID, CURRENT_USER_ID, OrderStatus.IN_PROGRESS);
             when(orderMapper.selectById(1L)).thenReturn(order);
 
+            FileRecord proofFile = new FileRecord();
+            proofFile.setId(100L);
+            proofFile.setFileUrl("/uploads/proofs/test.jpg");
+            when(fileService.requireOwnedFile(eq(100L), any())).thenReturn(proofFile);
+
             OrderCompleteRequest request = new OrderCompleteRequest();
+            request.setProofImageId(100L);
             request.setNote("Done");
 
             orderService.completeOrder(1L, request);
@@ -595,7 +602,13 @@ class OrderServiceTest {
             when(orderMapper.selectById(1L)).thenReturn(order);
 
             // Step 1: Service provider completes
+            FileRecord proofFile = new FileRecord();
+            proofFile.setId(100L);
+            proofFile.setFileUrl("/uploads/proofs/test.jpg");
+            when(fileService.requireOwnedFile(eq(100L), any())).thenReturn(proofFile);
+
             OrderCompleteRequest completeRequest = new OrderCompleteRequest();
+            completeRequest.setProofImageId(100L);
             completeRequest.setNote("Done");
             securityUtilsMock.when(SecurityUtils::requireCurrentUserId).thenReturn(OTHER_USER_ID);
             orderService.completeOrder(1L, completeRequest);

@@ -8,6 +8,7 @@ import com.campushub.entity.User;
 import com.campushub.entity.UserProfile;
 import com.campushub.enums.ApplicationStatus;
 import com.campushub.enums.OrderStatus;
+import com.campushub.enums.RewardPaymentMethod;
 import com.campushub.enums.RewardType;
 import com.campushub.enums.TaskCategory;
 import com.campushub.enums.TaskStatus;
@@ -254,6 +255,8 @@ class CoreFlowIntegrationTest {
         request.put("description", "Integration test task description");
         request.put("campus", "Xianlin");
         request.put("rewardType", RewardType.CASH.name());
+        request.put("rewardAmount", 20);
+        request.put("paymentMethod", RewardPaymentMethod.CASH.name());
         request.put("deadline", LocalDateTime.now().plusDays(1).toString());
         request.put("anonymous", false);
         request.put("categoryFields", Map.of("pickupLocation", "Dorm 9"));
