@@ -189,7 +189,11 @@ VITE_ASSET_BASE_URL=https://api.example.com
 
 ## 云服务器部署
 
-仓库提供 Docker Compose 生产部署配置，包含 Vue/Nginx、Spring Boot、MySQL，以及数据库和上传文件持久卷。没有域名时可直接使用云服务器公网 IP 访问。
+仓库提供 Docker Compose 生产部署配置，包含 Vue/Nginx、Spring Boot、MySQL，以及数据库和上传文件持久卷。
+
+项目访问地址：[http://campushub-nju.eastasia.cloudapp.azure.com](http://campushub-nju.eastasia.cloudapp.azure.com)。
+
+> 注意：服务器每天凌晨 2 点自动关闭，关闭后上述地址将暂时无法访问。
 
 完整步骤见 [`deploy/README.md`](deploy/README.md)，其中包含现有数据库导出、迁移、恢复、备份和答辩证据清单。
 
