@@ -811,7 +811,6 @@ onMounted(load)
               <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
               <span class="tag">{{ applicationStatusText[application.status] }}</span>
             </div>
-            <p>{{ application.message }}</p>
             <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
             <button
               v-if="task?.status === 'OPEN' && application.status === 'PENDING'"

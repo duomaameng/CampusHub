@@ -2,7 +2,6 @@ package com.campushub.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
-import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.entity.Application;
 import com.campushub.entity.Task;
 import com.campushub.enums.ApplicationStatus;
@@ -106,9 +105,6 @@ class TaskServiceTest {
     @Test
     void shouldRejectApplyingExpiredOpenTask() {
         Task task = openTaskPastDeadline();
-        TaskApplyRequest request = new TaskApplyRequest();
-        request.setMessage("我可以接单");
-
         when(taskMapper.selectById(100L)).thenReturn(task);
         when(taskMapper.updateStatusIfCurrent(100L, TaskStatus.OPEN.name(), TaskStatus.EXPIRED.name()))
                 .thenReturn(1);
@@ -116,7 +112,7 @@ class TaskServiceTest {
         try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
             securityUtils.when(SecurityUtils::requireCurrentUserId).thenReturn(200L);
 
-            assertThatThrownBy(() -> taskService.applyTask(100L, request))
+            assertThatThrownBy(() -> taskService.applyTask(100L))
                     .isInstanceOf(BusinessException.class);
         }
 
@@ -161,7 +157,7 @@ class TaskServiceTest {
         try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
             securityUtils.when(SecurityUtils::requireCurrentUserId).thenReturn(200L);
 
-            assertThatThrownBy(() -> taskService.applyTask(100L, new TaskApplyRequest()))
+            assertThatThrownBy(() -> taskService.applyTask(100L))
                     .isInstanceOf(BusinessException.class);
         }
 
@@ -173,9 +169,6 @@ class TaskServiceTest {
     void shouldTimeoutInProgressOrderAfterTaskDeadline() {
         Task task = openTaskPastDeadline();
         task.setStatus(TaskStatus.IN_PROGRESS);
-        TaskApplyRequest request = new TaskApplyRequest();
-        request.setMessage("我可以接单");
-
         when(taskMapper.selectById(100L)).thenReturn(task);
         when(orderMapper.timeoutInProgressOrderByTaskId(100L)).thenReturn(1);
         when(taskMapper.updateStatusIfCurrent(100L, TaskStatus.IN_PROGRESS.name(), TaskStatus.EXPIRED.name()))
@@ -184,7 +177,7 @@ class TaskServiceTest {
         try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
             securityUtils.when(SecurityUtils::requireCurrentUserId).thenReturn(200L);
 
-            assertThatThrownBy(() -> taskService.applyTask(100L, request))
+            assertThatThrownBy(() -> taskService.applyTask(100L))
                     .isInstanceOf(BusinessException.class);
         }
 

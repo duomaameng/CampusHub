@@ -136,12 +136,11 @@ export const taskApi = {
     if (useMock) return mockApi.listFavoriteTasks(params)
     return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/favorites', params })
   },
-  apply(taskId: number, message: string) {
-    if (useMock) return mockApi.applyTask(taskId, message)
+  apply(taskId: number) {
+    if (useMock) return mockApi.applyTask(taskId, '')
     return request<{ applicationId: number; taskId: number; status: string; createdAt: string }>({
       method: 'POST',
-      url: `/tasks/${taskId}/applications`,
-      data: { message }
+      url: `/tasks/${taskId}/applications`
     })
   },
   applications(taskId: number): Promise<ApplicationItem[]> {

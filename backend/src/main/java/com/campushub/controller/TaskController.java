@@ -2,7 +2,6 @@ package com.campushub.controller;
 
 import com.campushub.common.ApiResponse;
 import com.campushub.common.PageResult;
-import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.dto.task.TaskCreateRequest;
 import com.campushub.dto.task.TaskUpdateRequest;
 import com.campushub.service.TaskService;
@@ -63,8 +62,8 @@ public class TaskController {
     }
 
     @PostMapping("/tasks/{taskId}/applications")
-    public ApiResponse<TaskApplyVO> apply(@PathVariable Long taskId, @Valid @RequestBody TaskApplyRequest request) {
-        return ApiResponse.success(taskService.applyTask(taskId, request));
+    public ApiResponse<TaskApplyVO> apply(@PathVariable Long taskId) {
+        return ApiResponse.success(taskService.applyTask(taskId));
     }
 
     @GetMapping("/tasks/{taskId}/applications")

@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
 import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
-import com.campushub.dto.task.TaskApplyRequest;
 import com.campushub.dto.task.TaskCreateRequest;
 import com.campushub.dto.task.TaskUpdateRequest;
 import com.campushub.entity.Application;
@@ -159,7 +158,7 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskApplyVO applyTask(Long taskId, TaskApplyRequest request) {
+    public TaskApplyVO applyTask(Long taskId) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Task task = requireFreshTask(taskId);
 
@@ -186,7 +185,8 @@ public class TaskService {
         Application application = new Application();
         application.setTaskId(taskId);
         application.setApplicantId(currentUserId);
-        application.setMessage(request.getMessage().trim());
+        // Keep the legacy non-null database column compatible; applications no longer collect a message.
+        application.setMessage("");
         application.setStatus(ApplicationStatus.PENDING);
         applicationMapper.insert(application);
 
@@ -634,7 +634,6 @@ public class TaskService {
         vo.setApplicantNickname(profile != null ? profile.getNickname() : "CampusHub 用户");
         vo.setApplicantAvatarUrl(profile != null ? profile.getAvatarUrl() : null);
         vo.setApplicantCreditScore(findLatestCreditScore(application.getApplicantId()));
-        vo.setMessage(application.getMessage());
         vo.setStatus(application.getStatus());
         vo.setCreatedAt(application.getCreatedAt());
         return vo;

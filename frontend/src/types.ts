@@ -189,7 +189,6 @@ export interface ApplicationItem {
   applicantNickname: string
   applicantAvatarUrl?: string
   applicantCreditScore: number
-  message: string
   status: ApplicationStatus
   createdAt: string
 }

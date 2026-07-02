@@ -18,7 +18,6 @@ const auth = useAuthStore()
 
 const task = ref<TaskItem>()
 const applications = ref<ApplicationItem[]>([])
-const applyMessage = ref('')
 const applicationDialogOpen = ref(false)
 const applicationsLoading = ref(false)
 const applying = ref(false)
@@ -58,8 +57,7 @@ const canApply = computed(() => Boolean(
   task.value?.category !== 'TEAM_UP' &&
   task.value?.status === 'OPEN' &&
   auth.isAuthenticated &&
-  auth.user?.verified &&
-  applyMessage.value
+  auth.user?.verified
 ))
 const canEditTask = computed(() => Boolean(
   isPublisher.value &&
@@ -306,10 +304,8 @@ async function applyTask() {
   success.value = ''
   applying.value = true
   try {
-    await taskApi.apply(taskId.value, applyMessage.value)
+    await taskApi.apply(taskId.value)
     success.value = '接单申请已提交'
-    applyMessage.value = ''
-    applicationDialogOpen.value = false
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err.message : '接单申请失败'
@@ -623,12 +619,14 @@ onBeforeUnmount(() => {
               v-if="task.category !== 'TEAM_UP'"
               class="button primary order-application-button"
               type="button"
-              :disabled="!isPublisher && task.status !== 'OPEN'"
-              @click="openApplicationDialog"
+              :disabled="isPublisher ? false : !canApply || applying"
+              @click="isPublisher ? openApplicationDialog() : applyTask()"
             >
-              {{ isPublisher ? '查看接单申请' : '申请接单' }}
+              {{ isPublisher ? '查看接单申请' : applying ? '申请中...' : '申请接单' }}
               <span v-if="isPublisher && task.hasUnreadApplications" class="application-unread-dot" aria-label="有新的接单申请" />
             </button>
+            <p v-if="!isPublisher && !auth.isAuthenticated" class="hint">登录后可直接申请接单。</p>
+            <p v-else-if="!isPublisher && !auth.user?.verified" class="hint">完成邮箱验证后可直接申请接单。</p>
 
             <div
               v-if="(task.categoryFields && Object.keys(task.categoryFields).length) || task.privateFieldsHidden"
@@ -654,16 +652,16 @@ onBeforeUnmount(() => {
       </div>
     </Teleport>
     <Teleport to="body">
-      <div v-if="applicationDialogOpen && task" class="application-modal-backdrop" role="presentation" @click.self="closeApplicationDialog">
+      <div v-if="applicationDialogOpen && task && isPublisher" class="application-modal-backdrop" role="presentation" @click.self="closeApplicationDialog">
         <section class="application-modal" role="dialog" aria-modal="true" aria-labelledby="task-application-modal-title">
           <header class="application-modal-header">
-            <h2 id="task-application-modal-title">{{ isPublisher ? '接单申请' : '申请接单' }}</h2>
+            <h2 id="task-application-modal-title">接单申请</h2>
             <button class="application-modal-close" type="button" aria-label="关闭弹窗" :disabled="applying || actionLoadingApplicationId !== null" @click="closeApplicationDialog">
               <X aria-hidden="true" />
             </button>
           </header>
 
-          <div v-if="isPublisher" class="application-modal-content grid">
+          <div class="application-modal-content grid">
             <p v-if="success" class="success-message">{{ success }}</p>
             <div v-if="applicationsLoading && !applications.length" class="empty-state">正在加载申请</div>
             <div v-else-if="!applications.length" class="empty-state">暂无申请</div>
@@ -672,7 +670,6 @@ onBeforeUnmount(() => {
                 <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
                 <span class="tag">{{ applicationStatusText[application.status] }}</span>
               </div>
-              <p>{{ application.message }}</p>
               <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
               <div v-if="task.status === 'OPEN' && application.status === 'PENDING'" class="application-actions">
                 <button class="button secondary" type="button" :disabled="actionLoadingApplicationId === application.id" @click="confirmApplication(application.id)">确认接单</button>
@@ -681,19 +678,6 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div v-else class="application-modal-content grid">
-            <div class="field">
-              <textarea v-model.trim="applyMessage" placeholder="说明你的时间、位置或服务能力" />
-            </div>
-            <p v-if="!auth.isAuthenticated" class="hint">登录后可申请接单。</p>
-            <p v-else-if="!auth.user?.verified" class="hint">完成邮箱验证后才能申请接单。</p>
-            <div class="application-modal-actions">
-              <button class="button ghost" type="button" :disabled="applying" @click="closeApplicationDialog">取消</button>
-              <button class="button primary" type="button" :disabled="!canApply || applying" @click="applyTask">
-                {{ applying ? '提交中...' : '确认申请' }}
-              </button>
-            </div>
-          </div>
         </section>
       </div>
     </Teleport>

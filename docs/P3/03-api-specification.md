@@ -720,17 +720,7 @@
 
 **POST** `/api/tasks/{taskId}/applications` | 认证：认证
 
-**请求体：**
-
-```json
-{
-  "message": "我住在12栋，可以帮你取快递，下午3点有空"
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| message | string | 是 | 申请留言，1-500字符 |
+无需请求体，用户点击“申请接单”后直接提交申请。
 
 **成功响应：**
 
@@ -774,7 +764,6 @@
       "applicantNickname": "小红",
       "applicantAvatarUrl": "/uploads/avatars/10002.jpg",
       "applicantCreditScore": 95,
-      "message": "我住在12栋，可以帮你取快递",
       "status": "PENDING",
       "createdAt": "2026-05-17T11:00:00"
     }
