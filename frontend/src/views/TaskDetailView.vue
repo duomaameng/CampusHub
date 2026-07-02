@@ -3,6 +3,7 @@ import { AlertTriangle, Download, FileText, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
@@ -19,6 +20,7 @@ const task = ref<TaskItem>()
 const applications = ref<ApplicationItem[]>([])
 const applyMessage = ref('')
 const applicationDialogOpen = ref(false)
+const applicationsLoading = ref(false)
 const applying = ref(false)
 const loading = ref(false)
 const error = ref('')
@@ -36,7 +38,6 @@ const favoriteLoading = ref(false)
 const actionLoadingApplicationId = ref<number | null>(null)
 const previewImageUrl = ref('')
 const dangerDialog = useConfirmDialog()
-let applicationIndicatorTimer: number | undefined
 const editForm = reactive<TaskUpdatePayload & { categoryFields: Record<string, string | number | boolean> }>({
   category: 'EXPRESS',
   title: '',
@@ -171,18 +172,32 @@ function formatCategoryFieldValue(value: string | number | boolean) {
   return value
 }
 
-async function load() {
-  error.value = ''
-  loading.value = true
+async function load(silent = false) {
+  if (!silent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     task.value = await taskApi.get(taskId.value)
     if (isPublisher.value && task.value.category !== 'TEAM_UP') {
-      applications.value = await taskApi.applications(taskId.value)
+      await loadApplications(silent)
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '需求加载失败'
+    if (!silent) error.value = err instanceof Error ? err.message : '需求加载失败'
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
+  }
+}
+
+async function loadApplications(silent = false) {
+  if (!isPublisher.value || task.value?.category === 'TEAM_UP') return
+  if (!silent) applicationsLoading.value = true
+  try {
+    applications.value = await taskApi.applications(taskId.value)
+  } catch (err) {
+    if (!silent) error.value = err instanceof Error ? err.message : '接单申请加载失败'
+  } finally {
+    if (!silent) applicationsLoading.value = false
   }
 }
 
@@ -307,6 +322,9 @@ async function openApplicationDialog() {
   error.value = ''
   success.value = ''
   applicationDialogOpen.value = true
+  if (isPublisher.value) {
+    await loadApplications()
+  }
   if (isPublisher.value && task.value?.hasUnreadApplications) {
     task.value = { ...task.value, hasUnreadApplications: false }
     try {
@@ -315,18 +333,6 @@ async function openApplicationDialog() {
       if (task.value) task.value = { ...task.value, hasUnreadApplications: true }
       error.value = err instanceof Error ? err.message : '申请查看状态更新失败'
     }
-  }
-}
-
-async function refreshApplicationIndicator() {
-  if (!isPublisher.value || applicationDialogOpen.value) return
-  try {
-    const latest = await taskApi.get(taskId.value)
-    if (task.value) {
-      task.value = { ...task.value, applicationCount: latest.applicationCount, hasUnreadApplications: latest.hasUnreadApplications }
-    }
-  } catch {
-    // Keep the current page state when a background refresh fails.
   }
 }
 
@@ -422,14 +428,17 @@ async function submitReport() {
   }
 }
 
+useRealtimeRefresh(
+  ['TASKS_CHANGED', 'APPLICATIONS_CHANGED'],
+  () => load(true)
+)
+
 onMounted(() => {
   void load()
-  applicationIndicatorTimer = window.setInterval(refreshApplicationIndicator, 15000)
   window.addEventListener('keydown', handlePreviewKeydown)
 })
 
 onBeforeUnmount(() => {
-  if (applicationIndicatorTimer) window.clearInterval(applicationIndicatorTimer)
   window.removeEventListener('keydown', handlePreviewKeydown)
   document.body.style.overflow = ''
 })
@@ -439,9 +448,7 @@ onBeforeUnmount(() => {
   <section class="task-detail-view">
     <p v-if="error" class="error-message">{{ error }}</p>
     <p v-if="success" class="success-message">{{ success }}</p>
-    <div v-if="loading" class="empty-state">正在加载需求</div>
-
-    <div v-else-if="task" class="detail-layout single-column">
+    <div v-if="task" class="detail-layout single-column">
       <article class="panel grid">
         <div class="page-title">
           <div>
@@ -654,7 +661,8 @@ onBeforeUnmount(() => {
 
           <div v-if="isPublisher" class="application-modal-content grid">
             <p v-if="success" class="success-message">{{ success }}</p>
-            <div v-if="!applications.length" class="empty-state">暂无申请</div>
+            <div v-if="applicationsLoading && !applications.length" class="empty-state">正在加载申请</div>
+            <div v-else-if="!applications.length" class="empty-state">暂无申请</div>
             <div v-for="application in applications" :key="application.id" class="item-card">
               <div class="item-title">
                 <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>

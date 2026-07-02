@@ -3,6 +3,7 @@ import { ArrowLeft, Download, FileText, MessageSquareText, Paperclip, Send, X } 
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { fileApi, orderApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { orderStatusText } from '@/types'
@@ -80,6 +81,8 @@ async function load() {
     if (requestId !== loadRequestId) return
 
     order.value = nextOrder
+    await orderApi.markMessagesRead(requestedOrderId)
+    await auth.refreshUnreadMessages()
     if (!conversations.value.length) await loadConversations()
     await scrollToBottom()
   } catch (err) {
@@ -172,6 +175,8 @@ function isOrderMessage(value: unknown): value is OrderMessage {
 async function refreshCurrentOrderSilently() {
   try {
     order.value = await orderApi.get(orderId.value)
+    await orderApi.markMessagesRead(orderId.value)
+    await auth.refreshUnreadMessages()
     await scrollToBottom()
     void loadConversations()
   } catch {
@@ -215,6 +220,18 @@ async function handleAttachmentChange(event: Event) {
   } finally {
     attachmentUploading.value = false
     input.value = ''
+  }
+}
+
+async function refreshChatSilently() {
+  if (hasOrderId.value) {
+    await refreshCurrentOrderSilently()
+  } else {
+    try {
+      await loadConversations()
+    } catch {
+      // Keep the current conversation list visible if a silent refresh fails.
+    }
   }
 }
 
@@ -285,6 +302,11 @@ watch(orderId, (nextOrderId, previousOrderId) => {
   void load()
 })
 watch(sortedMessages, scrollToBottom)
+useRealtimeRefresh(
+  ['ORDERS_CHANGED', 'MESSAGES_CHANGED'],
+  refreshChatSilently,
+  (event) => !hasOrderId.value || event.entityId === null || event.entityId === orderId.value
+)
 onMounted(load)
 </script>
 

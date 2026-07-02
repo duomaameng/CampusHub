@@ -18,6 +18,7 @@ import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.service.FileService;
 import com.campushub.service.UserService;
@@ -46,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
     private final OrderMapper orderMapper;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     @Override
     public UserProfileVO getCurrentUser() {
@@ -102,6 +104,7 @@ public class UserServiceImpl implements UserService {
         userProfileMapper.updateById(profile);
 
         User user = userMapper.selectById(userId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.PROFILE_CHANGED, userId);
         return buildProfileResponse(user);
     }
 
@@ -170,6 +173,7 @@ public class UserServiceImpl implements UserService {
             profile.setContactVisible(false);
             userProfileMapper.updateById(profile);
         }
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.PROFILE_CHANGED, userId);
     }
 
     @Override

@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { fileApi, userApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import type { UserProfile } from '@/types'
@@ -56,16 +57,19 @@ async function handleAvatarChange(event: Event) {
   }
 }
 
-async function load() {
-  error.value = ''
-  loading.value = true
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     profile.value = await userApi.me()
     fillForm(profile.value)
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '资料加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '资料加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -81,6 +85,7 @@ async function save() {
   }
 }
 
+useRealtimeRefresh(['PROFILE_CHANGED'], () => load(true))
 onMounted(load)
 </script>
 
@@ -95,9 +100,7 @@ onMounted(load)
 
     <p v-if="error" class="error-message">{{ error }}</p>
     <p v-if="success" class="success-message">{{ success }}</p>
-    <div v-if="loading" class="empty-state">正在加载资料</div>
-
-    <div v-else class="detail-layout">
+    <div class="detail-layout">
       <form class="form-panel grid" @submit.prevent="save">
         <section class="panel grid">
           <h2>头像</h2>

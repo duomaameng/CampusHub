@@ -223,6 +223,14 @@ export const orderApi = {
       data: { messageType: 'FILE', fileId }
     })
   },
+  unreadMessageCount(): Promise<{ count: number }> {
+    if (useMock) return Promise.resolve({ count: 0 })
+    return request<{ count: number }>({ method: 'GET', url: '/orders/messages/unread-count' })
+  },
+  markMessagesRead(orderId: number): Promise<null> {
+    if (useMock) return Promise.resolve(null)
+    return request<null>({ method: 'PATCH', url: `/orders/${orderId}/messages/read` })
+  },
   async downloadAttachment(orderId: number, messageId: number): Promise<Blob> {
     if (useMock) throw new Error('请关闭 mock 模式后下载聊天附件')
     const response = await http.get<Blob>(`/orders/${orderId}/messages/${messageId}/attachment`, {

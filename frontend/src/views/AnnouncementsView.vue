@@ -2,6 +2,7 @@
 import { AlertCircle, CalendarClock, Megaphone, RefreshCcw } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { announcementApi } from '@/services/api'
 import { announcementPriorityText } from '@/types'
 import type { AnnouncementItem, PageData } from '@/types'
@@ -17,15 +18,18 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString()
 }
 
-async function load() {
-  loading.value = true
-  error.value = ''
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    loading.value = true
+    error.value = ''
+  }
   try {
     page.value = await announcementApi.list({ page: pageNumber.value, size: 10 })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '公告加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '公告加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -35,6 +39,7 @@ async function goPage(nextPage: number) {
   await load()
 }
 
+useRealtimeRefresh(['ANNOUNCEMENTS_CHANGED'], () => load(true))
 onMounted(load)
 </script>
 
@@ -76,10 +81,9 @@ onMounted(load)
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载公告</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无公告</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无公告</div>
 
-    <div v-else class="grid">
+    <div v-if="page?.records.length" class="grid">
       <article
         v-for="(item, index) in page.records"
         :key="item.id"

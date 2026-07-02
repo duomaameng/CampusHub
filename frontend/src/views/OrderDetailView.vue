@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCheck, Download, Eye, FileText, MessageSquareText, 
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText, orderStatusText } from '@/types'
@@ -129,9 +130,12 @@ const shouldShowOrderSidebar = computed(() => Boolean(
   isAwaitingNewProvider.value && isPublisher.value
 ))
 
-async function load() {
-  error.value = ''
-  loading.value = true
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     order.value = await orderApi.get(orderId.value)
     statusLogs.value = await orderApi.statusLogs(orderId.value)
@@ -144,9 +148,9 @@ async function load() {
       applications.value = []
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '订单加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '订单加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -540,6 +544,11 @@ function openTaskImagePreview(url: string) {
   taskImagePreviewUrl.value = resolveAssetUrl(url)
 }
 
+useRealtimeRefresh(
+  ['ORDERS_CHANGED', 'MESSAGES_CHANGED'],
+  () => load(true),
+  (event) => event.entityId === null || event.entityId === orderId.value
+)
 onMounted(load)
 </script>
 
@@ -547,9 +556,7 @@ onMounted(load)
   <section class="order-detail-view">
     <p v-if="error" class="error-message">{{ error }}</p>
     <p v-if="success" class="success-message">{{ success }}</p>
-    <div v-if="loading" class="empty-state">正在加载订单</div>
-
-    <div v-else-if="order" :class="['detail-layout', { 'single-column': !shouldShowOrderSidebar }]">
+    <div v-if="order" :class="['detail-layout', { 'single-column': !shouldShowOrderSidebar }]">
       <article class="panel grid">
         <div class="page-title">
           <div>

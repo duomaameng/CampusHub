@@ -2,6 +2,7 @@
 import { Edit3, Megaphone, RefreshCcw, Search, ShieldAlert, Trash2, UserRoundCog, UsersRound } from '@lucide/vue'
 import { onMounted, reactive, ref } from 'vue'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { adminApi } from '@/services/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -63,9 +64,12 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString()
 }
 
-async function loadUsers() {
-  usersLoading.value = true
-  usersError.value = ''
+async function loadUsers(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    usersLoading.value = true
+    usersError.value = ''
+  }
   try {
     userPage.value = await adminApi.users({
       page: 1,
@@ -74,9 +78,9 @@ async function loadUsers() {
       status: userFilters.status || undefined
     })
   } catch (err) {
-    usersError.value = err instanceof Error ? err.message : '用户列表加载失败'
+    if (!isSilent) usersError.value = err instanceof Error ? err.message : '用户列表加载失败'
   } finally {
-    usersLoading.value = false
+    if (!isSilent) usersLoading.value = false
   }
 }
 
@@ -92,9 +96,12 @@ async function updateStatus(userId: number, status: UserStatus) {
   }
 }
 
-async function loadReports() {
-  reportsLoading.value = true
-  reportsError.value = ''
+async function loadReports(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    reportsLoading.value = true
+    reportsError.value = ''
+  }
   try {
     reportPage.value = await adminApi.reports({
       page: reportPageNumber.value,
@@ -104,9 +111,9 @@ async function loadReports() {
       targetType: reportFilters.targetType || undefined
     })
   } catch (err) {
-    reportsError.value = err instanceof Error ? err.message : '举报列表加载失败'
+    if (!isSilent) reportsError.value = err instanceof Error ? err.message : '举报列表加载失败'
   } finally {
-    reportsLoading.value = false
+    if (!isSilent) reportsLoading.value = false
   }
 }
 
@@ -147,18 +154,21 @@ async function goReportPage(nextPage: number) {
   await loadReports()
 }
 
-async function loadAnnouncements() {
-  announcementsLoading.value = true
-  announcementsError.value = ''
+async function loadAnnouncements(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    announcementsLoading.value = true
+    announcementsError.value = ''
+  }
   try {
     announcementPage.value = await adminApi.announcements({
       page: announcementPageNumber.value,
       size: 10
     })
   } catch (err) {
-    announcementsError.value = err instanceof Error ? err.message : '公告列表加载失败'
+    if (!isSilent) announcementsError.value = err instanceof Error ? err.message : '公告列表加载失败'
   } finally {
-    announcementsLoading.value = false
+    if (!isSilent) announcementsLoading.value = false
   }
 }
 
@@ -248,9 +258,12 @@ async function goAnnouncementPage(nextPage: number) {
   await loadAnnouncements()
 }
 
-onMounted(async () => {
-  await Promise.all([loadUsers(), loadReports(), loadAnnouncements()])
-})
+async function loadAdminData(silent = false) {
+  await Promise.all([loadUsers(silent), loadReports(silent), loadAnnouncements(silent)])
+}
+
+useRealtimeRefresh(['ADMIN_CHANGED', 'ANNOUNCEMENTS_CHANGED'], () => loadAdminData(true))
+onMounted(loadAdminData)
 </script>
 
 <template>
@@ -307,9 +320,7 @@ onMounted(async () => {
 
       <p v-if="usersError" class="error-message">{{ usersError }}</p>
       <p v-if="usersSuccess" class="success-message">{{ usersSuccess }}</p>
-      <div v-if="usersLoading" class="empty-state">正在加载用户</div>
-
-      <div v-else class="table-wrapper">
+      <div class="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -390,10 +401,9 @@ onMounted(async () => {
 
       <p v-if="reportsError" class="error-message">{{ reportsError }}</p>
       <p v-if="reportsSuccess" class="success-message">{{ reportsSuccess }}</p>
-      <div v-if="reportsLoading" class="empty-state">正在加载举报</div>
-      <div v-else-if="!reportPage?.records.length" class="empty-state">暂无举报记录</div>
+      <div v-if="!reportsLoading && !reportPage?.records.length" class="empty-state">暂无举报记录</div>
 
-      <div v-else class="table-wrapper">
+      <div v-if="reportPage?.records.length" class="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -532,10 +542,8 @@ onMounted(async () => {
 
           <p v-if="announcementsError" class="error-message">{{ announcementsError }}</p>
           <p v-if="announcementsSuccess" class="success-message">{{ announcementsSuccess }}</p>
-          <div v-if="announcementsLoading" class="empty-state">正在加载公告</div>
-
-          <div v-else-if="!announcementPage?.records.length" class="empty-state">暂无公告</div>
-          <div v-else class="table-wrapper">
+          <div v-if="!announcementsLoading && !announcementPage?.records.length" class="empty-state">暂无公告</div>
+          <div v-if="announcementPage?.records.length" class="table-wrapper">
             <table>
               <thead>
                 <tr>

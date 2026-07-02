@@ -3,6 +3,7 @@ import { Bookmark, Clock, MapPin, Tag, Users } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { taskApi } from '@/services/api'
 import { taskStatusText } from '@/types'
 import type { PageData, TaskItem, TaskStatus } from '@/types'
@@ -46,18 +47,22 @@ const filteredFavorites = computed(() => {
   })
 })
 
-async function loadFavorites() {
-  error.value = ''
-  loading.value = true
+async function loadFavorites(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     page.value = await taskApi.favorites({ page: 1, size: 20 })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '收藏列表加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '收藏列表加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
+useRealtimeRefresh(['TASKS_CHANGED'], () => loadFavorites(true))
 onMounted(loadFavorites)
 </script>
 
@@ -96,12 +101,11 @@ onMounted(loadFavorites)
     </form>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载收藏列表</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无收藏的需求</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无收藏的需求</div>
 
-    <div v-else-if="!filteredFavorites.length" class="empty-state">暂无符合筛选条件的收藏</div>
+    <div v-else-if="page?.records.length && !filteredFavorites.length" class="empty-state">暂无符合筛选条件的收藏</div>
 
-    <div v-else class="cards-grid">
+    <div v-if="filteredFavorites.length" class="cards-grid">
       <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
         <div class="item-title">
           <div>

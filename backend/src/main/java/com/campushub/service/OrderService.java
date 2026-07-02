@@ -16,6 +16,7 @@ import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskStatus;
 import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.*;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.order.*;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class OrderService {
     private final TaskFileMapper taskFileMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public PageResult<OrderItemVO> listOrders(int page, int size, String role, OrderStatus status, String keyword) {
         refreshTimedOutOrders();
@@ -125,6 +127,7 @@ public class OrderService {
                 request.getNote() != null && !request.getNote().isBlank() ? request.getNote() : "服务方提交完成"
         );
         notificationService.createOrderStatusNotification(order.getPublisherId(), order.getId(), OrderStatus.PENDING_COMPLETION);
+        publishOrderChange(order);
     }
 
     @Transactional
@@ -150,6 +153,8 @@ public class OrderService {
         String taskTitle = task.getTitle();
         notificationService.createReviewRequestNotification(order.getPublisherId(), order.getId(), taskTitle);
         notificationService.createReviewRequestNotification(order.getServiceProviderId(), order.getId(), taskTitle);
+        publishOrderChange(order);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
     }
 
     @Transactional
@@ -195,6 +200,9 @@ public class OrderService {
             saveStatusLog(order.getId(), fromStatus, OrderStatus.PENDING_CONFIRM, currentUserId, reason);
 
             notificationService.createOrderStatusNotification(previousServiceProviderId, order.getId(), OrderStatus.PENDING_CONFIRM);
+            realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+            realtimeEventPublisher.user(previousServiceProviderId, RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+            realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
             return;
         }
 
@@ -214,6 +222,7 @@ public class OrderService {
         orderMapper.updateById(order);
         saveStatusLog(order.getId(), fromStatus, OrderStatus.IN_PROGRESS, currentUserId, "服务方申请取消：" + request.getReason().trim());
         notificationService.createOrderActionNotification(order.getPublisherId(), order.getId(), "服务方申请取消服务", "服务方申请取消订单，原因：" + request.getReason().trim());
+        publishOrderChange(order);
     }
 
     @Transactional
@@ -249,6 +258,9 @@ public class OrderService {
 
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
         notificationService.createOrderActionNotification(previousServiceProviderId, order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.user(previousServiceProviderId, RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
     }
 
     @Transactional
@@ -270,6 +282,7 @@ public class OrderService {
                 .set("cancel_reason", null));
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
         notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已拒绝取消申请", "发布方已拒绝取消申请，订单继续进行");
+        publishOrderChange(order);
     }
 
     @Transactional
@@ -320,6 +333,7 @@ public class OrderService {
             default -> message.getContent();
         };
         notificationService.createOrderMessageNotification(receiverId, order.getId(), senderNickname, preview);
+        publishMessageChange(order);
     }
 
     public FileRecord requireMessageAttachment(Long orderId, Long messageId) {
@@ -381,6 +395,18 @@ public class OrderService {
             orderMapper.updateById(order);
             saveStatusLog(order.getId(), OrderStatus.COMPLETED, OrderStatus.REVIEWED, currentUserId, "双方已完成评价");
         }
+        publishOrderChange(order);
+        realtimeEventPublisher.user(review.getRevieweeId(), RealtimeEventPublisher.PROFILE_CHANGED, review.getRevieweeId());
+    }
+
+    private void publishOrderChange(Order order) {
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+    }
+
+    private void publishMessageChange(Order order) {
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.MESSAGES_CHANGED, order.getId());
+        realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.MESSAGES_CHANGED, order.getId());
     }
 
     public List<ReviewItemVO> listReviews(Long orderId) {
@@ -403,6 +429,43 @@ public class OrderService {
                 .stream()
                 .map(this::toOrderMessageVO)
                 .toList();
+    }
+
+    public long countUnreadMessages() {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        List<Long> orderIds = orderMapper.selectList(new LambdaQueryWrapper<Order>()
+                        .and(wrapper -> wrapper
+                                .eq(Order::getPublisherId, currentUserId)
+                                .or()
+                                .eq(Order::getServiceProviderId, currentUserId)))
+                .stream()
+                .map(Order::getId)
+                .toList();
+        if (orderIds.isEmpty()) {
+            return 0;
+        }
+        return orderMessageMapper.selectCount(new LambdaQueryWrapper<OrderMessage>()
+                .in(OrderMessage::getOrderId, orderIds)
+                .ne(OrderMessage::getSenderId, currentUserId)
+                .eq(OrderMessage::getIsRead, false));
+    }
+
+    @Transactional
+    public void markMessagesRead(Long orderId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        int updatedRows = orderMessageMapper.update(
+                null,
+                new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<OrderMessage>()
+                        .eq(OrderMessage::getOrderId, orderId)
+                        .ne(OrderMessage::getSenderId, currentUserId)
+                        .eq(OrderMessage::getIsRead, false)
+                        .set(OrderMessage::getIsRead, true)
+        );
+        if (updatedRows > 0) {
+            realtimeEventPublisher.user(currentUserId, RealtimeEventPublisher.MESSAGES_CHANGED, orderId);
+        }
     }
 
     public List<OrderStatusLogVO> listStatusLogs(Long orderId) {

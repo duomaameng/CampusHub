@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { userApi } from '@/services/api'
 import type { CreditInfo, PublicProfile, UserReviewItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
@@ -13,9 +14,12 @@ const reviews = ref<UserReviewItem[]>([])
 const loading = ref(false)
 const error = ref('')
 
-async function load() {
-  error.value = ''
-  loading.value = true
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     const userId = Number(route.params.id)
     if (Number.isNaN(userId)) {
@@ -30,13 +34,18 @@ async function load() {
     credit.value = creditData
     reviews.value = reviewData
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '资料加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '资料加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
-watch(() => route.params.id, load)
+watch(() => route.params.id, () => load())
+useRealtimeRefresh(
+  ['PROFILE_CHANGED'],
+  () => load(true),
+  (event) => event.entityId === null || event.entityId === Number(route.params.id)
+)
 onMounted(load)
 </script>
 
@@ -50,9 +59,7 @@ onMounted(load)
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载资料</div>
-
-    <div v-else-if="profile" class="detail-layout">
+    <div v-if="profile" class="detail-layout">
       <div class="panel grid">
         <div class="profile-header">
           <div class="avatar-preview large">

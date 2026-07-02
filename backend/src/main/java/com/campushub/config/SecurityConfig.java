@@ -32,6 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Auth endpoints - public
                         .requestMatchers("/api/auth/**").permitAll()
+                        // WebSocket handshake authenticates its JWT in RealtimeHandshakeInterceptor
+                        .requestMatchers("/api/ws/**").permitAll()
                         // Public task browsing
                         .requestMatchers(HttpMethod.GET, "/api/tasks").permitAll()
                         .requestMatchers(new RegexRequestMatcher("^/api/tasks/\\d+$", "GET")).permitAll()

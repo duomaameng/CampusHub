@@ -3,6 +3,7 @@ import { CalendarClock, ClipboardList, UserRound } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { orderApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { orderStatusText } from '@/types'
@@ -107,9 +108,12 @@ const orderCards = computed<OrderListCard[]>(() => {
   return [...orderItems, ...taskItems].sort(compareOrderCards)
 })
 
-async function loadOrders() {
-  error.value = ''
-  loading.value = true
+async function loadOrders(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     const result = await orderApi.list({
       page: 1,
@@ -122,10 +126,12 @@ async function loadOrders() {
     page.value = { ...result, total: records.length, records }
     missingPublishedTasks.value = await loadMissingPublishedTasks(page.value.records)
   } catch (err) {
-    missingPublishedTasks.value = []
-    error.value = err instanceof Error ? err.message : '订单加载失败'
+    if (!isSilent) {
+      missingPublishedTasks.value = []
+      error.value = err instanceof Error ? err.message : '订单加载失败'
+    }
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -181,6 +187,7 @@ function relationClass(order: OrderItem) {
   return ''
 }
 
+useRealtimeRefresh(['ORDERS_CHANGED', 'TASKS_CHANGED'], () => loadOrders(true))
 onMounted(loadOrders)
 </script>
 
@@ -229,10 +236,9 @@ onMounted(loadOrders)
     </form>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载订单</div>
-    <div v-else-if="!orderCards.length" class="empty-state">暂无符合条件的订单</div>
+    <div v-if="!loading && !orderCards.length" class="empty-state">暂无符合条件的订单</div>
 
-    <div v-else class="cards-grid">
+    <div v-if="orderCards.length" class="cards-grid">
       <RouterLink
         v-for="(card, index) in orderCards"
         :key="card.key"

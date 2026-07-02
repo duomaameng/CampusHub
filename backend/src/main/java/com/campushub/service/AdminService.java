@@ -30,6 +30,7 @@ import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.admin.AdminDashboardVO;
 import com.campushub.vo.admin.AdminOrderItemVO;
@@ -67,6 +68,7 @@ public class AdminService {
     private final TaskMapper taskMapper;
     private final OrderMapper orderMapper;
     private final ReportMapper reportMapper;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public AdminDashboardVO getDashboard() {
         long totalUsers = userMapper.selectCount(null);
@@ -163,6 +165,8 @@ public class AdminService {
         userMapper.updateById(user);
 
         recordUserStatusOperation(userId, status, reason);
+        realtimeEventPublisher.user(userId, RealtimeEventPublisher.PROFILE_CHANGED, userId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, userId);
         return new AdminUserStatusVO(userId, status);
     }
 
@@ -230,6 +234,8 @@ public class AdminService {
             taskMapper.updateById(task);
             recordAdminOperation("UPDATE_TASK_STATUS", "TASK", taskId,
                     buildAdminTransitionDetail(TaskStatus.OPEN.name(), TaskStatus.CANCELLED.name(), request.getReason()));
+            realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, taskId);
+            realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, taskId);
             return;
         }
         String previousStatus = findPreviousAdminStatus("UPDATE_TASK_STATUS", "TASK", taskId);
@@ -240,6 +246,8 @@ public class AdminService {
         taskMapper.updateById(task);
         recordAdminOperation("UPDATE_TASK_STATUS", "TASK", taskId,
                 buildAdminTransitionDetail(TaskStatus.CANCELLED.name(), TaskStatus.OPEN.name(), request.getReason()));
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, taskId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, taskId);
     }
 
     public PageResult<AdminOrderItemVO> listOrders(int page, int size) {
@@ -301,6 +309,7 @@ public class AdminService {
             orderMapper.updateById(order);
             recordAdminOperation("UPDATE_ORDER_STATUS", "ORDER", orderId,
                     buildAdminTransitionDetail(currentStatus.name(), OrderStatus.DISPUTE.name(), request.getReason()));
+            publishAdminOrderChange(order);
             return;
         }
         String previousStatus = findPreviousAdminStatus("UPDATE_ORDER_STATUS", "ORDER", orderId);
@@ -321,6 +330,7 @@ public class AdminService {
         orderMapper.updateById(order);
         recordAdminOperation("UPDATE_ORDER_STATUS", "ORDER", orderId,
                 buildAdminTransitionDetail(currentStatus.name(), restoreStatus.name(), request.getReason()));
+        publishAdminOrderChange(order);
     }
 
     public PageResult<AdminReportItemVO> listReports(int page, int size, AdminReportQueryRequest request) {
@@ -385,6 +395,8 @@ public class AdminService {
         announcement.setPriority(StringUtils.hasText(request.getPriority()) ? request.getPriority().trim() : "NORMAL");
         announcement.setIsActive(true);
         announcementMapper.insert(announcement);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ANNOUNCEMENTS_CHANGED, announcement.getId());
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, announcement.getId());
         return new AnnouncementPublishVO(announcement.getId(), "已发布");
     }
 
@@ -406,6 +418,8 @@ public class AdminService {
         }
 
         announcementMapper.updateById(announcement);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ANNOUNCEMENTS_CHANGED, announcement.getId());
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, announcement.getId());
         return new AnnouncementPublishVO(
                 announcement.getId(),
                 Boolean.TRUE.equals(announcement.getIsActive()) ? "已启用" : "已停用"
@@ -416,6 +430,14 @@ public class AdminService {
     public void deleteAnnouncement(Long announcementId) {
         requireAnnouncement(announcementId);
         announcementMapper.deleteById(announcementId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ANNOUNCEMENTS_CHANGED, announcementId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, announcementId);
+    }
+
+    private void publishAdminOrderChange(Order order) {
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, order.getId());
     }
 
     private int normalizePage(int page) {

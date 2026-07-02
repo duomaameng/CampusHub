@@ -24,6 +24,7 @@ import com.campushub.mapper.ReportEvidenceMapper;
 import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.report.ReportDetailVO;
 import com.campushub.vo.report.ReportItemVO;
@@ -54,6 +55,7 @@ public class ReportService {
     private final CreditLogMapper creditLogMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public PageResult<ReportItemVO> listMyReports(int page, int size) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
@@ -131,6 +133,7 @@ public class ReportService {
             reportEvidenceMapper.insert(evidence);
         }
 
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, report.getId());
         return new ReportSubmissionVO(
                 report.getId(),
                 taskId,
@@ -168,6 +171,7 @@ public class ReportService {
             reportEvidenceMapper.insert(evidence);
         }
 
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, report.getId());
         return new ReportSubmissionVO(
                 report.getId(),
                 userId,
@@ -227,6 +231,7 @@ public class ReportService {
             reportEvidenceMapper.insert(evidence);
         }
 
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, report.getId());
         return new ReportSubmissionVO(
                 report.getId(),
                 orderId,
@@ -266,6 +271,7 @@ public class ReportService {
         } else {
             notificationService.createReportResultNotification(report.getReporterId(), report.getTargetId(), request.getResult().trim());
         }
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.ADMIN_CHANGED, report.getId());
     }
 
     private void applyTimeoutCreditPenalty(Report report, ReportProcessRequest request) {

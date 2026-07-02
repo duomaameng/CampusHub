@@ -15,6 +15,7 @@ import {
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { taskApi } from '@/services/api'
 import { taskStatusText } from '@/types'
 import type { PageData, TaskItem, TaskStatus } from '@/types'
@@ -58,18 +59,22 @@ const error = ref('')
 const openTaskCount = computed(() => page.value?.records.filter((task) => task.status === 'OPEN').length ?? 0)
 const totalApplications = computed(() => page.value?.records.reduce((sum, task) => sum + task.applicationCount, 0) ?? 0)
 
-async function loadTasks() {
-  error.value = ''
-  loading.value = true
+async function loadTasks(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     page.value = await taskApi.list({ ...filters, page: 1, size: 20 })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '任务加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '任务加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
+useRealtimeRefresh(['TASKS_CHANGED'], () => loadTasks(true))
 onMounted(loadTasks)
 </script>
 
@@ -155,10 +160,9 @@ onMounted(loadTasks)
     </form>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载任务</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无符合条件的任务</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无符合条件的任务</div>
 
-    <div v-else class="cards-grid">
+    <div v-if="page?.records.length" class="cards-grid">
       <RouterLink
         v-for="(task, index) in page.records"
         :key="task.id"

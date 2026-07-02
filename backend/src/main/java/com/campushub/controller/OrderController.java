@@ -11,6 +11,7 @@ import com.campushub.vo.order.OrderDetailVO;
 import com.campushub.vo.order.OrderItemVO;
 import com.campushub.vo.order.OrderStatusLogVO;
 import com.campushub.vo.order.ReviewItemVO;
+import com.campushub.vo.UnreadCountVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -81,6 +82,17 @@ public class OrderController {
     @PostMapping("/{orderId}/messages")
     public ApiResponse<Void> sendMessage(@PathVariable Long orderId, @Valid @RequestBody OrderMessageRequest request) {
         orderService.sendMessage(orderId, request);
+        return ApiResponse.success();
+    }
+
+    @GetMapping("/messages/unread-count")
+    public ApiResponse<UnreadCountVO> unreadMessageCount() {
+        return ApiResponse.success(new UnreadCountVO(orderService.countUnreadMessages()));
+    }
+
+    @PatchMapping("/{orderId}/messages/read")
+    public ApiResponse<Void> markMessagesRead(@PathVariable Long orderId) {
+        orderService.markMessagesRead(orderId);
         return ApiResponse.success();
     }
 

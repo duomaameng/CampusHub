@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { notificationApi } from '@/services/api'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useConfirmDialog } from '@/composables/useConfirmDialog'
@@ -14,16 +15,19 @@ const error = ref('')
 const loading = ref(false)
 const dangerDialog = useConfirmDialog()
 
-async function load() {
-  loading.value = true
-  error.value = ''
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    loading.value = true
+    error.value = ''
+  }
   try {
     page.value = await notificationApi.list({ page: 1, size: 20 })
     await auth.refreshUnread()
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '通知加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '通知加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -63,6 +67,7 @@ function targetLink(item: NotificationItem) {
   return item.targetType === 'ORDER' ? `/orders/${item.targetId}` : `/tasks/${item.targetId}`
 }
 
+useRealtimeRefresh(['NOTIFICATIONS_CHANGED'], () => load(true))
 onMounted(load)
 </script>
 
@@ -80,10 +85,9 @@ onMounted(load)
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载通知</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无通知</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无通知</div>
 
-    <div v-else class="grid">
+    <div v-if="page?.records.length" class="grid">
       <article
         v-for="(item, index) in page.records"
         :key="item.id"

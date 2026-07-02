@@ -39,6 +39,7 @@ import com.campushub.mapper.TaskFileMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.task.ApplicationConfirmVO;
 import com.campushub.vo.task.ApplicationItemVO;
@@ -83,6 +84,7 @@ public class TaskService {
     private final NotificationService notificationService;
     private final FileService fileService;
     private final ObjectMapper objectMapper;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public PageResult<TaskItemVO> listTasks(int page, int size, String category, String campus, String keyword, String sort) {
         expireOpenTasksPastDeadline();
@@ -148,6 +150,7 @@ public class TaskService {
 
         bindTaskImages(task.getId(), request.getImageIds());
         bindTaskFiles(task.getId(), request.getFileIds());
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
         return new TaskCreateVO(task.getId(), task.getStatus(), task.getCreatedAt());
     }
 
@@ -187,6 +190,7 @@ public class TaskService {
                 .map(UserProfile::getNickname)
                 .orElse("CampusHub 用户");
         notificationService.createApplicationNotification(task.getPublisherId(), task.getId(), applicantNickname, task.getTitle());
+        realtimeEventPublisher.user(currentUserId, RealtimeEventPublisher.TASKS_CHANGED, taskId);
 
         return new TaskApplyVO(application.getId(), taskId, application.getStatus(), application.getCreatedAt());
     }
@@ -283,6 +287,9 @@ public class TaskService {
         orderStatusLogMapper.insert(log);
 
         notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.IN_PROGRESS);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
+        realtimeEventPublisher.user(task.getPublisherId(), RealtimeEventPublisher.APPLICATIONS_CHANGED, task.getId());
+        publishOrderChange(order);
         return new ApplicationConfirmVO(order.getId(), task.getId(), order.getStatus(), order.getCreatedAt());
     }
 
@@ -347,6 +354,7 @@ public class TaskService {
         TaskItemVO vo = toTaskItemVO(task);
         vo.setFiles(listTaskFiles(taskId));
         vo.setFileDownloadAllowed(canCurrentUserDownloadTaskFiles(taskId));
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, taskId);
         return vo;
     }
 
@@ -376,6 +384,7 @@ public class TaskService {
         taskFileMapper.delete(new LambdaQueryWrapper<TaskFile>().eq(TaskFile::getTaskId, taskId));
 
         taskMapper.deleteById(taskId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, taskId);
     }
 
     @Transactional
@@ -387,6 +396,7 @@ public class TaskService {
                 .eq(Favorite::getTaskId, taskId));
         if (existing != null) {
             favoriteMapper.deleteById(existing.getId());
+            realtimeEventPublisher.user(currentUserId, RealtimeEventPublisher.TASKS_CHANGED, taskId);
             return new FavoriteToggleVO(false);
         } else {
             Favorite fav = new Favorite();
@@ -395,8 +405,10 @@ public class TaskService {
             try {
                 favoriteMapper.insert(fav);
             } catch (DuplicateKeyException ignored) {
+                realtimeEventPublisher.user(currentUserId, RealtimeEventPublisher.TASKS_CHANGED, taskId);
                 return new FavoriteToggleVO(true);
             }
+            realtimeEventPublisher.user(currentUserId, RealtimeEventPublisher.TASKS_CHANGED, taskId);
             return new FavoriteToggleVO(true);
         }
     }
@@ -452,6 +464,14 @@ public class TaskService {
         if (updatedRows != 1) {
             throw new BusinessException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
         }
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
+        realtimeEventPublisher.user(task.getPublisherId(), RealtimeEventPublisher.APPLICATIONS_CHANGED, task.getId());
+        realtimeEventPublisher.user(application.getApplicantId(), RealtimeEventPublisher.TASKS_CHANGED, task.getId());
+    }
+
+    private void publishOrderChange(Order order) {
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
     }
 
     private String requireText(String value, String fieldName) {

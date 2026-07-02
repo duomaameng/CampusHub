@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import { authApi, notificationApi, userApi } from '@/services/api'
+import { authApi, notificationApi, orderApi, userApi } from '@/services/api'
 import type { LoginUser, UserProfile } from '@/types'
 
 function getStoredToken(): string {
@@ -31,7 +31,8 @@ export const useAuthStore = defineStore('auth', {
     token: getStoredToken(),
     user: getStoredUser(),
     profile: null as UserProfile | null,
-    unreadCount: 0
+    unreadCount: 0,
+    unreadMessageCount: 0
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token && state.user),
@@ -45,6 +46,7 @@ export const useAuthStore = defineStore('auth', {
       setAuthSession(result.token, result.user)
       await this.loadMe()
       await this.refreshUnread()
+      await this.refreshUnreadMessages()
     },
     async register(email: string, password: string, confirmPassword: string, code: string) {
       return authApi.register(email, password, confirmPassword, code)
@@ -68,6 +70,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.profile = null
       this.unreadCount = 0
+      this.unreadMessageCount = 0
       clearAuthSession()
     },
     async loadMe() {
@@ -88,6 +91,11 @@ export const useAuthStore = defineStore('auth', {
       if (!this.token) return
       const result = await notificationApi.unreadCount()
       this.unreadCount = result.count
+    },
+    async refreshUnreadMessages() {
+      if (!this.token) return
+      const result = await orderApi.unreadMessageCount()
+      this.unreadMessageCount = result.count
     }
   }
 })
