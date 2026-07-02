@@ -529,7 +529,7 @@
     "publisherAvatarUrl": "/uploads/avatars/10001.jpg",
     "category": "EXPRESS",
     "title": "帮忙取一下韵达快递",
-    "description": "韵达快递，取件码 A-3-2105，在仙林校区快递点",
+    "description": "韵达快递，在仙林校区快递点取件并送到宿舍",
     "campus": "仙林校区",
     "rewardType": "CASH",
     "rewardAmount": 10.00,
@@ -539,10 +539,9 @@
     "anonymous": false,
     "categoryFields": {
       "expressCompany": "韵达快递",
-      "pickupLocation": "仙林校区快递点",
-      "pickupCode": "A-3-2105",
-      "deliveryLocation": "仙林校区12栋"
+      "pickupLocation": "仙林校区快递点"
     },
+    "privateFieldsHidden": true,
     "imageUrls": ["/uploads/tasks/3001_1.jpg"],
     "files": [],
     "fileDownloadAllowed": false,
@@ -556,7 +555,7 @@
 }
 ```
 
-注：`categoryFields` 按需求类别返回差异化字段。`pickupCode` 仅在订单确认后对接单者展示完整内容，否则脱敏或隐藏。
+注：`categoryFields` 按需求类别返回差异化字段。快递代取的 `pickupCode`、`deliveryLocation`（以及兼容字段 `deliveryAddress`）和失物招领的 `contactInfo` 属于私密字段：发布者始终可见；发布者确认接单后，仅对应服务方可见；其余访问者的响应会移除这些字段，并返回 `privateFieldsHidden: true`。若私密字段的完整值被重复写入标题或描述，公开响应也会将该值替换为 `[私密信息已隐藏]`。组队搭子不进入接单流程，其 `contactInfo` 仍作为公开联系信息展示。标题和描述属于公开内容，不应填写上述私密信息。
 
 ---
 

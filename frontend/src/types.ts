@@ -158,6 +158,7 @@ export interface TaskItem {
   createdAt: string
   updatedAt?: string
   categoryFields?: Record<string, string | number | boolean>
+  privateFieldsHidden?: boolean
 }
 
 export interface TaskForm {

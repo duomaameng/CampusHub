@@ -1506,6 +1506,11 @@ components:
           type: integer
         isFavorited:
           type: boolean
+        categoryFields:
+          $ref: "#/components/schemas/CategoryFields"
+        privateFieldsHidden:
+          type: boolean
+          description: 未确认接单时，响应是否已隐藏取件码、精确送达地点或联系方式等私密字段
         createdAt:
           type: string
           format: date-time

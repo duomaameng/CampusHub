@@ -38,4 +38,5 @@ public class TaskItemVO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Map<String, Object> categoryFields;
+    private boolean privateFieldsHidden;
 }

@@ -69,6 +69,10 @@ public class TaskService {
     private static final int DEFAULT_CREDIT_SCORE = 100;
     private static final int MIN_CREDIT_SCORE = 0;
     private static final int MAX_CREDIT_SCORE = 100;
+    private static final Map<TaskCategory, Set<String>> PRIVATE_CATEGORY_FIELDS = Map.of(
+            TaskCategory.EXPRESS, Set.of("pickupCode", "deliveryLocation", "deliveryAddress"),
+            TaskCategory.LOST_FOUND, Set.of("contactInfo")
+    );
 
     private final TaskMapper taskMapper;
     private final TaskImageMapper taskImageMapper;
@@ -550,8 +554,45 @@ public class TaskService {
         vo.setFavorited(isFavoritedByCurrentUser(task.getId()));
         vo.setCreatedAt(task.getCreatedAt());
         vo.setUpdatedAt(task.getUpdatedAt());
-        vo.setCategoryFields(parseCategoryFields(task.getCategoryFields()));
+        Map<String, Object> categoryFields = parseCategoryFields(task.getCategoryFields());
+        Set<String> privateFieldNames = PRIVATE_CATEGORY_FIELDS.getOrDefault(task.getCategory(), Set.of());
+        if (!privateFieldNames.isEmpty() && !canCurrentUserViewPrivateFields(task)) {
+            Map<String, Object> publicFields = new LinkedHashMap<>(categoryFields);
+            privateFieldNames.stream()
+                    .map(categoryFields::get)
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .filter(value -> !value.isBlank())
+                    .forEach(value -> {
+                        vo.setTitle(redactPrivateValue(vo.getTitle(), value));
+                        vo.setDescription(redactPrivateValue(vo.getDescription(), value));
+                    });
+            privateFieldNames.forEach(publicFields::remove);
+            vo.setPrivateFieldsHidden(publicFields.size() != categoryFields.size());
+            categoryFields = publicFields;
+        }
+        vo.setCategoryFields(categoryFields);
         return vo;
+    }
+
+    private boolean canCurrentUserViewPrivateFields(Task task) {
+        Optional<Long> currentUserId = SecurityUtils.getCurrentUserId();
+        if (currentUserId.isEmpty()) {
+            return false;
+        }
+        if (Objects.equals(currentUserId.get(), task.getPublisherId())) {
+            return true;
+        }
+        return orderMapper.selectCount(new LambdaQueryWrapper<Order>()
+                .eq(Order::getTaskId, task.getId())
+                .eq(Order::getServiceProviderId, currentUserId.get())) > 0;
+    }
+
+    private String redactPrivateValue(String publicText, String privateValue) {
+        if (publicText == null || !publicText.contains(privateValue)) {
+            return publicText;
+        }
+        return publicText.replace(privateValue, "[私密信息已隐藏]");
     }
 
     private void applyReward(

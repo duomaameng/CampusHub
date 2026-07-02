@@ -630,13 +630,17 @@ onBeforeUnmount(() => {
               <span v-if="isPublisher && task.hasUnreadApplications" class="application-unread-dot" aria-label="有新的接单申请" />
             </button>
 
-            <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
+            <div
+              v-if="(task.categoryFields && Object.keys(task.categoryFields).length) || task.privateFieldsHidden"
+              class="panel"
+            >
               <h2>{{ task.category === 'TEAM_UP' ? '组队帖子信息' : '订单相关信息' }}</h2>
-              <div class="meta-line">
+              <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="meta-line">
                 <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
                   {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
                 </span>
               </div>
+              <p v-if="task.privateFieldsHidden" class="hint">取件码、精确送达地点或联系方式等私密信息，将在发布者确认接单后对服务方显示。</p>
             </div>
           </div>
         </template>

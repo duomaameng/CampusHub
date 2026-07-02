@@ -98,6 +98,11 @@ const categoryFields = computed(() => {
   return []
 })
 
+function isPrivateCategoryField(key: string) {
+  return (form.category === 'EXPRESS' && ['pickupCode', 'deliveryLocation'].includes(key))
+    || (form.category === 'LOST_FOUND' && key === 'contactInfo')
+}
+
 watch(
   () => form.category,
   (category) => {
@@ -339,6 +344,7 @@ async function removeUploadedFile(fileId: number) {
           描述
         </label>
         <textarea id="description" v-model.trim="form.description" minlength="10" maxlength="2000" required />
+        <p class="hint">请勿在描述中填写取件码、精确送达地址或联系方式；请填写在下方专用字段中，系统会在确认接单前保护这些信息。</p>
       </div>
 
       <div class="grid two">
@@ -435,6 +441,7 @@ async function removeUploadedFile(fileId: number) {
             @change="validateCategoryDateTimeField(key)"
             @blur="validateCategoryDateTimeField(key)"
           />
+          <p v-if="isPrivateCategoryField(key)" class="hint">该信息在发布者确认接单前仅发布者可见。</p>
         </div>
       </div>
 
