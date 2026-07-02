@@ -375,7 +375,12 @@ function closeCancelDialog() {
 }
 
 async function submitCancellation() {
-  if (!order.value || !cancelReason.value.trim()) return
+  if (!order.value) return
+  if (!cancelReason.value.trim()) {
+    error.value = '请填写取消原因后再提交'
+    success.value = ''
+    return
+  }
   const providerRequest = isProvider.value && !isPublisher.value
   cancelSubmitting.value = true
   error.value = ''
@@ -1000,7 +1005,8 @@ onMounted(load)
             <p class="hint">
               {{ isProvider && !isPublisher ? '提交后将等待发布方审核。' : '订单取消后将无法继续履约。' }}
             </p>
-            <p v-if="error" class="error-message">{{ error }}</p>
+            <p v-if="!cancelReason.trim()" class="error-message">请填写取消原因后再提交。</p>
+            <p v-else-if="error" class="error-message">{{ error }}</p>
             <div class="report-modal-actions">
               <button class="button ghost" type="button" :disabled="cancelSubmitting" @click="closeCancelDialog">返回</button>
               <button class="button danger" type="submit" :disabled="cancelSubmitting || !cancelReason.trim()">
@@ -1554,9 +1560,19 @@ onMounted(load)
   color: #c1121f;
 }
 
-.button.danger:hover {
+.button.danger:hover:not(:disabled) {
   background: #ffe8e8;
   color: #9f0f19;
+}
+
+.button.danger:disabled {
+  border-color: #9ca3af;
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 1;
+  transform: none;
+  box-shadow: none;
 }
 
 .item-card {
