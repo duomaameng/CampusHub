@@ -19,6 +19,7 @@ import com.campushub.mapper.TaskImageMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ class TaskServiceTest {
     @Mock private UserMapper userMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
+    @Mock private RealtimeEventPublisher realtimeEventPublisher;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
@@ -76,7 +78,8 @@ class TaskServiceTest {
                 userMapper,
                 notificationService,
                 fileService,
-                objectMapper
+                objectMapper,
+                realtimeEventPublisher
         );
 
         assertThatThrownBy(() -> taskService.listTasks(1, 20, "NOT_A_CATEGORY", null, null, null))
