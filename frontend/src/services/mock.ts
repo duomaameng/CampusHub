@@ -226,7 +226,6 @@ const initialDb: MockDatabase = {
       applicantId: 10002,
       applicantNickname: '小红',
       applicantCreditScore: 95,
-      message: '我可以帮你一起梳理联调流程。',
       status: 'PENDING',
       createdAt: '2026-05-18T15:00:00.000Z'
     }
@@ -763,7 +762,7 @@ export const mockApi = {
     return paginate(clone(db.tasks.filter((item) => item.isFavorited)), params.page, params.size)
   },
 
-  async applyTask(taskId: number, message: string) {
+  async applyTask(taskId: number) {
     await wait()
     const db = loadDb()
     const user = getCurrentUser(db)
@@ -782,7 +781,6 @@ export const mockApi = {
       applicantId: user.id,
       applicantNickname: user.profile.nickname,
       applicantCreditScore: user.credit.score,
-      message,
       status: 'PENDING',
       createdAt: new Date().toISOString()
     })

@@ -137,7 +137,7 @@ export const taskApi = {
     return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/favorites', params })
   },
   apply(taskId: number) {
-    if (useMock) return mockApi.applyTask(taskId, '')
+    if (useMock) return mockApi.applyTask(taskId)
     return request<{ applicationId: number; taskId: number; status: string; createdAt: string }>({
       method: 'POST',
       url: `/tasks/${taskId}/applications`
