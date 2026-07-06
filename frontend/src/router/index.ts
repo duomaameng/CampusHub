@@ -28,15 +28,15 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/orders/:id/chat',
-      name: 'order-chat',
-      component: () => import('@/views/OrderChatView.vue'),
+      path: '/chats',
+      name: 'chats',
+      component: () => import('@/views/ChatView.vue'),
       meta: { requiresAuth: true }
     },
     {
-      path: '/chats',
-      name: 'chats',
-      component: () => import('@/views/OrderChatView.vue'),
+      path: '/messages/:userId',
+      name: 'user-chat',
+      component: () => import('@/views/ChatView.vue'),
       meta: { requiresAuth: true }
     },
     { path: '/profile', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { requiresAuth: true } },

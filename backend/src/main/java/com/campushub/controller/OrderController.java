@@ -11,7 +11,6 @@ import com.campushub.vo.order.OrderDetailVO;
 import com.campushub.vo.order.OrderItemVO;
 import com.campushub.vo.order.OrderStatusLogVO;
 import com.campushub.vo.order.ReviewItemVO;
-import com.campushub.vo.UnreadCountVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -77,47 +76,6 @@ public class OrderController {
     public ApiResponse<Void> rejectCancelRequest(@PathVariable Long orderId) {
         orderService.rejectCancelRequest(orderId);
         return ApiResponse.success();
-    }
-
-    @PostMapping("/{orderId}/messages")
-    public ApiResponse<Void> sendMessage(@PathVariable Long orderId, @Valid @RequestBody OrderMessageRequest request) {
-        orderService.sendMessage(orderId, request);
-        return ApiResponse.success();
-    }
-
-    @GetMapping("/messages/unread-count")
-    public ApiResponse<UnreadCountVO> unreadMessageCount() {
-        return ApiResponse.success(new UnreadCountVO(orderService.countUnreadMessages()));
-    }
-
-    @PatchMapping("/{orderId}/messages/read")
-    public ApiResponse<Void> markMessagesRead(@PathVariable Long orderId) {
-        orderService.markMessagesRead(orderId);
-        return ApiResponse.success();
-    }
-
-    @GetMapping("/{orderId}/messages")
-    public ApiResponse<List<com.campushub.vo.order.OrderMessageVO>> messages(@PathVariable Long orderId) {
-        return ApiResponse.success(orderService.listMessages(orderId));
-    }
-
-    @GetMapping("/{orderId}/messages/{messageId}/attachment")
-    public ResponseEntity<Resource> downloadMessageAttachment(@PathVariable Long orderId, @PathVariable Long messageId) {
-        FileRecord file = orderService.requireMessageAttachment(orderId, messageId);
-        Path path = fileService.resolveStoredFile(file);
-        String contentType;
-        try {
-            contentType = Files.probeContentType(path);
-        } catch (Exception ignored) {
-            contentType = null;
-        }
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
-                        .filename(file.getFileName(), StandardCharsets.UTF_8)
-                        .build()
-                        .toString())
-                .body(new FileSystemResource(path));
     }
 
     @PostMapping("/{orderId}/reviews")

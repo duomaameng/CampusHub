@@ -21,7 +21,6 @@ public class OrderDetailVO extends OrderItemVO {
     private String proofImageUrl;
     private String completionNote;
     private List<OrderStatusLogVO> statusLogs;
-    private List<OrderMessageVO> messages;
     private List<TaskFileVO> taskFiles;
     private boolean taskFileDownloadAllowed;
     private List<String> taskImageUrls;

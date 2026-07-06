@@ -22,7 +22,7 @@ export type OrderStatus =
   | 'REVIEWED'
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
 export type RewardPaymentMethod = 'WECHAT' | 'ALIPAY' | 'CASH'
-export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
+export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'CHAT_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
 export type MessageType = 'TEXT' | 'IMAGE' | 'FILE'
 export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'TASK_FILE' | 'CHAT_IMAGE' | 'CHAT_FILE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
 export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'
@@ -218,6 +218,7 @@ export interface OrderDetail extends OrderItem {
   proofImageUrl?: string
   completionNote?: string
   statusLogs: OrderStatusLog[]
+  /** Legacy mock-only field. Production chat data comes from ChatDetail. */
   messages: OrderMessage[]
   taskFiles?: TaskFileItem[]
   taskFileDownloadAllowed?: boolean
@@ -240,6 +241,14 @@ export interface OrderStatusLog {
   createdAt: string
 }
 
+export interface ChatUser {
+  id: number
+  email: string
+  nickname: string
+  avatarUrl?: string
+}
+
+/** Legacy mock-only order message shape. */
 export interface OrderMessage {
   id: number
   orderId: number
@@ -253,6 +262,35 @@ export interface OrderMessage {
   fileName?: string
   fileSize?: number
   createdAt: string
+}
+
+export interface ChatMessage {
+  id: number
+  conversationId: number
+  senderId: number
+  senderNickname: string
+  senderAvatarUrl?: string
+  messageType: MessageType
+  content?: string
+  imageUrl?: string
+  fileId?: number
+  fileName?: string
+  fileSize?: number
+  createdAt: string
+}
+
+export interface ConversationItem {
+  id: number
+  participant: ChatUser
+  lastMessageText: string
+  lastMessageAt: string
+  unreadCount: number
+}
+
+export interface ChatDetail {
+  conversationId?: number
+  participant: ChatUser
+  messages: ChatMessage[]
 }
 
 export interface NotificationItem {

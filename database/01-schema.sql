@@ -16,6 +16,8 @@ DROP TABLE IF EXISTS `report`;
 DROP TABLE IF EXISTS `credit_log`;
 DROP TABLE IF EXISTS `review`;
 DROP TABLE IF EXISTS `notification`;
+DROP TABLE IF EXISTS `chat_message`;
+DROP TABLE IF EXISTS `conversation`;
 DROP TABLE IF EXISTS `order_message`;
 DROP TABLE IF EXISTS `order_status_log`;
 DROP TABLE IF EXISTS `orders`;
@@ -175,9 +177,24 @@ CREATE TABLE `order_status_log` (
   CONSTRAINT `fk_osl_operator` FOREIGN KEY (`operator_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='order status log table';
 
-CREATE TABLE `order_message` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'order message id',
-  `order_id` BIGINT NOT NULL COMMENT 'order id',
+CREATE TABLE `conversation` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'conversation id',
+  `user1_id` BIGINT NOT NULL COMMENT 'smaller participant user id',
+  `user2_id` BIGINT NOT NULL COMMENT 'larger participant user id',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_conversation_users` (`user1_id`, `user2_id`),
+  KEY `idx_conversation_user1_updated` (`user1_id`, `updated_at`),
+  KEY `idx_conversation_user2_updated` (`user2_id`, `updated_at`),
+  CONSTRAINT `fk_conversation_user1` FOREIGN KEY (`user1_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `fk_conversation_user2` FOREIGN KEY (`user2_id`) REFERENCES `user` (`id`),
+  CONSTRAINT `chk_conversation_user_order` CHECK (`user1_id` < `user2_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='user conversation table';
+
+CREATE TABLE `chat_message` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'chat message id',
+  `conversation_id` BIGINT NOT NULL COMMENT 'conversation id',
   `sender_id` BIGINT NOT NULL COMMENT 'sender user id',
   `message_type` VARCHAR(8) NOT NULL COMMENT 'TEXT IMAGE or FILE',
   `content` VARCHAR(2000) DEFAULT NULL COMMENT 'text content',
@@ -186,11 +203,12 @@ CREATE TABLE `order_message` (
   `is_read` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'read flag',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_order_message_order_time` (`order_id`, `created_at`),
-  KEY `idx_order_message_file_id` (`file_id`),
-  CONSTRAINT `fk_order_message_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_order_message_sender` FOREIGN KEY (`sender_id`) REFERENCES `user` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='order message table';
+  KEY `idx_chat_message_conversation_time` (`conversation_id`, `created_at`),
+  KEY `idx_chat_message_unread` (`conversation_id`, `is_read`, `sender_id`),
+  KEY `idx_chat_message_file_id` (`file_id`),
+  CONSTRAINT `fk_chat_message_conversation` FOREIGN KEY (`conversation_id`) REFERENCES `conversation` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_chat_message_sender` FOREIGN KEY (`sender_id`) REFERENCES `user` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='user chat message table';
 
 CREATE TABLE `notification` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT 'notification id',
@@ -202,11 +220,13 @@ CREATE TABLE `notification` (
   `is_deleted` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'deleted flag',
   `related_order_id` BIGINT DEFAULT NULL COMMENT 'related order id',
   `related_task_id` BIGINT DEFAULT NULL COMMENT 'related task id',
+  `related_user_id` BIGINT DEFAULT NULL COMMENT 'related chat user id',
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_notification_receiver_read_time` (`receiver_id`, `is_read`, `created_at`),
   KEY `idx_notification_receiver_deleted` (`receiver_id`, `is_deleted`),
-  CONSTRAINT `fk_notification_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_notification_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `user` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_notification_related_user` FOREIGN KEY (`related_user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='notification table';
 
 CREATE TABLE `review` (
@@ -274,8 +294,8 @@ CREATE TABLE `file_record` (
   CONSTRAINT `fk_file_record_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='file record table';
 
-ALTER TABLE `order_message`
-  ADD CONSTRAINT `fk_order_message_file`
+ALTER TABLE `chat_message`
+  ADD CONSTRAINT `fk_chat_message_file`
   FOREIGN KEY (`file_id`) REFERENCES `file_record` (`id`);
 
 CREATE TABLE `task_file` (

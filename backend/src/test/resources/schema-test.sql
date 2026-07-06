@@ -6,7 +6,8 @@ DROP TABLE IF EXISTS report;
 DROP TABLE IF EXISTS credit_log;
 DROP TABLE IF EXISTS review;
 DROP TABLE IF EXISTS notification;
-DROP TABLE IF EXISTS order_message;
+DROP TABLE IF EXISTS chat_message;
+DROP TABLE IF EXISTS conversation;
 DROP TABLE IF EXISTS order_status_log;
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS application;
@@ -126,13 +127,23 @@ CREATE TABLE order_status_log (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE order_message (
+CREATE TABLE conversation (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  order_id BIGINT NOT NULL,
+  user1_id BIGINT NOT NULL,
+  user2_id BIGINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user1_id, user2_id)
+);
+
+CREATE TABLE chat_message (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id BIGINT NOT NULL,
   sender_id BIGINT NOT NULL,
   message_type VARCHAR(8) NOT NULL,
   content VARCHAR(2000),
   image_url VARCHAR(512),
+  file_id BIGINT,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -147,6 +158,7 @@ CREATE TABLE notification (
   is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
   related_order_id BIGINT,
   related_task_id BIGINT,
+  related_user_id BIGINT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

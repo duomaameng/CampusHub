@@ -126,7 +126,7 @@ function handleLogout() {
         <RouterLink
           v-if="auth.isAuthenticated"
           to="/chats"
-          :class="{ 'router-link-active': route.name === 'order-chat' || route.name === 'chats' }"
+          :class="{ 'router-link-active': route.name === 'user-chat' || route.name === 'chats' }"
         >
           <MessageSquareText class="nav-icon" aria-hidden="true" />
           <span>消息</span>

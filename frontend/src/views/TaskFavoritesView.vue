@@ -112,7 +112,9 @@ onMounted(loadFavorites)
             <span class="relation-pill">收藏任务</span>
             <h2>{{ task.title }}</h2>
           </div>
-          <span :class="['tag', 'status-tag', statusTagClass[task.status]]">{{ taskStatusText[task.status] }}</span>
+          <span :class="['tag', 'status-tag', statusTagClass[task.status]]">
+            {{ task.status === 'CANCELLED' ? '已删除' : taskStatusText[task.status] }}
+          </span>
         </div>
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>

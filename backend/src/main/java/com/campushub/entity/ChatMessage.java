@@ -1,19 +1,23 @@
 package com.campushub.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.campushub.enums.MessageType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-@TableName("order_message")
-public class OrderMessage {
+@TableName("chat_message")
+public class ChatMessage {
 
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    private Long orderId;
+    private Long conversationId;
 
     private Long senderId;
 

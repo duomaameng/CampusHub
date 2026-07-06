@@ -90,7 +90,8 @@
 - `task`
 - `application`
 - `orders`
-- `order_message`
+- `conversation`
+- `chat_message`
 - `notification`
 - `review`
 - `report`

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-import { authApi, notificationApi, orderApi, userApi } from '@/services/api'
+import { authApi, messageApi, notificationApi, userApi } from '@/services/api'
 import type { LoginUser, UserProfile } from '@/types'
 
 function getStoredToken(): string {
@@ -94,7 +94,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async refreshUnreadMessages() {
       if (!this.token) return
-      const result = await orderApi.unreadMessageCount()
+      const result = await messageApi.unreadCount()
       this.unreadMessageCount = result.count
     }
   }

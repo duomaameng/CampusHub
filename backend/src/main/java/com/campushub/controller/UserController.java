@@ -7,6 +7,7 @@ import com.campushub.vo.user.PublicProfileVO;
 import com.campushub.vo.user.UserCreditVO;
 import com.campushub.vo.user.UserProfileVO;
 import com.campushub.vo.user.UserReviewItemVO;
+import com.campushub.vo.message.ChatUserVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -49,5 +50,10 @@ public class UserController {
     @GetMapping("/{userId}/credit")
     public ApiResponse<UserCreditVO> getUserCredit(@PathVariable Long userId) {
         return ApiResponse.success(userService.getUserCredit(userId));
+    }
+
+    @GetMapping("/search")
+    public ApiResponse<List<ChatUserVO>> searchUsers(@RequestParam String keyword) {
+        return ApiResponse.success(userService.searchChatUsers(keyword));
     }
 }

@@ -130,10 +130,9 @@ public class NotificationService {
     }
 
     @Transactional
-    public void createOrderMessageNotification(Long receiverId, Long orderId, String senderNickname, String preview) {
-        notificationMapper.insert(notificationFactory.orderMessage(receiverId, orderId, senderNickname, preview));
+    public void createChatMessageNotification(Long receiverId, Long senderId, String senderNickname, String preview) {
+        notificationMapper.insert(notificationFactory.chatMessage(receiverId, senderId, senderNickname, preview));
         publishNotificationChange(receiverId);
-        realtimeEventPublisher.user(receiverId, RealtimeEventPublisher.MESSAGES_CHANGED, orderId);
     }
 
     @Transactional
@@ -165,8 +164,12 @@ public class NotificationService {
     }
 
     private NotificationItemVO toItemVO(Notification notification) {
-        String targetType = notification.getRelatedOrderId() != null ? "ORDER" : "TASK";
-        Long targetId = notification.getRelatedOrderId() != null ? notification.getRelatedOrderId() : notification.getRelatedTaskId();
+        String targetType = notification.getRelatedUserId() != null
+                ? "USER"
+                : notification.getRelatedOrderId() != null ? "ORDER" : "TASK";
+        Long targetId = notification.getRelatedUserId() != null
+                ? notification.getRelatedUserId()
+                : notification.getRelatedOrderId() != null ? notification.getRelatedOrderId() : notification.getRelatedTaskId();
         return new NotificationItemVO(
                 notification.getId(),
                 notification.getType(),

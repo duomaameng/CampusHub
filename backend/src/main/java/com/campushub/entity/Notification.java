@@ -29,6 +29,8 @@ public class Notification {
 
     private Long relatedTaskId;
 
+    private Long relatedUserId;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 }

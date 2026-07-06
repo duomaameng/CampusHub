@@ -38,6 +38,13 @@ public class TaskController {
         return ApiResponse.success(taskService.listTasks(page, size, category, campus, keyword, sort));
     }
 
+    @GetMapping("/tasks/mine")
+    public ApiResponse<PageResult<TaskItemVO>> mine(@RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "100") int size,
+                                                    @RequestParam(required = false) String keyword) {
+        return ApiResponse.success(taskService.listMyPublishedTasks(page, size, keyword));
+    }
+
     @GetMapping("/tasks/{taskId}")
     public ApiResponse<TaskItemVO> get(@PathVariable Long taskId) {
         return ApiResponse.success(taskService.getTask(taskId));

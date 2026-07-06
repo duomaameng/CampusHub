@@ -83,7 +83,7 @@ mysql -u root -p < database/02-seed.sql
 | 管理员 | `admin.demo@smail.nju.edu.cn` | `CampusHub123!` |
 | 学生 | `student.demo1@smail.nju.edu.cn` | `CampusHub123!` |
 | 学生 | `student.demo2@smail.nju.edu.cn` | `CampusHub123!` |
-| 学生 | `student.pending@smail.nju.edu.cn` | `CampusHub123!` |
+| 学生 | `student.demo3@smail.nju.edu.cn` | `CampusHub123!` |
 
 ### 启动后端
 

@@ -3,6 +3,7 @@ package com.campushub.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campushub.common.BusinessException;
 import com.campushub.entity.Application;
+import com.campushub.entity.Order;
 import com.campushub.entity.Task;
 import com.campushub.enums.ApplicationStatus;
 import com.campushub.enums.RewardType;
@@ -13,6 +14,7 @@ import com.campushub.mapper.CreditLogMapper;
 import com.campushub.mapper.FavoriteMapper;
 import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.OrderStatusLogMapper;
+import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.TaskFileMapper;
 import com.campushub.mapper.TaskImageMapper;
@@ -53,6 +55,7 @@ class TaskServiceTest {
     @Mock private FavoriteMapper favoriteMapper;
     @Mock private CreditLogMapper creditLogMapper;
     @Mock private ReviewMapper reviewMapper;
+    @Mock private ReportMapper reportMapper;
     @Mock private UserMapper userMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
@@ -75,6 +78,7 @@ class TaskServiceTest {
                 favoriteMapper,
                 creditLogMapper,
                 reviewMapper,
+                reportMapper,
                 userMapper,
                 notificationService,
                 fileService,
@@ -186,6 +190,49 @@ class TaskServiceTest {
 
         verify(orderMapper).timeoutInProgressOrderByTaskId(100L);
         verify(taskMapper).updateStatusIfCurrent(100L, TaskStatus.IN_PROGRESS.name(), TaskStatus.EXPIRED.name());
+    }
+
+    @Test
+    void shouldSoftDeleteOpenTaskEvenWhenApplicationsExist() {
+        Task task = openTaskPastDeadline();
+        task.setDeadline(LocalDateTime.now().plusDays(1));
+        when(taskMapper.selectById(100L)).thenReturn(task);
+
+        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
+            securityUtils.when(SecurityUtils::requireCurrentUserId).thenReturn(10L);
+            taskService.deleteTask(100L);
+        }
+
+        verify(taskMapper).updateById(task);
+        verify(applicationMapper).update(any(), any());
+        verify(orderMapper).update(any(), any());
+        verify(favoriteMapper).delete(any());
+        verify(applicationMapper, never()).selectCount(any());
+    }
+
+    @Test
+    void shouldHardDeleteCancelledTaskAndDetachOrderReports() {
+        Task task = openTaskPastDeadline();
+        task.setStatus(TaskStatus.CANCELLED);
+        task.setDeadline(LocalDateTime.now().plusDays(1));
+        Order order = new Order();
+        order.setId(700L);
+        order.setTaskId(100L);
+        when(taskMapper.selectById(100L)).thenReturn(task);
+        when(orderMapper.selectList(any())).thenReturn(List.of(order));
+
+        try (MockedStatic<SecurityUtils> securityUtils = mockStatic(SecurityUtils.class)) {
+            securityUtils.when(SecurityUtils::requireCurrentUserId).thenReturn(10L);
+            taskService.deleteTask(100L);
+        }
+
+        var deletionOrder = inOrder(reviewMapper, reportMapper, orderMapper, applicationMapper, taskFileMapper, taskMapper);
+        deletionOrder.verify(reviewMapper).delete(any());
+        deletionOrder.verify(reportMapper).update(any(), any());
+        deletionOrder.verify(orderMapper).deleteById(700L);
+        deletionOrder.verify(applicationMapper).delete(any());
+        deletionOrder.verify(taskFileMapper).delete(any());
+        deletionOrder.verify(taskMapper).deleteById(100L);
     }
 
     private Task openTaskPastDeadline() {

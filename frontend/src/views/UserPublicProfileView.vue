@@ -1,13 +1,15 @@
 ﻿<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { userApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import type { CreditInfo, PublicProfile, UserReviewItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
+const auth = useAuthStore()
 const profile = ref<PublicProfile>()
 const credit = ref<CreditInfo>()
 const reviews = ref<UserReviewItem[]>([])
@@ -75,6 +77,13 @@ onMounted(load)
               <span v-else-if="profile.gender === 'FEMALE'" class="tag">女</span>
             </div>
           </div>
+          <RouterLink
+            v-if="auth.isAuthenticated && profile.userId !== auth.user?.id"
+            class="button secondary"
+            :to="{ name: 'user-chat', params: { userId: profile.userId } }"
+          >
+            联系该用户
+          </RouterLink>
         </div>
 
         <div class="grid two">

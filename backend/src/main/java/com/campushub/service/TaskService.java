@@ -32,6 +32,7 @@ import com.campushub.mapper.CreditLogMapper;
 import com.campushub.mapper.FavoriteMapper;
 import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.OrderStatusLogMapper;
+import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.TaskImageMapper;
 import com.campushub.mapper.TaskFileMapper;
@@ -83,6 +84,7 @@ public class TaskService {
     private final FavoriteMapper favoriteMapper;
     private final CreditLogMapper creditLogMapper;
     private final ReviewMapper reviewMapper;
+    private final ReportMapper reportMapper;
     private final UserMapper userMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
@@ -113,6 +115,23 @@ public class TaskService {
             orderBy += ", created_at DESC";
         }
         wrapper.last("ORDER BY " + orderBy);
+
+        Page<Task> result = taskMapper.selectPage(pageQuery, wrapper);
+        List<TaskItemVO> records = result.getRecords().stream().map(this::toTaskItemVO).toList();
+        return PageResult.of(result.getTotal(), page, size, records);
+    }
+
+    public PageResult<TaskItemVO> listMyPublishedTasks(int page, int size, String keyword) {
+        expireOpenTasksPastDeadline();
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Page<Task> pageQuery = new Page<>(page, size);
+        LambdaQueryWrapper<Task> wrapper = new LambdaQueryWrapper<Task>()
+                .eq(Task::getPublisherId, currentUserId)
+                .in(Task::getStatus, TaskStatus.OPEN, TaskStatus.CANCELLED);
+        if (keyword != null && !keyword.isBlank()) {
+            wrapper.and(w -> w.like(Task::getTitle, keyword).or().like(Task::getDescription, keyword));
+        }
+        wrapper.last("ORDER BY FIELD(status, 'OPEN', 'CANCELLED'), created_at DESC");
 
         Page<Task> result = taskMapper.selectPage(pageQuery, wrapper);
         List<TaskItemVO> records = result.getRecords().stream().map(this::toTaskItemVO).toList();
@@ -369,17 +388,41 @@ public class TaskService {
         if (!Objects.equals(task.getPublisherId(), currentUserId)) {
             throw new BusinessException(ErrorCode.TASK_NOT_OWNER);
         }
-        if (!TaskStatus.OPEN.equals(task.getStatus())) {
-            throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
+        if (TaskStatus.OPEN.equals(task.getStatus())) {
+            task.setStatus(TaskStatus.CANCELLED);
+            taskMapper.updateById(task);
+            applicationMapper.update(
+                    null,
+                    new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Application>()
+                            .eq(Application::getTaskId, taskId)
+                            .in(Application::getStatus, ApplicationStatus.PENDING, ApplicationStatus.APPROVED)
+                            .set(Application::getStatus, ApplicationStatus.CANCELLED)
+            );
+            orderMapper.update(
+                    null,
+                    new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Order>()
+                            .eq(Order::getTaskId, taskId)
+                            .eq(Order::getStatus, OrderStatus.PENDING_CONFIRM)
+                            .set(Order::getStatus, OrderStatus.CANCELLED)
+            );
+            favoriteMapper.delete(new LambdaQueryWrapper<Favorite>().eq(Favorite::getTaskId, taskId));
+            realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, taskId);
+            return;
         }
-        if (!TaskCategory.TEAM_UP.equals(task.getCategory())) {
-            ensureNoApplications(taskId);
+        if (!TaskStatus.CANCELLED.equals(task.getStatus())) {
+            throw new BusinessException(ErrorCode.TASK_NOT_OPEN);
         }
 
         List<Order> orders = orderMapper.selectList(
                 new LambdaQueryWrapper<Order>().eq(Order::getTaskId, taskId));
         for (Order order : orders) {
             reviewMapper.delete(new LambdaQueryWrapper<Review>().eq(Review::getOrderId, order.getId()));
+            reportMapper.update(
+                    null,
+                    new LambdaUpdateWrapper<com.campushub.entity.Report>()
+                            .eq(com.campushub.entity.Report::getRelatedOrderId, order.getId())
+                            .set(com.campushub.entity.Report::getRelatedOrderId, null)
+            );
             orderMapper.deleteById(order.getId());
         }
 
@@ -437,6 +480,9 @@ public class TaskService {
                 .map(fav -> {
                     Task task = taskMap.get(fav.getTaskId());
                     if (task == null) return null;
+                    if (TaskStatus.CANCELLED.equals(task.getStatus())) {
+                        return null;
+                    }
                     TaskItemVO vo = toTaskItemVO(task);
                     vo.setFavorited(true);
                     return vo;

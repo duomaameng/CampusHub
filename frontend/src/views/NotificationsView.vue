@@ -64,6 +64,7 @@ function deleteAllRead() {
 }
 
 function targetLink(item: NotificationItem) {
+  if (item.targetType === 'USER') return `/messages/${item.targetId}`
   return item.targetType === 'ORDER' ? `/orders/${item.targetId}` : `/tasks/${item.targetId}`
 }
 

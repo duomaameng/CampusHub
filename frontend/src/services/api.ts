@@ -8,6 +8,10 @@ import type {
   AnnouncementItem,
   AnnouncementPublishResult,
   ApplicationItem,
+  ChatDetail,
+  ChatMessage,
+  ChatUser,
+  ConversationItem,
   CreditInfo,
   FavoriteToggleResult,
   LoginResult,
@@ -97,6 +101,10 @@ export const userApi = {
   getUserReviews(userId: number): Promise<UserReviewItem[]> {
     if (useMock) return mockApi.getUserReviews(userId)
     return request<UserReviewItem[]>({ method: 'GET', url: `/users/${userId}/reviews` })
+  },
+  search(keyword: string): Promise<ChatUser[]> {
+    if (useMock) return Promise.resolve([])
+    return request<ChatUser[]>({ method: 'GET', url: '/users/search', params: { keyword } })
   }
 }
 
@@ -111,6 +119,10 @@ export const taskApi = {
   }): Promise<PageData<TaskItem>> {
     if (useMock) return mockApi.listTasks(params)
     return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks', params })
+  },
+  mine(params: { page?: number; size?: number; keyword?: string }): Promise<PageData<TaskItem>> {
+    if (useMock) return mockApi.listTasks(params)
+    return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/mine', params })
   },
   get(taskId: number): Promise<TaskItem> {
     if (useMock) return mockApi.getTask(taskId)
@@ -202,41 +214,6 @@ export const orderApi = {
     if (useMock) return mockApi.rejectCancelRequest(orderId)
     return request({ method: 'POST', url: `/orders/${orderId}/cancel-request/reject` })
   },
-  sendMessage(orderId: number, content: string) {
-    if (useMock) return mockApi.sendMessage(orderId, content)
-    return request({ method: 'POST', url: `/orders/${orderId}/messages`, data: { messageType: 'TEXT', content } })
-  },
-  sendImage(orderId: number, imageId: number) {
-    if (useMock) return mockApi.sendImage(orderId, imageId)
-    return request({
-      method: 'POST',
-      url: `/orders/${orderId}/messages`,
-      data: { messageType: 'IMAGE', imageId }
-    })
-  },
-  sendFile(orderId: number, fileId: number) {
-    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用文件消息'))
-    return request({
-      method: 'POST',
-      url: `/orders/${orderId}/messages`,
-      data: { messageType: 'FILE', fileId }
-    })
-  },
-  unreadMessageCount(): Promise<{ count: number }> {
-    if (useMock) return Promise.resolve({ count: 0 })
-    return request<{ count: number }>({ method: 'GET', url: '/orders/messages/unread-count' })
-  },
-  markMessagesRead(orderId: number): Promise<null> {
-    if (useMock) return Promise.resolve(null)
-    return request<null>({ method: 'PATCH', url: `/orders/${orderId}/messages/read` })
-  },
-  async downloadAttachment(orderId: number, messageId: number): Promise<Blob> {
-    if (useMock) throw new Error('请关闭 mock 模式后下载聊天附件')
-    const response = await http.get<Blob>(`/orders/${orderId}/messages/${messageId}/attachment`, {
-      responseType: 'blob'
-    })
-    return response.data
-  },
   submitReview(orderId: number, rating: number, content: string) {
     if (useMock) return mockApi.submitReview(orderId, rating, content)
     return request({ method: 'POST', url: `/orders/${orderId}/reviews`, data: { rating, content } })
@@ -248,6 +225,39 @@ export const orderApi = {
   statusLogs(orderId: number): Promise<OrderStatusLog[]> {
     if (useMock) return mockApi.getOrderStatusLogs(orderId)
     return request<OrderStatusLog[]>({ method: 'GET', url: `/orders/${orderId}/status-logs` })
+  }
+}
+
+export const messageApi = {
+  conversations(): Promise<ConversationItem[]> {
+    if (useMock) return Promise.resolve([])
+    return request<ConversationItem[]>({ method: 'GET', url: '/messages/conversations' })
+  },
+  chat(userId: number): Promise<ChatDetail> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用用户聊天'))
+    return request<ChatDetail>({ method: 'GET', url: `/messages/users/${userId}` })
+  },
+  sendText(userId: number, content: string): Promise<ChatMessage> {
+    return request<ChatMessage>({ method: 'POST', url: `/messages/users/${userId}`, data: { messageType: 'TEXT', content } })
+  },
+  sendImage(userId: number, imageId: number): Promise<ChatMessage> {
+    return request<ChatMessage>({ method: 'POST', url: `/messages/users/${userId}`, data: { messageType: 'IMAGE', imageId } })
+  },
+  sendFile(userId: number, fileId: number): Promise<ChatMessage> {
+    return request<ChatMessage>({ method: 'POST', url: `/messages/users/${userId}`, data: { messageType: 'FILE', fileId } })
+  },
+  unreadCount(): Promise<{ count: number }> {
+    if (useMock) return Promise.resolve({ count: 0 })
+    return request<{ count: number }>({ method: 'GET', url: '/messages/unread-count' })
+  },
+  markRead(userId: number): Promise<null> {
+    if (useMock) return Promise.resolve(null)
+    return request<null>({ method: 'PATCH', url: `/messages/users/${userId}/read` })
+  },
+  async downloadAttachment(messageId: number): Promise<Blob> {
+    if (useMock) throw new Error('请关闭 mock 模式后下载聊天附件')
+    const response = await http.get<Blob>(`/messages/${messageId}/attachment`, { responseType: 'blob' })
+    return response.data
   }
 }
 

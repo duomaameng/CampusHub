@@ -25,6 +25,7 @@ type OrderListCard = {
   numberLabel: string
   createdAt: string
   imageUrl?: string
+  statusLabel?: string
 }
 
 const auth = useAuthStore()
@@ -96,10 +97,11 @@ const orderCards = computed<OrderListCard[]>(() => {
     relationLabel: '我发布',
     relationClass: 'publisher',
     title: task.title,
-    status: 'PENDING_CONFIRM',
+    status: task.status === 'CANCELLED' ? 'CANCELLED' : 'PENDING_CONFIRM',
+    statusLabel: task.status === 'CANCELLED' ? '已删除' : undefined,
     publisherId: task.publisherId,
     publisherNickname: task.publisherNickname,
-    serviceProviderHint: '尚未接单',
+    serviceProviderHint: task.status === 'CANCELLED' ? '帖子已删除' : '尚未接单',
     numberLabel: `任务号 ${task.id}`,
     createdAt: task.createdAt,
     imageUrl: task.imageUrls?.[0]
@@ -156,17 +158,22 @@ function compareByStatusAndTime(aStatus: OrderStatus, aCreatedAt: string, bStatu
 }
 
 async function loadMissingPublishedTasks(orders: OrderItem[]) {
-  if (!auth.user || filters.role === 'PROVIDER' || filters.status) return []
+  if (!auth.user || filters.role === 'PROVIDER') return []
+  if (filters.status && !['PENDING_CONFIRM', 'CANCELLED'].includes(filters.status)) return []
 
   const linkedTaskIds = new Set(orders.map((order) => order.taskId))
-  const result = await taskApi.list({
+  const result = await taskApi.mine({
     page: 1,
     size: 100,
-    keyword: filters.keyword || undefined,
-    sort: 'newest'
+    keyword: filters.keyword || undefined
   })
 
-  return result.records.filter((task) => task.publisherId === auth.user?.id && !linkedTaskIds.has(task.id))
+  return result.records.filter((task) => {
+    const cardStatus = task.status === 'CANCELLED' ? 'CANCELLED' : 'PENDING_CONFIRM'
+    return task.publisherId === auth.user?.id
+      && !linkedTaskIds.has(task.id)
+      && (!filters.status || filters.status === cardStatus)
+  })
 }
 
 function setRoleFilter(role: OrderRoleFilter) {
@@ -223,6 +230,7 @@ onMounted(loadOrders)
           <option value="TIMEOUT">已超时</option>
           <option value="DISPUTE">争议处理中</option>
           <option value="PENDING_CONFIRM">待接单</option>
+          <option value="CANCELLED">已删除</option>
         </select>
       </div>
       <div class="field">
@@ -251,7 +259,7 @@ onMounted(loadOrders)
             <span :class="['relation-pill', card.relationClass]">{{ card.relationLabel }}</span>
             <h2>{{ card.title }}</h2>
           </div>
-          <span :class="['tag', 'status-tag', statusClass[card.status]]">{{ orderStatusText[card.status] }}</span>
+          <span :class="['tag', 'status-tag', statusClass[card.status]]">{{ card.statusLabel || orderStatusText[card.status] }}</span>
         </div>
         <div class="meta-line">
           <span>

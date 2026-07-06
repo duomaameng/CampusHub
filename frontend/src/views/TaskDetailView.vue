@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { AlertTriangle, Download, FileText, X } from '@lucide/vue'
+import { AlertTriangle, Download, FileText, MessageSquareText, X } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
@@ -63,6 +63,11 @@ const canEditTask = computed(() => Boolean(
   isPublisher.value &&
   task.value?.status === 'OPEN' &&
   (task.value.category === 'TEAM_UP' || task.value.applicationCount === 0)
+))
+const isDeletedTask = computed(() => task.value?.status === 'CANCELLED')
+const canDeleteTask = computed(() => Boolean(
+  isPublisher.value &&
+  (task.value?.status === 'OPEN' || isDeletedTask.value)
 ))
 const canReportTask = computed(() => Boolean(
   auth.isAuthenticated &&
@@ -254,24 +259,30 @@ async function saveTask() {
 
 async function deleteTask() {
   if (!task.value) return
-  if (!canEditTask.value) {
-    error.value = '已有接单或接单申请，不能删除该需求'
+  if (!canDeleteTask.value) {
+    error.value = '只有待接单或已删除状态的订单可以执行删除'
     success.value = ''
     return
   }
   const currentTask = task.value
+  const permanentlyDeletingTask = isDeletedTask.value
   dangerDialog.request({
-    title: currentTask.category === 'TEAM_UP' ? '取消这条组队帖？' : '删除这条需求？',
-    description: currentTask.category === 'TEAM_UP'
-      ? `“${currentTask.title}”取消后将不再展示，且无法恢复。`
-      : `“${currentTask.title}”删除后无法恢复，收藏和相关申请也会受到影响。`,
-    confirmText: currentTask.category === 'TEAM_UP' ? '确认取消' : '确认删除'
+    title: permanentlyDeletingTask ? '彻底删除这条订单？' : '删除这条订单？',
+    description: permanentlyDeletingTask
+      ? `“${currentTask.title}”将被完全删除，且无法恢复。`
+      : `“${currentTask.title}”将进入已删除状态；相关接单申请会取消，之后可以再次删除并彻底移除。`,
+    confirmText: permanentlyDeletingTask ? '彻底删除' : '确认删除'
   }, async () => {
     error.value = ''
     deletingTask.value = true
     try {
       await taskApi.remove(currentTask.id)
-      await router.push('/tasks')
+      if (!permanentlyDeletingTask) {
+        success.value = '订单已进入已删除状态'
+        await load()
+      } else {
+        await router.push('/tasks')
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : '需求删除失败'
       throw err
@@ -466,8 +477,9 @@ onBeforeUnmount(() => {
           </div>
           <div class="task-actions">
             <span class="tag">{{ categoryText[task.category] }}</span>
+            <span v-if="isDeletedTask" class="tag danger">已删除</span>
             <button
-              v-if="isPublisher && !editMode"
+              v-if="isPublisher && !editMode && !isDeletedTask"
               class="button secondary"
               :class="{ 'is-soft-disabled': !canEditTask }"
               type="button"
@@ -479,13 +491,17 @@ onBeforeUnmount(() => {
             <button
               v-if="isPublisher && !editMode"
               class="button danger"
-              :class="{ 'is-soft-disabled': !canEditTask }"
+              :class="{ 'is-soft-disabled': !canDeleteTask }"
               type="button"
               :disabled="deletingTask"
-              :aria-disabled="!canEditTask"
+              :aria-disabled="!canDeleteTask"
               @click="deleteTask"
             >
-              {{ deletingTask ? (task.category === 'TEAM_UP' ? '取消中...' : '删除中...') : (task.category === 'TEAM_UP' ? '取消帖子' : '删除') }}
+              {{
+                deletingTask
+                  ? (isDeletedTask ? '彻底删除中...' : '删除中...')
+                  : (isDeletedTask ? '删除' : task.category === 'TEAM_UP' ? '删除帖子' : '删除')
+              }}
             </button>
             <button
               v-if="auth.isAuthenticated && !isPublisher"
@@ -615,16 +631,26 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="order-information-section">
-            <button
-              v-if="task.category !== 'TEAM_UP'"
-              class="button primary order-application-button"
-              type="button"
-              :disabled="isPublisher ? false : !canApply || applying"
-              @click="isPublisher ? openApplicationDialog() : applyTask()"
-            >
-              {{ isPublisher ? '查看接单申请' : applying ? '申请中...' : '申请接单' }}
-              <span v-if="isPublisher && task.hasUnreadApplications" class="application-unread-dot" aria-label="有新的接单申请" />
-            </button>
+            <div class="order-action-buttons">
+              <button
+                v-if="task.category !== 'TEAM_UP'"
+                class="button primary order-application-button"
+                type="button"
+                :disabled="isPublisher ? false : !canApply || applying"
+                @click="isPublisher ? openApplicationDialog() : applyTask()"
+              >
+                {{ isPublisher ? '查看接单申请' : applying ? '申请中...' : '申请接单' }}
+                <span v-if="isPublisher && task.hasUnreadApplications" class="application-unread-dot" aria-label="有新的接单申请" />
+              </button>
+              <RouterLink
+                v-if="auth.isAuthenticated && !isPublisher && !task.anonymous"
+                class="button secondary order-contact-button"
+                :to="{ name: 'user-chat', params: { userId: task.publisherId } }"
+              >
+                <MessageSquareText class="button-icon" aria-hidden="true" />
+                <span>联系发布者</span>
+              </RouterLink>
+            </div>
             <p v-if="!isPublisher && !auth.isAuthenticated" class="hint">登录后可直接申请接单。</p>
             <p v-else-if="!isPublisher && !auth.user?.verified" class="hint">完成邮箱验证后可直接申请接单。</p>
 
@@ -672,9 +698,21 @@ onBeforeUnmount(() => {
               </div>
               <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
               <div v-if="task.status === 'OPEN' && application.status === 'PENDING'" class="application-actions">
+                <RouterLink class="button ghost" :to="{ name: 'user-chat', params: { userId: application.applicantId } }">
+                  <MessageSquareText class="button-icon" aria-hidden="true" />
+                  <span>联系申请人</span>
+                </RouterLink>
                 <button class="button secondary" type="button" :disabled="actionLoadingApplicationId === application.id" @click="confirmApplication(application.id)">确认接单</button>
                 <button class="button danger" type="button" :disabled="actionLoadingApplicationId === application.id" @click="rejectApplication(application.id)">拒绝申请</button>
               </div>
+              <RouterLink
+                v-else
+                class="button ghost"
+                :to="{ name: 'user-chat', params: { userId: application.applicantId } }"
+              >
+                <MessageSquareText class="button-icon" aria-hidden="true" />
+                <span>联系申请人</span>
+              </RouterLink>
             </div>
           </div>
 
@@ -749,7 +787,15 @@ onBeforeUnmount(() => {
   gap: 14px;
 }
 
-.order-application-button {
+.order-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.order-application-button,
+.order-contact-button {
   position: relative;
   overflow: visible;
   isolation: isolate;

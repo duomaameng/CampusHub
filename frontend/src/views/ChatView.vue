@@ -1,34 +1,23 @@
 ﻿<script setup lang="ts">
-import { ArrowLeft, Download, FileText, MessageSquareText, Paperclip, Send, X } from '@lucide/vue'
+import { Download, FileText, MessageSquareText, Paperclip, Search, Send, X } from '@lucide/vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
-import { fileApi, orderApi } from '@/services/api'
+import { fileApi, messageApi, userApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
-import { orderStatusText } from '@/types'
-import type { OrderDetail, OrderMessage, UploadedFileItem } from '@/types'
+import type { ChatDetail, ChatMessage, ChatUser, ConversationItem, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
-
-type ConversationItem = {
-  orderId: number
-  taskTitle: string
-  participantId?: number | null
-  participantNickname: string
-  participantAvatarUrl?: string
-  participantRole: string
-  status: OrderDetail['status']
-  lastMessageText: string
-  lastMessageAt: string
-  messageCount: number
-}
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-const order = ref<OrderDetail>()
+const chat = ref<ChatDetail>()
 const conversations = ref<ConversationItem[]>([])
+const searchKeyword = ref('')
+const searchResults = ref<ChatUser[]>([])
+const searching = ref(false)
 const loading = ref(false)
 const sending = ref(false)
 const attachmentUploading = ref(false)
@@ -39,51 +28,33 @@ const uploadedAttachment = ref<UploadedFileItem | null>(null)
 const messagesPanel = ref<HTMLElement | null>(null)
 let loadRequestId = 0
 
-const orderId = computed(() => Number(route.params.id))
-const hasOrderId = computed(() => Number.isFinite(orderId.value))
-const isPublisher = computed(() => order.value?.publisherId === auth.user?.id)
-const isAwaitingNewProvider = computed(() => order.value?.status === 'PENDING_CONFIRM')
-const chatTarget = computed(() => {
-  if (!order.value) return null
-  if (isPublisher.value) {
-    return {
-      id: order.value.serviceProviderId,
-      nickname: order.value.serviceProviderNickname || '服务方',
-      avatarUrl: order.value.serviceProviderAvatarUrl,
-      role: '服务方'
-    }
-  }
-  return {
-    id: order.value.publisherId,
-    nickname: order.value.publisherNickname,
-    avatarUrl: order.value.publisherAvatarUrl,
-    role: '发布者'
-  }
-})
-const sortedMessages = computed(() => [...(order.value?.messages || [])].sort((a, b) =>
+const participantId = computed(() => Number(route.params.userId))
+const hasParticipantId = computed(() => Number.isFinite(participantId.value))
+const chatTarget = computed(() => chat.value?.participant)
+const sortedMessages = computed(() => [...(chat.value?.messages || [])].sort((a, b) =>
   new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
 ))
 
 async function load() {
   const requestId = ++loadRequestId
-  const requestedOrderId = orderId.value
+  const requestedParticipantId = participantId.value
   error.value = ''
   loading.value = true
   try {
-    if (!hasOrderId.value) {
-      await loadConversations()
+    await loadConversations()
+    if (!hasParticipantId.value) {
+      chat.value = undefined
       if (conversations.value.length) {
-        await router.replace({ name: 'order-chat', params: { id: conversations.value[0].orderId } })
+        await router.replace({ name: 'user-chat', params: { userId: conversations.value[0].participant.id } })
       }
       return
     }
-    const nextOrder = await orderApi.get(requestedOrderId)
+    const nextChat = await messageApi.chat(requestedParticipantId)
     if (requestId !== loadRequestId) return
 
-    order.value = nextOrder
-    await orderApi.markMessagesRead(requestedOrderId)
+    chat.value = nextChat
+    await messageApi.markRead(requestedParticipantId)
     await auth.refreshUnreadMessages()
-    if (!conversations.value.length) await loadConversations()
     await scrollToBottom()
   } catch (err) {
     if (requestId !== loadRequestId) return
@@ -94,56 +65,22 @@ async function load() {
 }
 
 async function loadConversations() {
-  const result = await orderApi.list({ page: 1, size: 50 })
-  const details = await Promise.all(
-    result.records.map(async (item) => {
-      try {
-        return await orderApi.get(item.id)
-      } catch {
-        return null
-      }
-    })
-  )
-
-  const items = details
-    .filter((item): item is OrderDetail => Boolean(item))
-    .map(buildConversationItem)
-    .filter((item): item is ConversationItem => Boolean(item))
-    .filter((item) => item.messageCount > 0)
-    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime())
-
-  conversations.value = items
+  conversations.value = await messageApi.conversations()
 }
 
-function buildConversationItem(item: OrderDetail): ConversationItem | null {
-  const currentUserId = auth.user?.id
-  const currentUserIsPublisher = item.publisherId === currentUserId
-  const participantId = currentUserIsPublisher ? item.serviceProviderId : item.publisherId
-  const participantNickname = currentUserIsPublisher
-    ? item.serviceProviderNickname || '服务方'
-    : item.publisherNickname
-  const participantAvatarUrl = currentUserIsPublisher
-    ? item.serviceProviderAvatarUrl
-    : item.publisherAvatarUrl
-  const participantRole = currentUserIsPublisher ? '服务方' : '发布者'
-  const orderedMessages = [...item.messages].sort((a, b) =>
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  )
-  const latest = orderedMessages[orderedMessages.length - 1]
-
-  if (!participantId) return null
-
-  return {
-    orderId: item.id,
-    taskTitle: item.taskTitle,
-    participantId,
-    participantNickname,
-    participantAvatarUrl,
-    participantRole,
-    status: item.status,
-    lastMessageText: latest?.content || (latest?.imageUrl ? '[图片]' : latest?.fileName ? `[文件] ${latest.fileName}` : '还没有消息'),
-    lastMessageAt: latest?.createdAt || item.createdAt,
-    messageCount: orderedMessages.length
+async function searchUsers() {
+  if (!searchKeyword.value.trim()) {
+    searchResults.value = []
+    return
+  }
+  searching.value = true
+  error.value = ''
+  try {
+    searchResults.value = await userApi.search(searchKeyword.value.trim())
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '账号搜索失败'
+  } finally {
+    searching.value = false
   }
 }
 
@@ -154,13 +91,13 @@ async function scrollToBottom() {
   }
 }
 
-function appendMessage(newMessage: OrderMessage) {
-  if (!order.value) return
+function appendMessage(newMessage: ChatMessage) {
+  if (!chat.value) return
 
-  order.value = {
-    ...order.value,
+  chat.value = {
+    ...chat.value,
     messages: [
-      ...order.value.messages.filter((item) => item.id !== newMessage.id),
+      ...chat.value.messages.filter((item) => item.id !== newMessage.id),
       newMessage
     ]
   }
@@ -168,14 +105,14 @@ function appendMessage(newMessage: OrderMessage) {
   void loadConversations()
 }
 
-function isOrderMessage(value: unknown): value is OrderMessage {
+function isChatMessage(value: unknown): value is ChatMessage {
   return Boolean(value && typeof value === 'object' && 'id' in value && 'senderId' in value && 'createdAt' in value)
 }
 
-async function refreshCurrentOrderSilently() {
+async function refreshCurrentChatSilently() {
   try {
-    order.value = await orderApi.get(orderId.value)
-    await orderApi.markMessagesRead(orderId.value)
+    chat.value = await messageApi.chat(participantId.value)
+    await messageApi.markRead(participantId.value)
     await auth.refreshUnreadMessages()
     await scrollToBottom()
     void loadConversations()
@@ -185,18 +122,18 @@ async function refreshCurrentOrderSilently() {
 }
 
 async function sendTextMessage() {
-  if (!message.value.trim() || sending.value || loading.value || isAwaitingNewProvider.value) return
+  if (!message.value.trim() || sending.value || loading.value || !hasParticipantId.value) return
 
   const content = message.value.trim()
   sending.value = true
   error.value = ''
   try {
-    const sentMessage = await orderApi.sendMessage(orderId.value, content)
+    const sentMessage = await messageApi.sendText(participantId.value, content)
     message.value = ''
-    if (isOrderMessage(sentMessage)) {
+    if (isChatMessage(sentMessage)) {
       appendMessage(sentMessage)
     } else {
-      await refreshCurrentOrderSilently()
+      await refreshCurrentChatSilently()
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : '消息发送失败'
@@ -224,8 +161,8 @@ async function handleAttachmentChange(event: Event) {
 }
 
 async function refreshChatSilently() {
-  if (hasOrderId.value) {
-    await refreshCurrentOrderSilently()
+  if (hasParticipantId.value) {
+    await refreshCurrentChatSilently()
   } else {
     try {
       await loadConversations()
@@ -236,20 +173,20 @@ async function refreshChatSilently() {
 }
 
 async function sendAttachmentMessage() {
-  if (!uploadedAttachment.value || sending.value || loading.value || isAwaitingNewProvider.value) return
+  if (!uploadedAttachment.value || sending.value || loading.value || !hasParticipantId.value) return
 
   sending.value = true
   error.value = ''
   try {
     const attachment = uploadedAttachment.value
     const sentMessage = attachment.businessType === 'CHAT_IMAGE'
-      ? await orderApi.sendImage(orderId.value, attachment.id)
-      : await orderApi.sendFile(orderId.value, attachment.id)
+      ? await messageApi.sendImage(participantId.value, attachment.id)
+      : await messageApi.sendFile(participantId.value, attachment.id)
     uploadedAttachment.value = null
-    if (isOrderMessage(sentMessage)) {
+    if (isChatMessage(sentMessage)) {
       appendMessage(sentMessage)
     } else {
-      await refreshCurrentOrderSilently()
+      await refreshCurrentChatSilently()
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : '附件消息发送失败'
@@ -258,11 +195,11 @@ async function sendAttachmentMessage() {
   }
 }
 
-async function downloadAttachment(item: OrderMessage) {
+async function downloadAttachment(item: ChatMessage) {
   if (!item.fileId) return
   error.value = ''
   try {
-    const blob = await orderApi.downloadAttachment(orderId.value, item.id)
+    const blob = await messageApi.downloadAttachment(item.id)
     const objectUrl = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = objectUrl
@@ -293,8 +230,8 @@ function initials(name?: string) {
   return (name || '用户').slice(0, 1)
 }
 
-watch(orderId, (nextOrderId, previousOrderId) => {
-  if (nextOrderId !== previousOrderId) {
+watch(participantId, (nextParticipantId, previousParticipantId) => {
+  if (nextParticipantId !== previousParticipantId) {
     message.value = ''
     uploadedAttachment.value = null
     uploadError.value = ''
@@ -303,57 +240,75 @@ watch(orderId, (nextOrderId, previousOrderId) => {
 })
 watch(sortedMessages, scrollToBottom)
 useRealtimeRefresh(
-  ['ORDERS_CHANGED', 'MESSAGES_CHANGED'],
+  ['MESSAGES_CHANGED'],
   refreshChatSilently,
-  (event) => !hasOrderId.value || event.entityId === null || event.entityId === orderId.value
+  (event) => !hasParticipantId.value || event.entityId === null || event.entityId === participantId.value
 )
 onMounted(load)
 </script>
 
 <template>
-  <section class="order-chat-view">
-    <RouterLink v-if="hasOrderId" class="back-link" :to="{ name: 'order-detail', params: { id: orderId } }">
-      <ArrowLeft class="button-icon" aria-hidden="true" />
-      <span>返回订单详情</span>
-    </RouterLink>
-
+  <section class="chat-view">
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading && !order" class="empty-state">正在加载聊天</div>
-    <div v-else-if="!order" class="empty-state">暂无聊天记录</div>
 
-    <div v-else-if="order" class="chat-layout">
+    <div class="chat-layout">
       <aside class="chat-sidebar">
         <div class="page-title">
-          <h1>订单聊天</h1>
-          <span class="tag">{{ orderStatusText[order.status] }}</span>
+          <h1>消息</h1>
         </div>
+
+        <form class="composer" @submit.prevent="searchUsers">
+          <textarea v-model.trim="searchKeyword" rows="1" placeholder="搜索账号或昵称" />
+          <button class="button secondary send-button" type="submit" :disabled="searching || !searchKeyword.trim()">
+            <Search class="button-icon" aria-hidden="true" />
+            <span>{{ searching ? '搜索中...' : '搜索' }}</span>
+          </button>
+        </form>
+
+        <section v-if="searchResults.length" class="conversation-list">
+          <RouterLink
+            v-for="user in searchResults"
+            :key="user.id"
+            :to="{ name: 'user-chat', params: { userId: user.id } }"
+            class="contact-item"
+            @click="searchResults = []"
+          >
+            <span class="contact-avatar">
+              <img v-if="user.avatarUrl" :src="resolveAssetUrl(user.avatarUrl)" alt="" />
+              <span v-else>{{ initials(user.nickname) }}</span>
+            </span>
+            <span class="contact-copy">
+              <strong>{{ user.nickname }}</strong>
+              <span>{{ user.email }}</span>
+            </span>
+          </RouterLink>
+        </section>
 
         <section class="conversation-list">
           <div v-if="!conversations.length" class="contact-empty">暂无最近聊天</div>
           <RouterLink
             v-for="item in conversations"
-            :key="item.orderId"
-            :to="{ name: 'order-chat', params: { id: item.orderId } }"
-            :class="['contact-item', { active: item.orderId === orderId }]"
+            :key="item.id"
+            :to="{ name: 'user-chat', params: { userId: item.participant.id } }"
+            :class="['contact-item', { active: item.participant.id === participantId }]"
           >
             <span class="contact-avatar">
-              <img v-if="item.participantAvatarUrl" :src="resolveAssetUrl(item.participantAvatarUrl)" alt="" />
-              <span v-else>{{ initials(item.participantNickname) }}</span>
+              <img v-if="item.participant.avatarUrl" :src="resolveAssetUrl(item.participant.avatarUrl)" alt="" />
+              <span v-else>{{ initials(item.participant.nickname) }}</span>
             </span>
             <span class="contact-copy">
-              <strong>{{ item.participantNickname }}</strong>
-              <span>{{ item.participantRole }} · {{ item.taskTitle }}</span>
+              <strong>{{ item.participant.nickname }}</strong>
+              <span>{{ item.participant.email }}</span>
               <small>{{ item.lastMessageText }}</small>
             </span>
             <span class="contact-meta">
-              <span>{{ item.messageCount }}</span>
-              <small>{{ orderStatusText[item.status] }}</small>
+              <span v-if="item.unreadCount">{{ item.unreadCount }}</span>
             </span>
           </RouterLink>
         </section>
       </aside>
 
-      <article :class="['chat-panel', { 'is-switching': loading }]">
+      <article v-if="chat" :class="['chat-panel', { 'is-switching': loading }]">
         <div v-if="loading" class="chat-switch-indicator">正在切换会话...</div>
         <header class="chat-header">
           <div class="chat-avatar">
@@ -362,8 +317,7 @@ onMounted(load)
           </div>
           <div>
             <h2>{{ chatTarget?.nickname || '对方' }}</h2>
-            <p v-if="isAwaitingNewProvider" class="hint">暂无服务方，暂不能发起聊天</p>
-            <p v-else class="hint">围绕订单沟通取送时间、完成凭证和补充信息</p>
+            <p class="hint">{{ chatTarget?.email }}</p>
           </div>
         </header>
 
@@ -423,11 +377,11 @@ onMounted(load)
         <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
 
         <form class="composer" @submit.prevent="sendTextMessage">
-          <label class="button ghost upload-trigger" :class="{ disabled: attachmentUploading || loading || isAwaitingNewProvider }">
+          <label class="button ghost upload-trigger" :class="{ disabled: attachmentUploading || loading }">
             <input
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
-              :disabled="attachmentUploading || loading || isAwaitingNewProvider"
+              :disabled="attachmentUploading || loading"
               @change="handleAttachmentChange"
             />
             <Paperclip class="button-icon" aria-hidden="true" />
@@ -435,23 +389,24 @@ onMounted(load)
           </label>
           <textarea
             v-model.trim="message"
-            :disabled="loading || isAwaitingNewProvider"
+            :disabled="loading"
             rows="1"
             placeholder="输入消息，Enter 发送"
             @keydown="handleComposerKeydown"
           />
-          <button class="button secondary send-button" type="submit" :disabled="sending || loading || !message.trim() || isAwaitingNewProvider">
+          <button class="button secondary send-button" type="submit" :disabled="sending || loading || !message.trim()">
             <Send class="button-icon" aria-hidden="true" />
             <span>{{ sending ? '发送中...' : '发送' }}</span>
           </button>
         </form>
       </article>
+      <div v-else class="empty-state">{{ loading ? '正在加载聊天' : '搜索账号，开始一段新对话' }}</div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.order-chat-view {
+.chat-view {
   --chat-green: #ffb454;
   --chat-dark: #191a23;
   --chat-grey: #f3f3f3;
@@ -997,6 +952,18 @@ onMounted(load)
 
 .composer textarea:focus {
   box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
+}
+
+.chat-sidebar > .composer {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0 18px 16px;
+  border-top: 0;
+}
+
+.chat-sidebar > .composer textarea {
+  min-height: 42px;
+  padding: 9px 12px;
+  resize: none;
 }
 
 .button {

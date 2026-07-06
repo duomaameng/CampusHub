@@ -1,13 +1,13 @@
-package com.campushub.dto.order;
+package com.campushub.dto.message;
 
 import com.campushub.enums.MessageType;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class OrderMessageRequest {
+public class ChatMessageRequest {
 
-    @NotNull(message = "消息类型不能为空")
+    @NotNull
     private MessageType messageType;
 
     private String content;

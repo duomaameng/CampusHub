@@ -6,13 +6,12 @@ import com.campushub.common.BusinessException;
 import com.campushub.common.PageResult;
 import com.campushub.dto.order.OrderCancelRequest;
 import com.campushub.dto.order.OrderCompleteRequest;
-import com.campushub.dto.order.OrderMessageRequest;
 import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
-import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskStatus;
 import com.campushub.mapper.*;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.order.*;
 import org.junit.jupiter.api.AfterEach;
@@ -41,7 +40,6 @@ class OrderServiceTest {
     @Mock private TaskMapper taskMapper;
     @Mock private UserProfileMapper userProfileMapper;
     @Mock private OrderStatusLogMapper orderStatusLogMapper;
-    @Mock private OrderMessageMapper orderMessageMapper;
     @Mock private ApplicationMapper applicationMapper;
     @Mock private ReviewMapper reviewMapper;
     @Mock private CreditLogMapper creditLogMapper;
@@ -49,6 +47,7 @@ class OrderServiceTest {
     @Mock private TaskFileMapper taskFileMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
+    @Mock private RealtimeEventPublisher realtimeEventPublisher;
 
     @InjectMocks
     private OrderService orderService;
@@ -106,7 +105,6 @@ class OrderServiceTest {
             when(orderMapper.selectById(1L)).thenReturn(order);
             when(taskMapper.selectById(10L)).thenReturn(createTask(10L, CURRENT_USER_ID, "Test"));
             when(orderStatusLogMapper.selectList(any())).thenReturn(Collections.emptyList());
-            when(orderMessageMapper.selectList(any())).thenReturn(Collections.emptyList());
 
             OrderDetailVO result = orderService.getOrder(1L);
 
@@ -402,60 +400,6 @@ class OrderServiceTest {
             assertThatThrownBy(() -> orderService.cancelOrder(1L, request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("已提交取消申请");
-        }
-    }
-
-    // ==================== sendMessage ====================
-    @Nested
-    class SendMessageTests {
-
-        @Test
-        void shouldSendTextMessageWhenParticipant() {
-            Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.IN_PROGRESS);
-            when(orderMapper.selectById(1L)).thenReturn(order);
-
-            OrderMessageRequest request = new OrderMessageRequest();
-            request.setMessageType(MessageType.TEXT);
-            request.setContent("Hello, how is it going?");
-
-            orderService.sendMessage(1L, request);
-
-            ArgumentCaptor<OrderMessage> captor = ArgumentCaptor.forClass(OrderMessage.class);
-            verify(orderMessageMapper).insert(captor.capture());
-            OrderMessage saved = captor.getValue();
-            assertThat(saved.getOrderId()).isEqualTo(1L);
-            assertThat(saved.getSenderId()).isEqualTo(CURRENT_USER_ID);
-            assertThat(saved.getMessageType()).isEqualTo(MessageType.TEXT);
-            assertThat(saved.getContent()).isEqualTo("Hello, how is it going?");
-            assertThat(saved.getIsRead()).isFalse();
-        }
-
-        @Test
-        void shouldThrowWhenTextContentIsEmpty() {
-            Order order = createOrder(1L, 10L, CURRENT_USER_ID, OTHER_USER_ID, OrderStatus.IN_PROGRESS);
-            when(orderMapper.selectById(1L)).thenReturn(order);
-
-            OrderMessageRequest request = new OrderMessageRequest();
-            request.setMessageType(MessageType.TEXT);
-            request.setContent("   ");
-
-            assertThatThrownBy(() -> orderService.sendMessage(1L, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("消息内容不能为空");
-        }
-
-        @Test
-        void shouldThrowWhenNotParticipant() {
-            Order order = createOrder(1L, 10L, 99999L, 88888L, OrderStatus.IN_PROGRESS);
-            when(orderMapper.selectById(1L)).thenReturn(order);
-
-            OrderMessageRequest request = new OrderMessageRequest();
-            request.setMessageType(MessageType.TEXT);
-            request.setContent("Hello");
-
-            assertThatThrownBy(() -> orderService.sendMessage(1L, request))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("非订单参与方");
         }
     }
 

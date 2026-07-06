@@ -1,17 +1,16 @@
-package com.campushub.vo.order;
+package com.campushub.vo.message;
 
 import com.campushub.enums.MessageType;
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
-public class OrderMessageVO {
-
+@Builder
+public class ChatMessageVO {
     private Long id;
-    private Long orderId;
+    private Long conversationId;
     private Long senderId;
     private String senderNickname;
     private String senderAvatarUrl;
@@ -21,5 +20,6 @@ public class OrderMessageVO {
     private Long fileId;
     private String fileName;
     private Long fileSize;
+    private Boolean read;
     private LocalDateTime createdAt;
 }

@@ -7,11 +7,9 @@ import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
 import com.campushub.dto.order.OrderCancelRequest;
 import com.campushub.dto.order.OrderCompleteRequest;
-import com.campushub.dto.order.OrderMessageRequest;
 import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
 import com.campushub.enums.ApplicationStatus;
-import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskStatus;
 import com.campushub.enums.UploadBusinessType;
@@ -37,7 +35,6 @@ public class OrderService {
     private final TaskMapper taskMapper;
     private final UserProfileMapper userProfileMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
-    private final OrderMessageMapper orderMessageMapper;
     private final ApplicationMapper applicationMapper;
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
@@ -254,8 +251,6 @@ public class OrderService {
                 .eq("status", ApplicationStatus.APPROVED.name())
                 .set("status", ApplicationStatus.CANCELLED.name()));
 
-        orderMessageMapper.delete(new LambdaQueryWrapper<OrderMessage>().eq(OrderMessage::getOrderId, orderId));
-
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
         notificationService.createOrderActionNotification(previousServiceProviderId, order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
         realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
@@ -283,70 +278,6 @@ public class OrderService {
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
         notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已拒绝取消申请", "发布方已拒绝取消申请，订单继续进行");
         publishOrderChange(order);
-    }
-
-    @Transactional
-    public void sendMessage(Long orderId, OrderMessageRequest request) {
-        refreshTimedOutOrders();
-        Order order = requireOrder(orderId);
-        Long currentUserId = SecurityUtils.requireCurrentUserId();
-        ensureParticipant(order);
-        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus()) || OrderStatus.TIMEOUT.equals(order.getStatus())) {
-            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
-        }
-
-        OrderMessage message = new OrderMessage();
-        message.setOrderId(orderId);
-        message.setSenderId(currentUserId);
-        message.setMessageType(request.getMessageType());
-        message.setIsRead(false);
-
-        if (MessageType.TEXT.equals(request.getMessageType())) {
-            if (request.getContent() == null || request.getContent().isBlank()) {
-                throw new BusinessException(ErrorCode.MESSAGE_EMPTY);
-            }
-            message.setContent(request.getContent().trim());
-        } else if (MessageType.IMAGE.equals(request.getMessageType())) {
-            FileRecord image = request.getImageId() == null ? null : fileService.requireOwnedFile(request.getImageId(), UploadBusinessType.CHAT_IMAGE);
-            if (image == null) {
-                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "图片文件不存在");
-            }
-            message.setImageUrl(image.getFileUrl());
-            message.setFileId(image.getId());
-        } else if (MessageType.FILE.equals(request.getMessageType())) {
-            FileRecord file = request.getFileId() == null ? null : fileService.requireOwnedFile(request.getFileId(), UploadBusinessType.CHAT_FILE);
-            if (file == null) {
-                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "附件不存在");
-            }
-            message.setFileId(file.getId());
-        }
-
-        orderMessageMapper.insert(message);
-
-        Long receiverId = Objects.equals(currentUserId, order.getPublisherId())
-                ? order.getServiceProviderId()
-                : order.getPublisherId();
-        String senderNickname = findNickname(currentUserId);
-        String preview = switch (request.getMessageType()) {
-            case IMAGE -> "发送了一张图片";
-            case FILE -> "发送了一个文件";
-            default -> message.getContent();
-        };
-        notificationService.createOrderMessageNotification(receiverId, order.getId(), senderNickname, preview);
-        publishMessageChange(order);
-    }
-
-    public FileRecord requireMessageAttachment(Long orderId, Long messageId) {
-        Order order = requireOrder(orderId);
-        ensureParticipant(order);
-        OrderMessage message = orderMessageMapper.selectOne(new LambdaQueryWrapper<OrderMessage>()
-                .eq(OrderMessage::getId, messageId)
-                .eq(OrderMessage::getOrderId, orderId)
-                .last("LIMIT 1"));
-        if (message == null || message.getFileId() == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "消息附件不存在");
-        }
-        return fileService.requireFile(message.getFileId());
     }
 
     @Transactional
@@ -404,11 +335,6 @@ public class OrderService {
         realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
     }
 
-    private void publishMessageChange(Order order) {
-        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.MESSAGES_CHANGED, order.getId());
-        realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.MESSAGES_CHANGED, order.getId());
-    }
-
     public List<ReviewItemVO> listReviews(Long orderId) {
         Order order = requireOrder(orderId);
         ensureParticipant(order);
@@ -418,54 +344,6 @@ public class OrderService {
                 .stream()
                 .map(this::toReviewItemVO)
                 .toList();
-    }
-
-    public List<OrderMessageVO> listMessages(Long orderId) {
-        Order order = requireOrder(orderId);
-        ensureParticipant(order);
-        return orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
-                        .eq(OrderMessage::getOrderId, orderId)
-                        .orderByAsc(OrderMessage::getCreatedAt))
-                .stream()
-                .map(this::toOrderMessageVO)
-                .toList();
-    }
-
-    public long countUnreadMessages() {
-        Long currentUserId = SecurityUtils.requireCurrentUserId();
-        List<Long> orderIds = orderMapper.selectList(new LambdaQueryWrapper<Order>()
-                        .and(wrapper -> wrapper
-                                .eq(Order::getPublisherId, currentUserId)
-                                .or()
-                                .eq(Order::getServiceProviderId, currentUserId)))
-                .stream()
-                .map(Order::getId)
-                .toList();
-        if (orderIds.isEmpty()) {
-            return 0;
-        }
-        return orderMessageMapper.selectCount(new LambdaQueryWrapper<OrderMessage>()
-                .in(OrderMessage::getOrderId, orderIds)
-                .ne(OrderMessage::getSenderId, currentUserId)
-                .eq(OrderMessage::getIsRead, false));
-    }
-
-    @Transactional
-    public void markMessagesRead(Long orderId) {
-        Order order = requireOrder(orderId);
-        ensureParticipant(order);
-        Long currentUserId = SecurityUtils.requireCurrentUserId();
-        int updatedRows = orderMessageMapper.update(
-                null,
-                new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<OrderMessage>()
-                        .eq(OrderMessage::getOrderId, orderId)
-                        .ne(OrderMessage::getSenderId, currentUserId)
-                        .eq(OrderMessage::getIsRead, false)
-                        .set(OrderMessage::getIsRead, true)
-        );
-        if (updatedRows > 0) {
-            realtimeEventPublisher.user(currentUserId, RealtimeEventPublisher.MESSAGES_CHANGED, orderId);
-        }
     }
 
     public List<OrderStatusLogVO> listStatusLogs(Long orderId) {
@@ -500,12 +378,6 @@ public class OrderService {
         vo.setStatusLogs(statusLogs.stream()
                 .map(this::toStatusLogVO)
                 .toList());
-        vo.setMessages(orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
-                        .eq(OrderMessage::getOrderId, order.getId())
-                        .orderByAsc(OrderMessage::getCreatedAt))
-                .stream()
-                .map(this::toOrderMessageVO)
-                .toList());
         vo.setTaskFiles(taskFileMapper.selectList(new LambdaQueryWrapper<TaskFile>()
                         .eq(TaskFile::getTaskId, order.getTaskId())
                         .orderByAsc(TaskFile::getSortOrder))
@@ -530,14 +402,9 @@ public class OrderService {
         vo.setId(order.getId());
         vo.setTaskId(order.getTaskId());
         vo.setTaskTitle(task.getTitle());
-        if (Boolean.TRUE.equals(task.getAnonymous())) {
-            vo.setPublisherId(null);
-            vo.setPublisherNickname("匿名用户");
-        } else {
-            vo.setPublisherId(order.getPublisherId());
-            vo.setPublisherNickname(findNickname(order.getPublisherId()));
-            vo.setPublisherAvatarUrl(findAvatarUrl(order.getPublisherId()));
-        }
+        vo.setPublisherId(order.getPublisherId());
+        vo.setPublisherNickname(findNickname(order.getPublisherId()));
+        vo.setPublisherAvatarUrl(findAvatarUrl(order.getPublisherId()));
         if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
             vo.setServiceProviderId(null);
             vo.setServiceProviderNickname("暂无服务方");
@@ -564,24 +431,6 @@ public class OrderService {
         OrderStatus fromStatus = log.getFromStatus() == null ? null : OrderStatus.valueOf(log.getFromStatus());
         OrderStatus toStatus = log.getToStatus() == null ? null : OrderStatus.valueOf(log.getToStatus());
         return new OrderStatusLogVO(log.getId(), fromStatus, toStatus, log.getOperatorId(), findNickname(log.getOperatorId()), log.getReason(), log.getCreatedAt());
-    }
-
-    private OrderMessageVO toOrderMessageVO(OrderMessage message) {
-        FileRecord file = message.getFileId() == null ? null : fileService.requireFile(message.getFileId());
-        return new OrderMessageVO(
-                message.getId(),
-                message.getOrderId(),
-                message.getSenderId(),
-                findNickname(message.getSenderId()),
-                findAvatarUrl(message.getSenderId()),
-                message.getMessageType(),
-                message.getContent(),
-                message.getImageUrl(),
-                file == null ? null : file.getId(),
-                file == null ? null : file.getFileName(),
-                file == null ? null : file.getFileSize(),
-                message.getCreatedAt()
-        );
     }
 
     private ReviewItemVO toReviewItemVO(Review review) {

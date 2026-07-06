@@ -644,9 +644,9 @@ onMounted(load)
         </section>
 
         <RouterLink
-          v-if="!isAwaitingNewProvider"
+          v-if="reportTargetUser"
           class="button secondary contact-button"
-          :to="{ name: 'order-chat', params: { id: order.id } }"
+          :to="{ name: 'user-chat', params: { userId: reportTargetUser.id } }"
         >
           <MessageSquareText class="button-icon" aria-hidden="true" />
           <span>联系对方</span>

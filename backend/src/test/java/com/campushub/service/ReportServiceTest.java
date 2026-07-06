@@ -19,6 +19,7 @@ import com.campushub.mapper.ReportEvidenceMapper;
 import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ class ReportServiceTest {
     @Mock private CreditLogMapper creditLogMapper;
     @Mock private NotificationService notificationService;
     @Mock private FileService fileService;
+    @Mock private RealtimeEventPublisher realtimeEventPublisher;
 
     @InjectMocks
     private ReportService reportService;

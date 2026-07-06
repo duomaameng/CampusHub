@@ -32,11 +32,11 @@ public class NotificationFactory {
         return notification;
     }
 
-    public Notification orderMessage(Long receiverId, Long orderId, String senderNickname, String preview) {
-        Notification notification = base(receiverId, NotificationType.ORDER_MESSAGE);
-        notification.setTitle("订单收到新留言");
+    public Notification chatMessage(Long receiverId, Long senderId, String senderNickname, String preview) {
+        Notification notification = base(receiverId, NotificationType.CHAT_MESSAGE);
+        notification.setTitle("收到新消息");
         notification.setContent(senderNickname + "：" + preview);
-        notification.setRelatedOrderId(orderId);
+        notification.setRelatedUserId(senderId);
         return notification;
     }
 
