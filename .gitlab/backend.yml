@@ -1,0 +1,46 @@
+stages:
+  - build
+  - test
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  key: backend-maven-cache
+  paths:
+    - .m2/repository
+
+backend-build:
+  stage: build
+  image: maven:3.9.9-eclipse-temurin-17
+  script:
+    - cd backend
+    - mvn -B -q clean compile
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - backend/target
+
+backend-unit-test:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-17
+  script:
+    - cd backend
+    - mvn -B -q -Dtest=AdminServiceTest,OrderServiceTest,AuthServiceImplTest,EmailServiceTest,FileServiceTest,NotificationFactoryTest,NotificationServiceTest,ReportServiceTest,TaskServiceTest,UserServiceImplTest test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - backend/target/surefire-reports
+
+backend-integration-test:
+  stage: test
+  image: maven:3.9.9-eclipse-temurin-17
+  script:
+    - cd backend
+    - mvn -B -q -Dtest=CoreFlowIntegrationTest test
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - backend/target/surefire-reports

@@ -1,0 +1,217 @@
+classDiagram
+direction LR
+
+class User {
+  - id: Long
+  - email: String
+  - passwordHash: String
+  - role: UserRole
+  - status: UserStatus
+  - verified: Boolean
+  - studentNoMasked: String
+  - loginFailures: Integer
+  - lockedUntil: LocalDateTime
+  - createdAt: LocalDateTime
+  - updatedAt: LocalDateTime
+  + canLogin(): boolean
+  + isAdmin(): boolean
+  + markVerified(): void
+  + disable(): void
+}
+
+class UserProfile {
+  - id: Long
+  - userId: Long
+  - nickname: String
+  - avatarUrl: String
+  - gender: String
+  - grade: String
+  - college: String
+  - bio: String
+  - campus: String
+  - contact: String
+  - contactVisible: Boolean
+  + updateProfile(): void
+  + hideContact(): void
+  + showContact(): void
+}
+
+class Task {
+  - id: Long
+  - publisherId: Long
+  - category: TaskCategory
+  - title: String
+  - description: String
+  - campus: String
+  - locationDetail: String
+  - rewardType: RewardType
+  - rewardAmount: BigDecimal
+  - deadline: LocalDateTime
+  - status: TaskStatus
+  - anonymous: Boolean
+  - categoryFields: String
+  - version: Integer
+  - createdAt: LocalDateTime
+  - updatedAt: LocalDateTime
+  + publish(): void
+  + edit(): void
+  + cancel(): void
+  + expire(): void
+  + canAcceptApplication(): boolean
+}
+
+class TaskImage {
+  - id: Long
+  - taskId: Long
+  - imageUrl: String
+  - sortOrder: Integer
+  + bindToTask(taskId): void
+}
+
+class Application {
+  - id: Long
+  - taskId: Long
+  - applicantId: Long
+  - message: String
+  - status: ApplicationStatus
+  - createdAt: LocalDateTime
+  + submit(): void
+  + approve(): void
+  + reject(): void
+  + cancel(): void
+}
+
+class Order {
+  - id: Long
+  - taskId: Long
+  - publisherId: Long
+  - serviceProviderId: Long
+  - status: OrderStatus
+  - completionProofUrl: String
+  - cancelReason: String
+  - version: Integer
+  - createdAt: LocalDateTime
+  - updatedAt: LocalDateTime
+  + confirm(): void
+  + submitCompletion(proofUrl): void
+  + confirmCompletion(): void
+  + cancel(reason): void
+  + enterDispute(): void
+  + canBeReviewed(): boolean
+}
+
+class OrderStatusLog {
+  - id: Long
+  - orderId: Long
+  - fromStatus: OrderStatus
+  - toStatus: OrderStatus
+  - operatorId: Long
+  - reason: String
+  - createdAt: LocalDateTime
+  + recordTransition(): void
+}
+
+class OrderMessage {
+  - id: Long
+  - orderId: Long
+  - senderId: Long
+  - messageType: MessageType
+  - content: String
+  - imageUrl: String
+  - isRead: Boolean
+  - createdAt: LocalDateTime
+  + sendText(content): void
+  + sendImage(imageUrl): void
+  + markRead(): void
+}
+
+class Notification {
+  - id: Long
+  - receiverId: Long
+  - type: NotificationType
+  - title: String
+  - content: String
+  - isRead: Boolean
+  - isDeleted: Boolean
+  - relatedOrderId: Long
+  - relatedTaskId: Long
+  - createdAt: LocalDateTime
+  + markRead(): void
+  + markDeleted(): void
+}
+
+class Review {
+  - id: Long
+  - orderId: Long
+  - reviewerId: Long
+  - revieweeId: Long
+  - rating: Integer
+  - content: String
+  - createdAt: LocalDateTime
+  + submit(): void
+  + isValidRating(): boolean
+}
+
+class Report {
+  - id: Long
+  - reporterId: Long
+  - targetType: ReportTargetType
+  - targetId: Long
+  - reasonType: ReportReasonType
+  - description: String
+  - status: ReportStatus
+  - result: String
+  - processedBy: Long
+  - processedAt: LocalDateTime
+  - createdAt: LocalDateTime
+  + submit(): void
+  + process(): void
+  + reject(): void
+}
+
+class FileRecord {
+  - id: Long
+  - userId: Long
+  - fileName: String
+  - fileUrl: String
+  - fileSize: Long
+  - purpose: String
+  - createdAt: LocalDateTime
+}
+
+class ReportEvidence {
+  - id: Long
+  - reportId: Long
+  - fileRecordId: Long
+  - createdAt: LocalDateTime
+}
+
+User "1" -- "1" UserProfile : has
+User "1" -- "0..*" Task : publishes
+Task "1" *-- "0..*" TaskImage : contains
+Task "1" -- "0..*" Application : receives
+User "1" -- "0..*" Application : submits
+Application "0..*" --> "1" Task : applies for
+Application "0..*" --> "1" User : applicant
+Task "1" -- "0..1" Order : generates
+Order "1" *-- "1..*" OrderStatusLog : records
+Order "1" *-- "0..*" OrderMessage : contains
+Order "1" -- "0..*" Review : receives
+User "1" -- "0..*" Review : writes
+User "1" -- "0..*" Notification : receives
+User "1" -- "0..*" FileRecord : uploads
+Order "1" ..> Notification : triggers
+User "1" -- "0..*" Report : submits
+Report "0..*" --> "1" User : reporter
+Report "0..*" --> "0..1" User : processed by
+Order "0..1" --> "1" Task : created from
+Order "0..*" --> "1" User : publisher
+Order "0..*" --> "0..1" User : service provider
+OrderMessage "0..*" --> "1" User : sender
+Notification "0..*" --> "1" User : receiver
+Review "0..*" --> "1" User : reviewer
+Review "0..*" --> "1" User : reviewee
+Report "1" *-- "0..*" ReportEvidence : has evidence
+ReportEvidence "0..*" --> "1" FileRecord : file
+Report ..> Task : target
+Report ..> User : target

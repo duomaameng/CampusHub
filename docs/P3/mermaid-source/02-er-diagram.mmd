@@ -1,0 +1,57 @@
+erDiagram
+    User ||--|| UserProfile : has
+    User ||--o{ Task : publishes
+    User ||--o{ Application : submits
+    User ||--o{ Favorite : bookmarks
+    User ||--o{ Order : "as publisher"
+    User ||--o{ Order : "as provider"
+    User ||--o{ OrderMessage : sends
+    User ||--o{ Notification : receives
+    User ||--o{ Review : writes
+    User ||--o{ Review : receives
+    User ||--o{ Report : submits
+    User ||--o{ CreditLog : accumulates
+    User ||--o{ FileRecord : uploads
+    User ||--o{ AdminOperationLog : "as admin"
+
+    Task ||--o{ TaskImage : contains
+    Task ||--o{ Application : receives
+    Task ||--o{ Favorite : collected
+    Task ||--o| Order : generates
+
+    Application ||--|| User : applicant
+    Application }o--|| Task : "applies for"
+
+    Order ||--o{ OrderStatusLog : records
+    Order ||--o{ OrderMessage : contains
+    Order ||--o{ Review : receives
+    Order ||--|| Task : "created from"
+    Order }o--|| User : publisher
+    Order }o--o| User : "service provider"
+
+    OrderMessage }o--|| Order : belongs
+    OrderMessage }o--|| User : sender
+
+    Notification }o--|| User : receiver
+
+    Review }o--|| Order : "about"
+    Review }o--|| User : reviewer
+    Review }o--|| User : reviewee
+
+    Report }o--|| User : reporter
+    Report }o--o| User : "processed by"
+    Report ||--o{ ReportEvidence : has
+
+    CreditLog }o--|| User : belongs
+
+    Announcement }o--|| User : "admin publisher"
+
+    AdminOperationLog }o--|| User : admin
+
+    TaskImage }o--|| Task : belongs
+    Favorite }o--|| User : user
+    Favorite }o--|| Task : task
+    FileRecord }o--|| User : uploader
+    FileRecord ||--o{ ReportEvidence : evidence_file
+    ReportEvidence }o--|| Report : report
+    ReportEvidence }o--|| FileRecord : file_record

@@ -1,0 +1,528 @@
+package com.campushub.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.campushub.common.BusinessException;
+import com.campushub.common.ErrorCode;
+import com.campushub.common.PageResult;
+import com.campushub.dto.order.OrderCancelRequest;
+import com.campushub.dto.order.OrderCompleteRequest;
+import com.campushub.dto.order.OrderMessageRequest;
+import com.campushub.dto.order.ReviewCreateRequest;
+import com.campushub.entity.*;
+import com.campushub.enums.ApplicationStatus;
+import com.campushub.enums.MessageType;
+import com.campushub.enums.OrderStatus;
+import com.campushub.enums.TaskStatus;
+import com.campushub.enums.UploadBusinessType;
+import com.campushub.mapper.*;
+import com.campushub.security.SecurityUtils;
+import com.campushub.vo.order.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Objects;
+
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+    private static final int DEFAULT_CREDIT_SCORE = 100;
+    private static final int MIN_CREDIT_SCORE = 0;
+    private static final int MAX_CREDIT_SCORE = 100;
+
+    private final OrderMapper orderMapper;
+    private final TaskMapper taskMapper;
+    private final UserProfileMapper userProfileMapper;
+    private final OrderStatusLogMapper orderStatusLogMapper;
+    private final OrderMessageMapper orderMessageMapper;
+    private final ApplicationMapper applicationMapper;
+    private final ReviewMapper reviewMapper;
+    private final CreditLogMapper creditLogMapper;
+    private final NotificationService notificationService;
+    private final FileService fileService;
+
+    public PageResult<OrderItemVO> listOrders(int page, int size, String role, OrderStatus status, String keyword) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        Page<Order> pageQuery = new Page<>(page, size);
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+        wrapper.ne(Order::getStatus, OrderStatus.CANCELLED);
+
+        if ("PUBLISHER".equalsIgnoreCase(role)) {
+            wrapper.eq(Order::getPublisherId, currentUserId);
+        } else if ("PROVIDER".equalsIgnoreCase(role)) {
+            wrapper.eq(Order::getServiceProviderId, currentUserId);
+            wrapper.ne(Order::getStatus, OrderStatus.PENDING_CONFIRM);
+        } else {
+            wrapper.and(w ->
+                w.eq(Order::getPublisherId, currentUserId)
+                 .or(w2 -> w2.eq(Order::getServiceProviderId, currentUserId)
+                              .ne(Order::getStatus, OrderStatus.PENDING_CONFIRM))
+            );
+        }
+        if (status != null) {
+            wrapper.eq(Order::getStatus, status);
+        }
+        wrapper.last("""
+                ORDER BY CASE status
+                    WHEN 'IN_PROGRESS' THEN 0
+                    WHEN 'PENDING_COMPLETION' THEN 0
+                    WHEN 'PENDING_CONFIRM' THEN 1
+                    WHEN 'DISPUTE' THEN 1
+                    WHEN 'COMPLETED' THEN 2
+                    WHEN 'REVIEWED' THEN 2
+                    ELSE 3
+                END, created_at DESC
+                """);
+
+        Page<Order> result = orderMapper.selectPage(pageQuery, wrapper);
+        List<OrderItemVO> records = result.getRecords().stream()
+                .map(this::toOrderItemVO)
+                .filter(item -> keyword == null || keyword.isBlank() || item.getTaskTitle().contains(keyword))
+                .toList();
+        return PageResult.of(result.getTotal(), page, size, records);
+    }
+
+    public OrderDetailVO getOrder(Long orderId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        return toOrderDetailVO(order);
+    }
+
+    @Transactional
+    public void completeOrder(Long orderId, OrderCompleteRequest request) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(order.getServiceProviderId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+        if (!OrderStatus.IN_PROGRESS.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
+        }
+        if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单有未处理的取消申请，不能提交完成");
+        }
+
+        if (request.getProofImageId() != null) {
+            FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
+            order.setCompletionProofUrl(proof.getFileUrl());
+        }
+        order.setStatus(OrderStatus.PENDING_COMPLETION);
+        orderMapper.updateById(order);
+        saveStatusLog(
+                order.getId(),
+                OrderStatus.IN_PROGRESS,
+                OrderStatus.PENDING_COMPLETION,
+                currentUserId,
+                request.getNote() != null && !request.getNote().isBlank() ? request.getNote() : "服务方提交完成"
+        );
+        notificationService.createOrderStatusNotification(order.getPublisherId(), order.getId(), OrderStatus.PENDING_COMPLETION);
+    }
+
+    @Transactional
+    public void confirmCompletion(Long orderId) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(order.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+        if (!OrderStatus.PENDING_COMPLETION.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
+        }
+
+        order.setStatus(OrderStatus.COMPLETED);
+        orderMapper.updateById(order);
+        Task task = requireTask(order.getTaskId());
+        task.setStatus(TaskStatus.COMPLETED);
+        taskMapper.updateById(task);
+        saveStatusLog(order.getId(), OrderStatus.PENDING_COMPLETION, OrderStatus.COMPLETED, currentUserId, "发布方确认完成");
+
+        notificationService.createOrderStatusNotification(order.getServiceProviderId(), order.getId(), OrderStatus.COMPLETED);
+        String taskTitle = task.getTitle();
+        notificationService.createReviewRequestNotification(order.getPublisherId(), order.getId(), taskTitle);
+        notificationService.createReviewRequestNotification(order.getServiceProviderId(), order.getId(), taskTitle);
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId, OrderCancelRequest request) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        ensureParticipant(order);
+        if (OrderStatus.CANCELLED.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_ALREADY_CANCELLED);
+        }
+        if (OrderStatus.COMPLETED.equals(order.getStatus()) || OrderStatus.REVIEWED.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_ALREADY_COMPLETED);
+        }
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单已退回待接单状态，不能重复取消");
+        }
+
+        OrderStatus fromStatus = order.getStatus();
+        if (Objects.equals(currentUserId, order.getPublisherId())) {
+            Long previousServiceProviderId = order.getServiceProviderId();
+            String reason = request.getReason().trim();
+            order.setCancelReason(null);
+            order.setStatus(OrderStatus.PENDING_CONFIRM);
+            order.setServiceProviderId(null);
+            orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
+                    .eq("id", order.getId())
+                    .set("status", OrderStatus.PENDING_CONFIRM.name())
+                    .set("cancel_reason", null)
+                    .set("service_provider_id", null));
+
+            Task task = requireTask(order.getTaskId());
+            task.setStatus(TaskStatus.OPEN);
+            taskMapper.updateById(task);
+            applicationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Application>()
+                    .eq("task_id", task.getId())
+                    .eq("status", ApplicationStatus.APPROVED.name())
+                    .set("status", ApplicationStatus.CANCELLED.name()));
+
+            saveStatusLog(order.getId(), fromStatus, OrderStatus.PENDING_CONFIRM, currentUserId, reason);
+
+            notificationService.createOrderStatusNotification(previousServiceProviderId, order.getId(), OrderStatus.PENDING_CONFIRM);
+            return;
+        }
+
+        if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "已提交取消申请，请等待发布方处理");
+        }
+        Long cancelRequestCount = orderStatusLogMapper.selectCount(new LambdaQueryWrapper<OrderStatusLog>()
+                .eq(OrderStatusLog::getOrderId, order.getId())
+                .eq(OrderStatusLog::getOperatorId, currentUserId)
+                .likeRight(OrderStatusLog::getReason, "服务方申请取消："));
+        if (cancelRequestCount != null && cancelRequestCount >= 2) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "取消申请最多只能提交两次");
+        }
+
+        order.setCancelReason(request.getReason().trim());
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        orderMapper.updateById(order);
+        saveStatusLog(order.getId(), fromStatus, OrderStatus.IN_PROGRESS, currentUserId, "服务方申请取消：" + request.getReason().trim());
+        notificationService.createOrderActionNotification(order.getPublisherId(), order.getId(), "服务方申请取消服务", "服务方申请取消订单，原因：" + request.getReason().trim());
+    }
+
+    @Transactional
+    public void approveCancelRequest(Long orderId) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(order.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+        ensurePendingCancelRequest(order);
+
+        String reason = order.getCancelReason();
+        Long previousServiceProviderId = order.getServiceProviderId();
+        order.setStatus(OrderStatus.PENDING_CONFIRM);
+        order.setCancelReason(null);
+        order.setServiceProviderId(null);
+        orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
+                .eq("id", order.getId())
+                .set("status", OrderStatus.PENDING_CONFIRM.name())
+                .set("cancel_reason", null)
+                .set("service_provider_id", null));
+
+        Task task = requireTask(order.getTaskId());
+        task.setStatus(TaskStatus.OPEN);
+        taskMapper.updateById(task);
+        applicationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Application>()
+                .eq("task_id", task.getId())
+                .eq("status", ApplicationStatus.APPROVED.name())
+                .set("status", ApplicationStatus.CANCELLED.name()));
+
+        orderMessageMapper.delete(new LambdaQueryWrapper<OrderMessage>().eq(OrderMessage::getOrderId, orderId));
+
+        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
+        notificationService.createOrderActionNotification(previousServiceProviderId, order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
+    }
+
+    @Transactional
+    public void rejectCancelRequest(Long orderId) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!Objects.equals(order.getPublisherId(), currentUserId)) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+        ensurePendingCancelRequest(order);
+
+        String reason = order.getCancelReason();
+        order.setStatus(OrderStatus.IN_PROGRESS);
+        order.setCancelReason(null);
+        orderMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<Order>()
+                .eq("id", order.getId())
+                .set("status", OrderStatus.IN_PROGRESS.name())
+                .set("cancel_reason", null));
+        saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
+        notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已拒绝取消申请", "发布方已拒绝取消申请，订单继续进行");
+    }
+
+    @Transactional
+    public void sendMessage(Long orderId, OrderMessageRequest request) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        ensureParticipant(order);
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
+        }
+
+        OrderMessage message = new OrderMessage();
+        message.setOrderId(orderId);
+        message.setSenderId(currentUserId);
+        message.setMessageType(request.getMessageType());
+        message.setIsRead(false);
+
+        if (MessageType.TEXT.equals(request.getMessageType())) {
+            if (request.getContent() == null || request.getContent().isBlank()) {
+                throw new BusinessException(ErrorCode.MESSAGE_EMPTY);
+            }
+            message.setContent(request.getContent().trim());
+        } else if (MessageType.IMAGE.equals(request.getMessageType())) {
+            FileRecord image = request.getImageId() == null ? null : fileService.requireOwnedFile(request.getImageId(), UploadBusinessType.CHAT_IMAGE);
+            if (image == null) {
+                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "图片文件不存在");
+            }
+            message.setImageUrl(image.getFileUrl());
+        }
+
+        orderMessageMapper.insert(message);
+
+        Long receiverId = Objects.equals(currentUserId, order.getPublisherId())
+                ? order.getServiceProviderId()
+                : order.getPublisherId();
+        String senderNickname = findNickname(currentUserId);
+        String preview = MessageType.IMAGE.equals(request.getMessageType())
+                ? "发送了一张图片"
+                : message.getContent();
+        notificationService.createOrderMessageNotification(receiverId, order.getId(), senderNickname, preview);
+    }
+
+    @Transactional
+    public void submitReview(Long orderId, ReviewCreateRequest request) {
+        Order order = requireOrder(orderId);
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        ensureParticipant(order);
+        if (!OrderStatus.COMPLETED.equals(order.getStatus()) && !OrderStatus.REVIEWED.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.REVIEW_ORDER_NOT_COMPLETED);
+        }
+
+        long existing = reviewMapper.selectCount(new LambdaQueryWrapper<Review>()
+                .eq(Review::getOrderId, orderId)
+                .eq(Review::getReviewerId, currentUserId));
+        if (existing > 0) {
+            throw new BusinessException(ErrorCode.REVIEW_ALREADY_EXISTS);
+        }
+
+        Review review = new Review();
+        review.setOrderId(orderId);
+        review.setReviewerId(currentUserId);
+        review.setRevieweeId(Objects.equals(currentUserId, order.getPublisherId()) ? order.getServiceProviderId() : order.getPublisherId());
+        review.setRating(request.getRating());
+        review.setContent(request.getContent().trim());
+        reviewMapper.insert(review);
+
+        int creditChange = (request.getRating() - 3) * 5;
+        CreditLog latest = creditLogMapper.selectOne(new LambdaQueryWrapper<CreditLog>()
+                .eq(CreditLog::getUserId, review.getRevieweeId())
+                .orderByDesc(CreditLog::getId)
+                .last("LIMIT 1"));
+        int scoreBefore = clampCreditScore(latest != null ? latest.getScoreAfter() : DEFAULT_CREDIT_SCORE);
+        int scoreAfter = clampCreditScore(scoreBefore + creditChange);
+        CreditLog creditLog = new CreditLog();
+        creditLog.setUserId(review.getRevieweeId());
+        creditLog.setChangeAmount(scoreAfter - scoreBefore);
+        creditLog.setScoreBefore(scoreBefore);
+        creditLog.setScoreAfter(scoreAfter);
+        creditLog.setReason("订单 #" + orderId + " 评价评分：" + request.getRating());
+        creditLog.setRelatedOrderId(orderId);
+        creditLogMapper.insert(creditLog);
+
+        long reviewCount = reviewMapper.selectCount(new LambdaQueryWrapper<Review>().eq(Review::getOrderId, orderId));
+        if (reviewCount >= 2 && !OrderStatus.REVIEWED.equals(order.getStatus())) {
+            order.setStatus(OrderStatus.REVIEWED);
+            orderMapper.updateById(order);
+            saveStatusLog(order.getId(), OrderStatus.COMPLETED, OrderStatus.REVIEWED, currentUserId, "双方已完成评价");
+        }
+    }
+
+    public List<ReviewItemVO> listReviews(Long orderId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        return reviewMapper.selectList(new LambdaQueryWrapper<Review>()
+                        .eq(Review::getOrderId, orderId)
+                        .orderByDesc(Review::getCreatedAt))
+                .stream()
+                .map(this::toReviewItemVO)
+                .toList();
+    }
+
+    public List<OrderMessageVO> listMessages(Long orderId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        return orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
+                        .eq(OrderMessage::getOrderId, orderId)
+                        .orderByAsc(OrderMessage::getCreatedAt))
+                .stream()
+                .map(this::toOrderMessageVO)
+                .toList();
+    }
+
+    public List<OrderStatusLogVO> listStatusLogs(Long orderId) {
+        Order order = requireOrder(orderId);
+        ensureParticipant(order);
+        return orderStatusLogMapper.selectList(new LambdaQueryWrapper<OrderStatusLog>()
+                        .eq(OrderStatusLog::getOrderId, orderId)
+                        .orderByAsc(OrderStatusLog::getCreatedAt))
+                .stream()
+                .map(this::toStatusLogVO)
+                .toList();
+    }
+
+    private OrderDetailVO toOrderDetailVO(Order order) {
+        Task task = requireTask(order.getTaskId());
+        List<OrderStatusLog> statusLogs = orderStatusLogMapper.selectList(new LambdaQueryWrapper<OrderStatusLog>()
+                .eq(OrderStatusLog::getOrderId, order.getId())
+                .orderByAsc(OrderStatusLog::getCreatedAt));
+        OrderDetailVO vo = new OrderDetailVO();
+        copyBaseOrderFields(order, task, vo);
+        vo.setTaskDescription(task.getDescription());
+        vo.setCampus(task.getCampus());
+        vo.setRewardType(task.getRewardType());
+        vo.setProofImageUrl(order.getCompletionProofUrl());
+        vo.setCompletionNote(findCompletionNote(statusLogs));
+        vo.setStatusLogs(statusLogs.stream()
+                .map(this::toStatusLogVO)
+                .toList());
+        vo.setMessages(orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
+                        .eq(OrderMessage::getOrderId, order.getId())
+                        .orderByAsc(OrderMessage::getCreatedAt))
+                .stream()
+                .map(this::toOrderMessageVO)
+                .toList());
+        return vo;
+    }
+
+    private OrderItemVO toOrderItemVO(Order order) {
+        Task task = requireTask(order.getTaskId());
+        OrderItemVO vo = new OrderItemVO();
+        copyBaseOrderFields(order, task, vo);
+        return vo;
+    }
+
+    private void copyBaseOrderFields(Order order, Task task, OrderItemVO vo) {
+        vo.setId(order.getId());
+        vo.setTaskId(order.getTaskId());
+        vo.setTaskTitle(task.getTitle());
+        vo.setPublisherId(order.getPublisherId());
+        vo.setPublisherNickname(findNickname(order.getPublisherId()));
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            vo.setServiceProviderId(null);
+            vo.setServiceProviderNickname("暂无服务方");
+        } else {
+            vo.setServiceProviderId(order.getServiceProviderId());
+            vo.setServiceProviderNickname(findNickname(order.getServiceProviderId()));
+        }
+        vo.setStatus(order.getStatus());
+        vo.setCancelReason(order.getCancelReason());
+        vo.setCreatedAt(order.getCreatedAt());
+    }
+
+    private OrderStatusLogVO toStatusLogVO(OrderStatusLog log) {
+        OrderStatus fromStatus = log.getFromStatus() == null ? null : OrderStatus.valueOf(log.getFromStatus());
+        OrderStatus toStatus = log.getToStatus() == null ? null : OrderStatus.valueOf(log.getToStatus());
+        return new OrderStatusLogVO(log.getId(), fromStatus, toStatus, log.getOperatorId(), findNickname(log.getOperatorId()), log.getReason(), log.getCreatedAt());
+    }
+
+    private OrderMessageVO toOrderMessageVO(OrderMessage message) {
+        return new OrderMessageVO(
+                message.getId(),
+                message.getOrderId(),
+                message.getSenderId(),
+                findNickname(message.getSenderId()),
+                message.getMessageType(),
+                message.getContent(),
+                message.getImageUrl(),
+                message.getCreatedAt()
+        );
+    }
+
+    private ReviewItemVO toReviewItemVO(Review review) {
+        return new ReviewItemVO(
+                review.getId(),
+                review.getOrderId(),
+                review.getReviewerId(),
+                findNickname(review.getReviewerId()),
+                review.getRevieweeId(),
+                findNickname(review.getRevieweeId()),
+                review.getRating(),
+                review.getContent(),
+                review.getCreatedAt()
+        );
+    }
+
+    private void saveStatusLog(Long orderId, OrderStatus fromStatus, OrderStatus toStatus, Long operatorId, String reason) {
+        OrderStatusLog log = new OrderStatusLog();
+        log.setOrderId(orderId);
+        log.setFromStatus(fromStatus != null ? fromStatus.name() : null);
+        log.setToStatus(toStatus.name());
+        log.setOperatorId(operatorId);
+        log.setReason(reason);
+        orderStatusLogMapper.insert(log);
+    }
+
+    private int clampCreditScore(int score) {
+        return Math.max(MIN_CREDIT_SCORE, Math.min(MAX_CREDIT_SCORE, score));
+    }
+
+    private String findCompletionNote(List<OrderStatusLog> statusLogs) {
+        return statusLogs.stream()
+                .filter(log -> OrderStatus.PENDING_COMPLETION.name().equals(log.getToStatus()))
+                .map(OrderStatusLog::getReason)
+                .filter(reason -> reason != null && !reason.isBlank())
+                .reduce((first, second) -> second)
+                .orElse(null);
+    }
+
+    private void ensureParticipant(Order order) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
+            if (!Objects.equals(currentUserId, order.getPublisherId())) {
+                throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+            }
+            return;
+        }
+        if (!Objects.equals(currentUserId, order.getPublisherId()) && !Objects.equals(currentUserId, order.getServiceProviderId())) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_PARTICIPANT);
+        }
+    }
+
+    private void ensurePendingCancelRequest(Order order) {
+        if (!OrderStatus.IN_PROGRESS.equals(order.getStatus()) || order.getCancelReason() == null || order.getCancelReason().isBlank()) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
+        }
+    }
+
+    private Order requireOrder(Long orderId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
+        return order;
+    }
+
+    private Task requireTask(Long taskId) {
+        Task task = taskMapper.selectById(taskId);
+        if (task == null) {
+            throw new BusinessException(ErrorCode.TASK_NOT_FOUND);
+        }
+        return task;
+    }
+
+    private String findNickname(Long userId) {
+        UserProfile profile = userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfile>()
+                .eq(UserProfile::getUserId, userId)
+                .last("LIMIT 1"));
+        return profile != null ? profile.getNickname() : "CampusHub 用户";
+    }
+}
