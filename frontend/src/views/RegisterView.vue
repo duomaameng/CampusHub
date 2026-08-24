@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { LockKeyhole, Mail, RotateCcw, ShieldCheck, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
@@ -122,7 +122,7 @@ async function submit() {
 
 <style scoped>
 .register-view {
-  --register-green: #b9ff66;
+  --register-green: #ffb454;
   --register-dark: #191a23;
   --register-grey: #f3f3f3;
   position: relative;
@@ -133,7 +133,7 @@ async function submit() {
   background:
     radial-gradient(circle at 96% 6%, var(--register-green) 0 72px, transparent 73px),
     #ffffff;
-  box-shadow: 0 8px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -150,7 +150,7 @@ async function submit() {
   border: 2px solid #000000;
   border-radius: 24px;
   background: var(--register-grey);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -205,7 +205,7 @@ async function submit() {
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
-  background: var(--register-green);
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
@@ -247,7 +247,7 @@ async function submit() {
 .field input:focus,
 :deep(.password-input:focus) {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 :deep(.password-visibility-button) {
@@ -258,7 +258,7 @@ async function submit() {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .button.primary {
@@ -269,7 +269,7 @@ async function submit() {
 .button.primary:hover:not(:disabled) {
   color: #000000;
   background: var(--register-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .button.ghost {
@@ -280,7 +280,7 @@ async function submit() {
 .button.ghost:hover:not(:disabled) {
   color: #000000;
   background: var(--register-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .button:disabled {
@@ -293,7 +293,7 @@ async function submit() {
   padding: 12px 16px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 
@@ -311,3 +311,7 @@ async function submit() {
   }
 }
 </style>
+
+
+
+

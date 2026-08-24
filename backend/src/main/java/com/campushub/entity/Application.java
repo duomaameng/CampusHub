@@ -21,6 +21,8 @@ public class Application {
 
     private ApplicationStatus status;
 
+    private Boolean publisherViewed;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

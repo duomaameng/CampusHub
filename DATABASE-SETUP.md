@@ -7,19 +7,31 @@
 
 ## 1. 需要用到的文件
 
-数据库相关文件都在 [database](C:\Users\duoma\java\软工2项目\CampusHub\database) 目录下：
+数据库相关文件都在 [database](database) 目录下：
 
-- [01-schema.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\01-schema.sql)
+- [01-schema.sql](database/01-schema.sql)
   - 用来建库、建表
-- [02-seed.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\02-seed.sql)
+- [02-seed.sql](database/02-seed.sql)
   - 用来插入基础测试数据
-- [03-reset-dev-data.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\03-reset-dev-data.sql)
+- [03-reset-dev-data.sql](database/03-reset-dev-data.sql)
   - 用来清空开发测试数据，方便重新导入
+- [04-upgrade-existing-db.sql](database/04-upgrade-existing-db.sql)
+  - 用来升级已有数据库结构并保留现有数据
+- [05-add-six-open-tasks.sql](database/05-add-six-open-tasks.sql)
+  - 用来向已有数据库补充六条待接单演示需求和两张二手交易配图，可重复执行
 
 如果你只是第一次初始化数据库，只需要运行前两个文件：
 
 1. `01-schema.sql`
 2. `02-seed.sql`
+
+如果本机已经有需要保留的 `campus_hub` 数据，不要重新执行 `01-schema.sql`，只执行：
+
+1. `04-upgrade-existing-db.sql`
+
+如果数据库结构已经是最新版，只想补充六条待接单演示需求和对应配图，则执行：
+
+1. `05-add-six-open-tasks.sql`
 
 ## 2. 初始化前的准备
 
@@ -43,7 +55,7 @@
 ### 第二步：导入建表脚本
 
 1. 点击菜单栏 `File -> Open SQL Script...`
-2. 打开 [01-schema.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\01-schema.sql)
+2. 打开 [01-schema.sql](database/01-schema.sql)
 3. 点击执行按钮运行整个脚本
 
 执行成功后，会完成：
@@ -54,7 +66,7 @@
 ### 第三步：导入测试数据
 
 1. 再次点击 `File -> Open SQL Script...`
-2. 打开 [02-seed.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\02-seed.sql)
+2. 打开 [02-seed.sql](database/02-seed.sql)
 3. 点击执行按钮运行整个脚本
 
 执行成功后，会插入基础测试数据，例如：
@@ -78,7 +90,8 @@
 - `task`
 - `application`
 - `orders`
-- `order_message`
+- `conversation`
+- `chat_message`
 - `notification`
 - `review`
 - `report`
@@ -103,8 +116,8 @@ SELECT COUNT(*) FROM orders;
 如果你已经导入过一次测试数据，后面想重新回到“初始演示状态”，不要重复运行旧版带删除逻辑的脚本。  
 现在推荐的做法是：
 
-1. 先运行 [03-reset-dev-data.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\03-reset-dev-data.sql)
-2. 再运行 [02-seed.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\02-seed.sql)
+1. 先运行 [03-reset-dev-data.sql](database/03-reset-dev-data.sql)
+2. 再运行 [02-seed.sql](database/02-seed.sql)
 
 这样会：
 
@@ -115,7 +128,7 @@ SELECT COUNT(*) FROM orders;
 
 根目录的脚本在这里：
 
-- [init-db.ps1](C:\Users\duoma\java\软工2项目\CampusHub\scripts\init-db.ps1)
+- [init-db.ps1](scripts/init-db.ps1)
 
 它的作用是：
 
@@ -129,10 +142,10 @@ SELECT COUNT(*) FROM orders;
 
 ## 7. 如果想用脚本初始化
 
-先进入项目根目录：
+先在项目根目录打开 PowerShell。如果当前终端位于项目的上一级目录，可执行：
 
 ```powershell
-cd C:\Users\duoma\java\软工2项目\CampusHub
+cd CampusHub
 ```
 
 然后执行：
@@ -213,9 +226,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 对于组员来说，最推荐的数据库初始化方式是：
 
-1. 用 `MySQL Workbench` 打开 [01-schema.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\01-schema.sql)
+1. 用 `MySQL Workbench` 打开 [01-schema.sql](database/01-schema.sql)
 2. 执行建库建表
-3. 用 `MySQL Workbench` 打开 [02-seed.sql](C:\Users\duoma\java\软工2项目\CampusHub\database\02-seed.sql)
+3. 用 `MySQL Workbench` 打开 [02-seed.sql](database/02-seed.sql)
 4. 执行测试数据导入
 
 这样最直观，也最不容易被脚本权限或命令行问题卡住。
@@ -225,3 +238,4 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `03-reset-dev-data.sql`
 - 或 `init-db.ps1`
 
+已有数据库需要保留数据时使用 `04-upgrade-existing-db.sql`；只补充六条演示需求时使用 `05-add-six-open-tasks.sql`。

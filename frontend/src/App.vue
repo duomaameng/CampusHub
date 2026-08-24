@@ -8,39 +8,76 @@ import {
   LogIn,
   LogOut,
   Megaphone,
+  MessageSquareText,
   PlusCircle,
   ShieldCheck,
   Undo2,
   UserPlus,
   UserRound
 } from '@lucide/vue'
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRouter, useRoute } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
+import { connectRealtime, disconnectRealtime, subscribeRealtime } from '@/services/realtime'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
 const isLanding = computed(() => route.name === 'landing')
+const logoutDialog = useConfirmDialog()
+let unsubscribeRealtime: (() => void) | undefined
+
+function refreshSidebarCounts() {
+  if (!auth.token) return
+  void Promise.all([auth.refreshUnread(), auth.refreshUnreadMessages()])
+}
+
+watch(
+  () => auth.token,
+  (token) => {
+    connectRealtime(token || '')
+  },
+  { immediate: true }
+)
 
 onMounted(async () => {
+  unsubscribeRealtime = subscribeRealtime((event) => {
+    if (event.type === 'NOTIFICATIONS_CHANGED') void auth.refreshUnread()
+    if (event.type === 'MESSAGES_CHANGED') void auth.refreshUnreadMessages()
+  })
   document.documentElement.setAttribute('data-theme', 'light')
   localStorage.setItem('campus-hub-theme', 'light')
+  window.addEventListener('focus', refreshSidebarCounts)
   if (auth.token) {
     try {
       await auth.loadMe()
       await auth.refreshUnread()
+      await auth.refreshUnreadMessages()
     } catch {
       await auth.logout()
     }
   }
 })
 
-async function handleLogout() {
-  await auth.logout()
-  router.push('/login')
+onBeforeUnmount(() => {
+  unsubscribeRealtime?.()
+  window.removeEventListener('focus', refreshSidebarCounts)
+  disconnectRealtime()
+})
+
+function handleLogout() {
+  logoutDialog.request({
+    title: '退出当前账号？',
+    description: '退出后需要重新登录才能查看订单、消息和个人资料。',
+    confirmText: '确认退出'
+  }, async () => {
+    await auth.logout()
+    await router.push('/login')
+  })
 }
 </script>
 
@@ -85,6 +122,15 @@ async function handleLogout() {
         <RouterLink v-if="auth.isAuthenticated" to="/orders">
           <ClipboardList class="nav-icon" aria-hidden="true" />
           <span>我的订单</span>
+        </RouterLink>
+        <RouterLink
+          v-if="auth.isAuthenticated"
+          to="/chats"
+          :class="{ 'router-link-active': route.name === 'user-chat' || route.name === 'chats' }"
+        >
+          <MessageSquareText class="nav-icon" aria-hidden="true" />
+          <span>消息</span>
+          <span v-if="auth.unreadMessageCount" class="nav-badge">{{ auth.unreadMessageCount }}</span>
         </RouterLink>
         <RouterLink v-if="auth.isAuthenticated" to="/notifications">
           <Bell class="nav-icon" aria-hidden="true" />
@@ -132,6 +178,7 @@ async function handleLogout() {
       </main>
     </section>
   </div>
+  <ConfirmDialog v-bind="logoutDialog.state" @confirm="logoutDialog.confirm" @cancel="logoutDialog.cancel" />
 </template>
 
 <style scoped>

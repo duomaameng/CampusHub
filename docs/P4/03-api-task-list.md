@@ -5,7 +5,7 @@
 说明：
 - 本文档以**当前后端实际路径口径**为准，统一已实现接口的路径与方法。
 - 对于文档中已经规划、但当前尚未实现的接口，**保留条目，不删除**。
-- 若联调发现 Bug，请在 [08-bug-fix-log.md](C:\Users\duoma\java\软工2项目\CampusHub\docs\P4\04-bug-fix-log.md) 中记录。
+- 若联调发现 Bug，请在 [08-bug-fix-log.md](08-bug-fix-log.md) 中记录。
 
 ---
 
@@ -175,5 +175,5 @@
 ## 使用说明
 
 1. 测试通过后，将对应行的“状态”列改为“已完成”。
-2. 发现 Bug 时将状态改为“有 Bug”，并在 [08-bug-fix-log.md](C:\Users\duoma\java\软工2项目\CampusHub\docs\P4\04-bug-fix-log.md) 追加记录。
+2. 发现 Bug 时将状态改为“有 Bug”，并在 [08-bug-fix-log.md](08-bug-fix-log.md) 追加记录。
 3. 所有接口联调完成后，再进行主链路收口与验收。

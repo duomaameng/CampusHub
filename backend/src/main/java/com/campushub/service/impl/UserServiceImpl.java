@@ -18,6 +18,7 @@ import com.campushub.mapper.OrderMapper;
 import com.campushub.mapper.ReviewMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.service.FileService;
 import com.campushub.service.UserService;
@@ -25,6 +26,7 @@ import com.campushub.vo.user.PublicProfileVO;
 import com.campushub.vo.user.UserCreditVO;
 import com.campushub.vo.user.UserProfileVO;
 import com.campushub.vo.user.UserReviewItemVO;
+import com.campushub.vo.message.ChatUserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
     private final OrderMapper orderMapper;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     @Override
     public UserProfileVO getCurrentUser() {
@@ -102,6 +105,7 @@ public class UserServiceImpl implements UserService {
         userProfileMapper.updateById(profile);
 
         User user = userMapper.selectById(userId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.PROFILE_CHANGED, userId);
         return buildProfileResponse(user);
     }
 
@@ -170,6 +174,7 @@ public class UserServiceImpl implements UserService {
             profile.setContactVisible(false);
             userProfileMapper.updateById(profile);
         }
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.PROFILE_CHANGED, userId);
     }
 
     @Override
@@ -220,6 +225,48 @@ public class UserServiceImpl implements UserService {
                 .praiseRate(creditSummary.getPraiseRate())
                 .recentChanges(recentChanges)
                 .build();
+    }
+
+    @Override
+    public List<ChatUserVO> searchChatUsers(String keyword) {
+        Long currentUserId = SecurityUtils.requireCurrentUserId();
+        if (!StringUtils.hasText(keyword)) {
+            return List.of();
+        }
+        String query = keyword.trim();
+        List<Long> nicknameUserIds = userProfileMapper.selectList(
+                        new LambdaQueryWrapper<UserProfile>()
+                                .like(UserProfile::getNickname, query)
+                                .last("LIMIT 20"))
+                .stream()
+                .map(UserProfile::getUserId)
+                .toList();
+
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>()
+                .eq(User::getStatus, UserStatus.ACTIVE)
+                .ne(User::getId, currentUserId);
+        wrapper.and(search -> {
+            search.like(User::getEmail, query);
+            if (!nicknameUserIds.isEmpty()) {
+                search.or().in(User::getId, nicknameUserIds);
+            }
+        });
+
+        return userMapper.selectList(wrapper.last("LIMIT 20"))
+                .stream()
+                .map(user -> {
+                    UserProfile profile = userProfileMapper.selectOne(
+                            new LambdaQueryWrapper<UserProfile>()
+                                    .eq(UserProfile::getUserId, user.getId())
+                                    .last("LIMIT 1"));
+                    return ChatUserVO.builder()
+                            .id(user.getId())
+                            .email(user.getEmail())
+                            .nickname(profile == null ? user.getEmail() : profile.getNickname())
+                            .avatarUrl(profile == null ? null : profile.getAvatarUrl())
+                            .build();
+                })
+                .toList();
     }
 
     private UserProfileVO buildProfileResponse(User user) {

@@ -1,11 +1,12 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Bookmark, Clock, MapPin, Tag, Users } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { taskApi } from '@/services/api'
 import { taskStatusText } from '@/types'
-import type { PageData, TaskItem } from '@/types'
+import type { PageData, TaskItem, TaskStatus } from '@/types'
 
 const page = ref<PageData<TaskItem>>()
 const loading = ref(false)
@@ -15,6 +16,20 @@ const filters = reactive({
   keyword: '',
   sort: 'latest'
 })
+
+const statusTagClass: Record<TaskStatus, string> = {
+  OPEN: 'success',
+  IN_PROGRESS: 'info',
+  COMPLETED: 'warning',
+  CANCELLED: 'danger',
+  EXPIRED: 'danger'
+}
+
+const rewardText: Record<TaskItem['rewardType'], string> = {
+  CASH: '定价',
+  NEGOTIABLE: '面议',
+  CREDIT_INTENT: '积分'
+}
 
 const filteredFavorites = computed(() => {
   const keyword = filters.keyword.trim().toLowerCase()
@@ -32,18 +47,22 @@ const filteredFavorites = computed(() => {
   })
 })
 
-async function loadFavorites() {
-  error.value = ''
-  loading.value = true
+async function loadFavorites(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     page.value = await taskApi.favorites({ page: 1, size: 20 })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '收藏列表加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '收藏列表加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
+useRealtimeRefresh(['TASKS_CHANGED'], () => loadFavorites(true))
 onMounted(loadFavorites)
 </script>
 
@@ -52,7 +71,6 @@ onMounted(loadFavorites)
     <div class="page-title">
       <div>
         <h1>我的收藏</h1>
-        <p>集中查看已经收藏的需求，继续跟进或取消收藏可进入详情页操作。</p>
       </div>
       <RouterLink class="button ghost" to="/tasks">返回任务大厅</RouterLink>
     </div>
@@ -83,27 +101,34 @@ onMounted(loadFavorites)
     </form>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载收藏列表</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无收藏的需求</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无收藏的需求</div>
 
-    <div v-else-if="!filteredFavorites.length" class="empty-state">暂无符合筛选条件的收藏</div>
+    <div v-else-if="page?.records.length && !filteredFavorites.length" class="empty-state">暂无符合筛选条件的收藏</div>
 
-    <div v-else class="cards-grid">
+    <div v-if="filteredFavorites.length" class="cards-grid">
       <RouterLink v-for="(task, index) in filteredFavorites" :key="task.id" class="item-card" :to="`/tasks/${task.id}`" :style="{ '--i': index }">
         <div class="item-title">
-          <h2>{{ task.title }}</h2>
-          <span :class="['tag', task.status === 'OPEN' ? 'success' : 'warning']">{{ taskStatusText[task.status] }}</span>
+          <div>
+            <span class="relation-pill">收藏任务</span>
+            <h2>{{ task.title }}</h2>
+          </div>
+          <span :class="['tag', 'status-tag', statusTagClass[task.status]]">
+            {{ task.status === 'CANCELLED' ? '已删除' : taskStatusText[task.status] }}
+          </span>
         </div>
-        <p>{{ task.description }}</p>
         <div class="meta-line">
           <span><MapPin class="meta-icon" aria-hidden="true" />{{ task.campus }}</span>
-          <span><Tag class="meta-icon" aria-hidden="true" />{{ task.rewardType }}</span>
-          <span><Clock class="meta-icon" aria-hidden="true" />{{ new Date(task.deadline).toLocaleString() }}</span>
+          <span><Tag class="meta-icon" aria-hidden="true" />{{ rewardText[task.rewardType] }}</span>
         </div>
         <div class="meta-line">
           <span><Users class="meta-icon" aria-hidden="true" />申请 {{ task.applicationCount }}</span>
           <span><Bookmark class="meta-icon" aria-hidden="true" />收藏 {{ task.favoriteCount }}</span>
         </div>
+        <p class="hint"><Clock class="meta-icon" aria-hidden="true" />截止时间 · {{ new Date(task.deadline).toLocaleString() }}</p>
+        <img v-if="task.imageUrls && task.imageUrls.length" :src="task.imageUrls[0]" alt="" class="card-image" />
+        <span v-else class="order-card-visual" aria-hidden="true">
+          <span class="visual-dot" />
+        </span>
       </RouterLink>
     </div>
   </section>
@@ -111,7 +136,7 @@ onMounted(loadFavorites)
 
 <style scoped>
 .task-favorites-view {
-  --favorite-green: #b9ff66;
+  --favorite-green: #ffb454;
   --favorite-dark: #191a23;
   --favorite-grey: #f3f3f3;
 }
@@ -125,22 +150,15 @@ onMounted(loadFavorites)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
-  background: var(--favorite-green);
+  border: 2px solid #000000;
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
-}
-
-.page-title p {
-  margin-top: 12px;
-  max-width: 680px;
-  color: #3f4350;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.6;
+  box-shadow: none;
 }
 
 .page-title .button.ghost {
@@ -150,12 +168,12 @@ onMounted(loadFavorites)
   background: #ffffff;
   color: #000000;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .page-title .button.ghost:hover {
   background: var(--favorite-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -168,7 +186,7 @@ onMounted(loadFavorites)
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
@@ -193,13 +211,13 @@ onMounted(loadFavorites)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #f8ffe8;
+  background: #fff1df;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .toolbar .field label {
@@ -211,129 +229,123 @@ onMounted(loadFavorites)
 }
 
 .item-card {
-  min-height: 205px;
-  padding: 26px 30px;
+  padding: 22px 130px 22px 26px;
   border: 2px solid #000000;
-  border-radius: 28px;
-  background: var(--favorite-grey);
-  box-shadow: 0 6px 0 #000000;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
 
-.item-card::before {
+.item-card::after {
   display: none;
 }
 
-.item-card::after {
-  content: '';
+.order-card-visual {
   position: absolute;
-  right: 28px;
+  right: 30px;
   bottom: 24px;
-  width: 124px;
-  height: 72px;
+  z-index: 0;
+  width: 128px;
+  height: 74px;
   border: 2px solid #000000;
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 74% 28%, var(--favorite-green) 0 22px, transparent 23px),
-    #ffffff;
-  filter: none;
-  opacity: 1;
+  background: #ffffff;
   transform: rotate(-6deg);
   transition: transform var(--transition-fast);
+  pointer-events: none;
 }
 
-.item-card:hover::after {
-  opacity: 1;
-  transform: rotate(-3deg);
-}
-
-.item-card:nth-child(2n) {
+.order-card-visual .visual-dot {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   background: var(--favorite-green);
 }
 
-.item-card:nth-child(3n) {
-  background: var(--favorite-dark);
-  color: #ffffff;
+.card-image {
+  position: absolute;
+  right: 24px;
+  top: 54px;
+  z-index: 0;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
 }
 
-.item-card:nth-child(3n)::after {
-  border-color: #ffffff;
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
 }
 
-.item-card:nth-child(3n) p,
-.item-card:nth-child(3n) .meta-line span {
-  color: #ffffff;
-}
-
-.item-title,
-.item-card p,
-.meta-line {
-  position: relative;
-  z-index: 1;
+.item-card:hover .order-card-visual {
+  transform: rotate(-3deg);
 }
 
 .item-title {
-  position: static;
+  position: relative;
+  z-index: 1;
   align-items: flex-start;
   gap: 16px;
 }
 
-.item-title h2 {
+.item-title > div {
+  width: 100%;
+}
+
+.item-card h2 {
+  max-width: 100%;
+  margin-top: 8px;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.relation-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #000000;
+  background: var(--favorite-green);
+}
+
+.item-card .meta-line,
+.item-card > .hint {
   position: relative;
   z-index: 1;
 }
 
-.item-title > h2 {
-  margin-right: 0;
-}
-
-.item-card h2 {
-  width: max-content;
-  max-width: calc(100% - 120px);
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: var(--favorite-green);
-  color: #000000;
-  font-size: 21px;
-  font-weight: 900;
-  line-height: 1.18;
-}
-
-.item-card p {
-  max-width: 480px;
-  color: #343743;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.meta-line {
-  max-width: 520px;
-  font-size: 11.5px;
-  gap: 10px;
-}
-
-.meta-line span {
-  color: #6f7485;
-  font-weight: 800;
+.item-card .meta-line {
+  max-width: 620px;
+  font-size: 12.5px;
+  gap: 12px;
 }
 
 .item-card .tag {
   position: absolute;
-  right: 30px;
-  bottom: 28px;
-  z-index: 3;
+  top: 0;
+  left: 88px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: max-content;
   min-width: max-content;
   max-width: none;
+  margin-left: 0;
+  flex-shrink: 0;
+  z-index: 2;
   white-space: nowrap;
   writing-mode: horizontal-tb;
   text-orientation: mixed;
@@ -341,11 +353,41 @@ onMounted(loadFavorites)
   border-radius: 999px;
   background: #ffffff;
   color: #000000;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 0;
-  padding: 5px 12px;
+  padding: 4px 12px;
   box-shadow: none;
+}
+
+.item-card .hint {
+  max-width: 620px;
+  color: #6f7485;
+  font-weight: 800;
+}
+
+.item-card .status-tag.success {
+  background: linear-gradient(135deg, var(--success-bg), rgba(245, 158, 11, 0.08));
+  color: #9a3412;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.info {
+  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.08));
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.item-card .status-tag.warning {
+  background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.08));
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.danger {
+  background: linear-gradient(135deg, var(--danger-bg), rgba(239, 68, 68, 0.08));
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 .empty-state {
@@ -353,7 +395,7 @@ onMounted(loadFavorites)
   border: 2px dashed #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   color: #4a4e5b;
   font-size: 14px;
   font-weight: 800;
@@ -364,11 +406,22 @@ onMounted(loadFavorites)
   padding: 12px 16px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 
+.task-favorites-view .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-auto-rows: auto;
+  gap: 22px;
+}
+
 @media (max-width: 768px) {
+  .task-favorites-view .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
   .toolbar {
     grid-template-columns: 1fr;
   }
@@ -378,8 +431,26 @@ onMounted(loadFavorites)
     padding: var(--space-5);
   }
 
-  .item-card::after {
+  .order-card-visual {
     display: none;
+  }
+
+  .card-image {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+  }
+
+  .item-card:hover .card-image {
+    transform: none;
   }
 }
 </style>
+
+
+
+
+

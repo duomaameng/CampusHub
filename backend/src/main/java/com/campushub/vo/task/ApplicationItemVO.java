@@ -14,7 +14,6 @@ public class ApplicationItemVO {
     private String applicantNickname;
     private String applicantAvatarUrl;
     private Integer applicantCreditScore;
-    private String message;
     private ApplicationStatus status;
     private LocalDateTime createdAt;
 }

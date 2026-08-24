@@ -1,7 +1,8 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { AlertCircle, CalendarClock, Megaphone, RefreshCcw } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { announcementApi } from '@/services/api'
 import { announcementPriorityText } from '@/types'
 import type { AnnouncementItem, PageData } from '@/types'
@@ -17,15 +18,18 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString()
 }
 
-async function load() {
-  loading.value = true
-  error.value = ''
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    loading.value = true
+    error.value = ''
+  }
   try {
     page.value = await announcementApi.list({ page: pageNumber.value, size: 10 })
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '公告加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '公告加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -35,6 +39,7 @@ async function goPage(nextPage: number) {
   await load()
 }
 
+useRealtimeRefresh(['ANNOUNCEMENTS_CHANGED'], () => load(true))
 onMounted(load)
 </script>
 
@@ -76,10 +81,9 @@ onMounted(load)
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载公告</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无公告</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无公告</div>
 
-    <div v-else class="grid">
+    <div v-if="page?.records.length" class="grid">
       <article
         v-for="(item, index) in page.records"
         :key="item.id"
@@ -109,7 +113,7 @@ onMounted(load)
 
 <style scoped>
 .announcements-view {
-  --notice-green: #b9ff66;
+  --notice-green: #ffb454;
   --notice-dark: #191a23;
   --notice-grey: #f3f3f3;
   --notice-line: #000000;
@@ -121,9 +125,9 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background:
-    radial-gradient(circle at 92% 12%, rgba(185, 255, 102, 0.8) 0 58px, transparent 60px),
+    radial-gradient(circle at 92% 12%, rgba(255, 180, 84, 0.8) 0 58px, transparent 60px),
     #ffffff;
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .announcements-view :deep(.page-title h1) {
@@ -131,7 +135,8 @@ onMounted(load)
   margin: 0;
   padding: 5px 10px;
   border-radius: 24px;
-  background: var(--notice-green);
+  border: 2px solid #000000;
+  background: transparent;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   color: #000000;
@@ -139,6 +144,7 @@ onMounted(load)
   font-size: 32px;
   line-height: 1.12;
   letter-spacing: 0;
+  box-shadow: none;
 }
 
 .announcements-view :deep(.page-title p) {
@@ -152,7 +158,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background: var(--notice-grey);
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -171,7 +177,7 @@ onMounted(load)
   width: max-content;
   padding: 5px 10px;
   border-radius: 24px;
-  background: var(--notice-green);
+  background: transparent;
   color: #000000;
   font-weight: 900;
   font-size: 13px;
@@ -228,7 +234,7 @@ onMounted(load)
 
 .page-title .button.secondary:hover {
   background: #000000;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.55);
   transform: translateY(-1px);
 }
 
@@ -246,7 +252,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
   position: relative;
 }
 
@@ -260,17 +266,12 @@ onMounted(load)
 
 .announcement-card:hover {
   border-color: var(--notice-line);
-  box-shadow: 0 7px 0 var(--notice-line);
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
 .announcement-card h2 {
-  width: max-content;
   max-width: 100%;
-  padding: 4px 8px;
-  border-radius: 24px;
-  background: var(--notice-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
@@ -320,7 +321,7 @@ onMounted(load)
   background: #ffffff;
   border: 2px solid var(--notice-line);
   border-radius: 24px;
-  box-shadow: 0 5px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .pagination .button.ghost {
@@ -375,3 +376,7 @@ onMounted(load)
   }
 }
 </style>
+
+
+
+

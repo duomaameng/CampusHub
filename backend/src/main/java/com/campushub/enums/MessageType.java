@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 public enum MessageType {
     TEXT("TEXT"),
-    IMAGE("IMAGE");
+    IMAGE("IMAGE"),
+    FILE("FILE");
 
     @EnumValue
     private final String value;

@@ -9,6 +9,7 @@ import com.campushub.common.PageResult;
 import com.campushub.entity.Notification;
 import com.campushub.enums.OrderStatus;
 import com.campushub.mapper.NotificationMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.NotificationItemVO;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class NotificationService {
 
     private final NotificationMapper notificationMapper;
     private final NotificationFactory notificationFactory;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public PageResult<NotificationItemVO> listCurrentUserNotifications(int page, int size, Boolean read) {
         Long currentUserId = SecurityUtils.requireCurrentUserId();
@@ -57,6 +59,7 @@ public class NotificationService {
         }
         notification.setIsRead(true);
         notificationMapper.updateById(notification);
+        publishNotificationChange(currentUserId);
     }
 
     @Transactional
@@ -70,6 +73,7 @@ public class NotificationService {
                         .eq(Notification::getIsRead, false)
                         .set(Notification::getIsRead, true)
         );
+        publishNotificationChange(currentUserId);
     }
 
     @Transactional
@@ -87,6 +91,7 @@ public class NotificationService {
         }
         notification.setIsDeleted(true);
         notificationMapper.updateById(notification);
+        publishNotificationChange(currentUserId);
     }
 
     @Transactional
@@ -100,41 +105,71 @@ public class NotificationService {
                         .eq(Notification::getIsRead, true)
                         .set(Notification::getIsDeleted, true)
         );
+        publishNotificationChange(currentUserId);
     }
 
     @Transactional
     public void createApplicationNotification(Long receiverId, Long taskId, String applicantNickname, String taskTitle) {
         notificationMapper.insert(notificationFactory.application(receiverId, taskId, applicantNickname, taskTitle));
+        publishNotificationChange(receiverId);
+        realtimeEventPublisher.user(receiverId, RealtimeEventPublisher.TASKS_CHANGED, taskId);
+        realtimeEventPublisher.user(receiverId, RealtimeEventPublisher.APPLICATIONS_CHANGED, taskId);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, taskId);
     }
 
     @Transactional
     public void createOrderStatusNotification(Long receiverId, Long orderId, OrderStatus orderStatus) {
         notificationMapper.insert(notificationFactory.orderStatus(receiverId, orderId, orderStatus));
+        publishOrderNotification(receiverId, orderId);
     }
 
     @Transactional
     public void createOrderActionNotification(Long receiverId, Long orderId, String title, String content) {
         notificationMapper.insert(notificationFactory.orderAction(receiverId, orderId, title, content));
+        publishOrderNotification(receiverId, orderId);
     }
 
     @Transactional
-    public void createOrderMessageNotification(Long receiverId, Long orderId, String senderNickname, String preview) {
-        notificationMapper.insert(notificationFactory.orderMessage(receiverId, orderId, senderNickname, preview));
+    public void createChatMessageNotification(Long receiverId, Long senderId, String senderNickname, String preview) {
+        notificationMapper.insert(notificationFactory.chatMessage(receiverId, senderId, senderNickname, preview));
+        publishNotificationChange(receiverId);
     }
 
     @Transactional
     public void createReviewRequestNotification(Long receiverId, Long orderId, String taskTitle) {
         notificationMapper.insert(notificationFactory.reviewRequest(receiverId, orderId, taskTitle));
+        publishOrderNotification(receiverId, orderId);
     }
 
     @Transactional
     public void createReportResultNotification(Long receiverId, Long taskId, String resultSummary) {
         notificationMapper.insert(notificationFactory.reportResult(receiverId, taskId, resultSummary));
+        publishNotificationChange(receiverId);
+        realtimeEventPublisher.user(receiverId, RealtimeEventPublisher.TASKS_CHANGED, taskId);
+    }
+
+    @Transactional
+    public void createReportResultOrderNotification(Long receiverId, Long orderId, String resultSummary) {
+        notificationMapper.insert(notificationFactory.reportResultForOrder(receiverId, orderId, resultSummary));
+        publishOrderNotification(receiverId, orderId);
+    }
+
+    private void publishOrderNotification(Long receiverId, Long orderId) {
+        publishNotificationChange(receiverId);
+        realtimeEventPublisher.user(receiverId, RealtimeEventPublisher.ORDERS_CHANGED, orderId);
+    }
+
+    private void publishNotificationChange(Long receiverId) {
+        realtimeEventPublisher.user(receiverId, RealtimeEventPublisher.NOTIFICATIONS_CHANGED, null);
     }
 
     private NotificationItemVO toItemVO(Notification notification) {
-        String targetType = notification.getRelatedOrderId() != null ? "ORDER" : "TASK";
-        Long targetId = notification.getRelatedOrderId() != null ? notification.getRelatedOrderId() : notification.getRelatedTaskId();
+        String targetType = notification.getRelatedUserId() != null
+                ? "USER"
+                : notification.getRelatedOrderId() != null ? "ORDER" : "TASK";
+        Long targetId = notification.getRelatedUserId() != null
+                ? notification.getRelatedUserId()
+                : notification.getRelatedOrderId() != null ? notification.getRelatedOrderId() : notification.getRelatedTaskId();
         return new NotificationItemVO(
                 notification.getId(),
                 notification.getType(),

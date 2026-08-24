@@ -1,21 +1,26 @@
-<script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+﻿<script setup lang="ts">
+import { AlertTriangle, Download, FileText, MessageSquareText, X } from '@lucide/vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
-import { fileApi, orderApi, reportApi, taskApi } from '@/services/api'
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
+import { fileApi, reportApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { applicationStatusText } from '@/types'
-import type { ApplicationItem, OrderItem, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
+import type { ApplicationItem, RewardPaymentMethod, RewardType, TaskItem, TaskUpdatePayload, UploadedFileItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
 const task = ref<TaskItem>()
-const relatedOrder = ref<OrderItem | null>(null)
 const applications = ref<ApplicationItem[]>([])
-const applyMessage = ref('')
+const applicationDialogOpen = ref(false)
+const applicationsLoading = ref(false)
+const applying = ref(false)
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
@@ -24,18 +29,22 @@ const reportUploadError = ref('')
 const reportSubmitting = ref(false)
 const reportEvidenceUploading = ref(false)
 const reportEvidenceFiles = ref<UploadedFileItem[]>([])
+const reportDialogOpen = ref(false)
 const editMode = ref(false)
 const savingTask = ref(false)
 const deletingTask = ref(false)
-const deleteConfirming = ref(false)
 const favoriteLoading = ref(false)
 const actionLoadingApplicationId = ref<number | null>(null)
-const editForm = reactive<TaskUpdatePayload>({
+const previewImageUrl = ref('')
+const dangerDialog = useConfirmDialog()
+const editForm = reactive<TaskUpdatePayload & { categoryFields: Record<string, string | number | boolean> }>({
   category: 'EXPRESS',
   title: '',
   description: '',
   campus: '',
   rewardType: 'NEGOTIABLE',
+  rewardAmount: undefined,
+  paymentMethod: undefined,
   deadline: '',
   anonymous: false,
   imageIds: [],
@@ -44,19 +53,58 @@ const editForm = reactive<TaskUpdatePayload>({
 
 const taskId = computed(() => Number(route.params.id))
 const isPublisher = computed(() => Boolean(task.value && auth.user?.id === task.value.publisherId))
-const canApply = computed(() => Boolean(auth.isAuthenticated && auth.user?.verified && applyMessage.value))
-const canEditTask = computed(() => Boolean(isPublisher.value && task.value?.status === 'OPEN' && task.value.applicationCount === 0))
+const canApply = computed(() => Boolean(
+  task.value?.category !== 'TEAM_UP' &&
+  task.value?.status === 'OPEN' &&
+  auth.isAuthenticated &&
+  auth.user?.verified
+))
+const canEditTask = computed(() => Boolean(
+  isPublisher.value &&
+  task.value?.status === 'OPEN' &&
+  (task.value.category === 'TEAM_UP' || task.value.applicationCount === 0)
+))
+const isDeletedTask = computed(() => task.value?.status === 'CANCELLED')
+const canDeleteTask = computed(() => Boolean(
+  isPublisher.value &&
+  (task.value?.status === 'OPEN' || isDeletedTask.value)
+))
 const canReportTask = computed(() => Boolean(
   auth.isAuthenticated &&
+  auth.user?.id &&
   task.value &&
-  ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status) &&
-  relatedOrder.value &&
-  (
-    relatedOrder.value.publisherId === auth.user?.id ||
-    relatedOrder.value.serviceProviderId === auth.user?.id
-  )
+  task.value.publisherId !== auth.user.id
 ))
 const isFavorited = computed(() => Boolean(task.value?.isFavorited || (task.value as (TaskItem & { favorited?: boolean }) | undefined)?.favorited))
+
+function openImagePreview(url: string) {
+  previewImageUrl.value = resolveAssetUrl(url)
+  document.body.style.overflow = 'hidden'
+}
+
+function closeImagePreview() {
+  previewImageUrl.value = ''
+  document.body.style.overflow = ''
+}
+
+async function downloadTaskFile(file: { id: number; fileName: string }) {
+  if (!task.value?.fileDownloadAllowed) return
+  try {
+    const blob = await taskApi.downloadFile(taskId.value, file.id)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.fileName
+    link.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '文件下载失败'
+  }
+}
+
+function handlePreviewKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && previewImageUrl.value) closeImagePreview()
+}
 
 const categoryText: Record<string, string> = {
   EXPRESS: '快递代取',
@@ -69,23 +117,90 @@ const categoryText: Record<string, string> = {
   OTHER: '其他'
 }
 
-async function load() {
-  error.value = ''
-  loading.value = true
+const rewardText: Record<RewardType, string> = {
+  CASH: '定价',
+  NEGOTIABLE: '面议',
+  CREDIT_INTENT: '积分'
+}
+
+const paymentMethodText: Record<RewardPaymentMethod, string> = {
+  WECHAT: '微信',
+  ALIPAY: '支付宝',
+  CASH: '现金'
+}
+
+const categoryFieldText: Record<string, string> = {
+  expressCompany: '快递公司',
+  building: '宿舍楼',
+  pickupLocation: '取件地点',
+  pickupCode: '取件码',
+  pickupAddress: '取件地址',
+  deliveryLocation: '送达地点',
+  deliveryAddress: '送达地址',
+  destination: '目的地',
+  subject: '辅导科目',
+  level: '难度/年级',
+  goodsCategory: '商品分类',
+  price: '售价',
+  itemName: '物品名称',
+  condition: '成色',
+  lostOrFound: '失物/招领',
+  location: '地点',
+  itemLocation: '地点',
+  foundTime: '丢失/捡到时间',
+  itemDescription: '物品描述',
+  contactInfo: '联系方式',
+  topic: '咨询主题',
+  activityType: '活动类型',
+  requiredCount: '人数需求',
+  activityTime: '活动时间',
+  teamType: '组队类型',
+  expectedMembers: '期望人数',
+  note: '补充说明'
+}
+
+const categoryFieldValueText: Record<string, string> = {
+  NEW: '全新',
+  LIKE_NEW: '几乎全新',
+  USED: '有使用痕迹'
+}
+
+function formatCategoryFieldKey(key: string) {
+  return categoryFieldText[key] || key
+}
+
+function formatCategoryFieldValue(value: string | number | boolean) {
+  if (typeof value === 'boolean') return value ? '是' : '否'
+  if (typeof value === 'string') return categoryFieldValueText[value] || value
+  return value
+}
+
+async function load(silent = false) {
+  if (!silent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     task.value = await taskApi.get(taskId.value)
-    relatedOrder.value = null
-    if (auth.isAuthenticated && ['IN_PROGRESS', 'COMPLETED'].includes(task.value.status)) {
-      const orders = await orderApi.list({ page: 1, size: 100 })
-      relatedOrder.value = orders.records.find((item) => item.taskId === task.value?.id) || null
-    }
-    if (isPublisher.value) {
-      applications.value = await taskApi.applications(taskId.value)
+    if (isPublisher.value && task.value.category !== 'TEAM_UP') {
+      await loadApplications(silent)
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '需求加载失败'
+    if (!silent) error.value = err instanceof Error ? err.message : '需求加载失败'
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
+  }
+}
+
+async function loadApplications(silent = false) {
+  if (!isPublisher.value || task.value?.category === 'TEAM_UP') return
+  if (!silent) applicationsLoading.value = true
+  try {
+    applications.value = await taskApi.applications(taskId.value)
+  } catch (err) {
+    if (!silent) error.value = err instanceof Error ? err.message : '接单申请加载失败'
+  } finally {
+    if (!silent) applicationsLoading.value = false
   }
 }
 
@@ -102,12 +217,13 @@ function startEdit() {
     success.value = ''
     return
   }
-  deleteConfirming.value = false
   editForm.category = task.value.category
   editForm.title = task.value.title
   editForm.description = task.value.description
   editForm.campus = task.value.campus
   editForm.rewardType = task.value.rewardType
+  editForm.rewardAmount = task.value.rewardAmount
+  editForm.paymentMethod = task.value.paymentMethod
   editForm.deadline = toDatetimeLocal(task.value.deadline)
   editForm.anonymous = task.value.anonymous
   editForm.categoryFields = task.value.categoryFields || {}
@@ -126,6 +242,8 @@ async function saveTask() {
       description: editForm.description,
       campus: editForm.campus,
       rewardType: editForm.rewardType,
+      rewardAmount: editForm.rewardType === 'CASH' ? editForm.rewardAmount : undefined,
+      paymentMethod: editForm.rewardType === 'CASH' ? editForm.paymentMethod : undefined,
       deadline: editForm.deadline,
       anonymous: editForm.anonymous,
       categoryFields: editForm.categoryFields
@@ -141,26 +259,37 @@ async function saveTask() {
 
 async function deleteTask() {
   if (!task.value) return
-  if (!canEditTask.value) {
-    error.value = '已有接单或接单申请，不能删除该需求'
+  if (!canDeleteTask.value) {
+    error.value = '只有待接单或已删除状态的订单可以执行删除'
     success.value = ''
     return
   }
-  if (!deleteConfirming.value) {
-    deleteConfirming.value = true
-    return
-  }
-  error.value = ''
-  deletingTask.value = true
-  try {
-    await taskApi.remove(task.value.id)
-    router.push('/tasks')
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '需求删除失败'
-  } finally {
-    deletingTask.value = false
-    deleteConfirming.value = false
-  }
+  const currentTask = task.value
+  const permanentlyDeletingTask = isDeletedTask.value
+  dangerDialog.request({
+    title: permanentlyDeletingTask ? '彻底删除这条订单？' : '删除这条订单？',
+    description: permanentlyDeletingTask
+      ? `“${currentTask.title}”将被完全删除，且无法恢复。`
+      : `“${currentTask.title}”将进入已删除状态；相关接单申请会取消，之后可以再次删除并彻底移除。`,
+    confirmText: permanentlyDeletingTask ? '彻底删除' : '确认删除'
+  }, async () => {
+    error.value = ''
+    deletingTask.value = true
+    try {
+      await taskApi.remove(currentTask.id)
+      if (!permanentlyDeletingTask) {
+        success.value = '订单已进入已删除状态'
+        await load()
+      } else {
+        await router.push('/tasks')
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '需求删除失败'
+      throw err
+    } finally {
+      deletingTask.value = false
+    }
+  })
 }
 
 async function toggleFavorite() {
@@ -184,14 +313,39 @@ async function toggleFavorite() {
 async function applyTask() {
   error.value = ''
   success.value = ''
+  applying.value = true
   try {
-    await taskApi.apply(taskId.value, applyMessage.value)
+    await taskApi.apply(taskId.value)
     success.value = '接单申请已提交'
-    applyMessage.value = ''
     await load()
   } catch (err) {
     error.value = err instanceof Error ? err.message : '接单申请失败'
+  } finally {
+    applying.value = false
   }
+}
+
+async function openApplicationDialog() {
+  error.value = ''
+  success.value = ''
+  applicationDialogOpen.value = true
+  if (isPublisher.value) {
+    await loadApplications()
+  }
+  if (isPublisher.value && task.value?.hasUnreadApplications) {
+    task.value = { ...task.value, hasUnreadApplications: false }
+    try {
+      await taskApi.markApplicationsViewed(taskId.value)
+    } catch (err) {
+      if (task.value) task.value = { ...task.value, hasUnreadApplications: true }
+      error.value = err instanceof Error ? err.message : '申请查看状态更新失败'
+    }
+  }
+}
+
+function closeApplicationDialog() {
+  if (applying.value || actionLoadingApplicationId.value !== null) return
+  applicationDialogOpen.value = false
 }
 
 async function confirmApplication(applicationId: number) {
@@ -246,6 +400,18 @@ function removeReportEvidence(fileId: number) {
   reportEvidenceFiles.value = reportEvidenceFiles.value.filter((item) => item.id !== fileId)
 }
 
+function openReportDialog() {
+  if (!canReportTask.value) return
+  error.value = ''
+  reportUploadError.value = ''
+  reportDialogOpen.value = true
+}
+
+function closeReportDialog() {
+  if (reportSubmitting.value) return
+  reportDialogOpen.value = false
+}
+
 async function submitReport() {
   if (!task.value || !reportReason.value.trim()) return
 
@@ -260,6 +426,7 @@ async function submitReport() {
     )
     reportReason.value = ''
     reportEvidenceFiles.value = []
+    reportDialogOpen.value = false
     success.value = '举报已提交'
   } catch (err) {
     error.value = err instanceof Error ? err.message : '举报提交失败'
@@ -268,23 +435,74 @@ async function submitReport() {
   }
 }
 
-onMounted(load)
+useRealtimeRefresh(
+  ['TASKS_CHANGED', 'APPLICATIONS_CHANGED'],
+  () => load(true)
+)
+
+onMounted(() => {
+  void load()
+  window.addEventListener('keydown', handlePreviewKeydown)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handlePreviewKeydown)
+  document.body.style.overflow = ''
+})
 </script>
 
 <template>
   <section class="task-detail-view">
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载需求</div>
-
-    <div v-else-if="task" class="detail-layout">
+    <p v-if="success" class="success-message">{{ success }}</p>
+    <div v-if="task" class="detail-layout single-column">
       <article class="panel grid">
         <div class="page-title">
           <div>
-            <h1>{{ task.title }}</h1>
-            <p><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <div class="task-title-row">
+              <h1>{{ task.title }}</h1>
+              <button
+                v-if="canReportTask"
+                class="report-icon-button"
+                type="button"
+                title="举报任务"
+                aria-label="举报任务"
+                @click="openReportDialog"
+              >
+                <AlertTriangle aria-hidden="true" />
+              </button>
+            </div>
+            <p v-if="task.anonymous">匿名用户 · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
+            <p v-else><RouterLink :to="{ name: 'user-public-profile', params: { id: task.publisherId } }">{{ task.publisherNickname }}</RouterLink> · {{ task.campus }} · {{ new Date(task.createdAt).toLocaleString() }}</p>
           </div>
           <div class="task-actions">
             <span class="tag">{{ categoryText[task.category] }}</span>
+            <span v-if="isDeletedTask" class="tag danger">已删除</span>
+            <button
+              v-if="isPublisher && !editMode && !isDeletedTask"
+              class="button secondary"
+              :class="{ 'is-soft-disabled': !canEditTask }"
+              type="button"
+              :aria-disabled="!canEditTask"
+              @click="startEdit"
+            >
+              编辑
+            </button>
+            <button
+              v-if="isPublisher && !editMode"
+              class="button danger"
+              :class="{ 'is-soft-disabled': !canDeleteTask }"
+              type="button"
+              :disabled="deletingTask"
+              :aria-disabled="!canDeleteTask"
+              @click="deleteTask"
+            >
+              {{
+                deletingTask
+                  ? (isDeletedTask ? '彻底删除中...' : '删除中...')
+                  : (isDeletedTask ? '删除' : task.category === 'TEAM_UP' ? '删除帖子' : '删除')
+              }}
+            </button>
             <button
               v-if="auth.isAuthenticated && !isPublisher"
               :class="['button', 'favorite-button', isFavorited ? 'active' : '']"
@@ -297,169 +515,260 @@ onMounted(load)
           </div>
         </div>
 
-        <p>{{ task.description }}</p>
+        <form v-if="editMode" class="main-edit-form grid" @submit.prevent="saveTask">
+          <div class="field">
+            <label for="edit-title">标题</label>
+            <input id="edit-title" v-model.trim="editForm.title" required maxlength="100" />
+          </div>
+          <div class="field">
+            <label for="edit-description">描述</label>
+            <textarea id="edit-description" v-model.trim="editForm.description" required maxlength="2000" />
+          </div>
+          <div class="grid two">
+            <div class="field">
+              <label for="edit-campus">校区</label>
+              <input id="edit-campus" v-model.trim="editForm.campus" required />
+            </div>
+            <div class="field">
+              <label for="edit-reward">{{ editForm.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</label>
+              <select id="edit-reward" v-model="editForm.rewardType" required>
+                <option value="CASH">定价</option>
+                <option value="NEGOTIABLE">面议</option>
+                <option value="CREDIT_INTENT">积分</option>
+              </select>
+            </div>
+          </div>
+          <div v-if="editForm.rewardType === 'CASH'" class="grid two">
+            <div class="field">
+              <label for="edit-reward-amount">{{ editForm.category === 'SECOND_HAND' ? '售价（元）' : '酬金金额（元）' }}</label>
+              <input id="edit-reward-amount" v-model.number="editForm.rewardAmount" type="number" min="0.01" step="0.01" required />
+            </div>
+            <div class="field">
+              <label for="edit-payment-method">{{ editForm.category === 'SECOND_HAND' ? '收款方式' : '支付方式' }}</label>
+              <select id="edit-payment-method" v-model="editForm.paymentMethod" required>
+                <option value="WECHAT">微信</option>
+                <option value="ALIPAY">支付宝</option>
+                <option value="CASH">现金</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="edit-deadline">截止时间</label>
+            <input id="edit-deadline" v-model="editForm.deadline" type="datetime-local" required />
+          </div>
+          <div v-if="editForm.category === 'TEAM_UP'" class="grid two">
+            <div class="field">
+              <label for="edit-activity-type">活动类型</label>
+              <input id="edit-activity-type" v-model.trim="editForm.categoryFields.activityType" required />
+            </div>
+            <div class="field">
+              <label for="edit-required-count">人数需求</label>
+              <input id="edit-required-count" v-model.number="editForm.categoryFields.requiredCount" type="number" min="1" step="1" required />
+            </div>
+            <div class="field">
+              <label for="edit-activity-time">活动时间</label>
+              <input id="edit-activity-time" v-model="editForm.categoryFields.activityTime" type="datetime-local" required />
+            </div>
+            <div class="field">
+              <label for="edit-contact-info">联系方式</label>
+              <input id="edit-contact-info" v-model.trim="editForm.categoryFields.contactInfo" required />
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input v-model="editForm.anonymous" type="checkbox" />
+            <span>匿名发布</span>
+          </label>
+          <div class="actions">
+            <button class="button primary" type="submit" :disabled="savingTask">{{ savingTask ? '保存中...' : '保存修改' }}</button>
+            <button class="button ghost" type="button" @click="editMode = false">取消</button>
+          </div>
+        </form>
 
-        <div v-if="task.imageUrls.length" class="upload-grid">
-          <article v-for="url in task.imageUrls" :key="url" class="upload-card">
+        <template v-else>
+          <p>{{ task.description }}</p>
+
+          <div v-if="task.imageUrls.length" class="upload-grid">
+          <button
+            v-for="url in task.imageUrls"
+            :key="url"
+            class="upload-card task-image-button"
+            type="button"
+            aria-label="全屏预览任务配图"
+            @click="openImagePreview(url)"
+          >
             <img :src="resolveAssetUrl(url)" alt="任务配图" />
-          </article>
-        </div>
+          </button>
+          </div>
 
-        <div class="grid two">
+          <section v-if="task.files?.length" class="task-files-section">
+            <h2>任务文件</h2>
+            <div class="task-files-list">
+              <article v-for="file in task.files" :key="file.id" class="task-file-row">
+                <FileText aria-hidden="true" />
+                <strong>{{ file.fileName }}</strong>
+                <button class="button ghost" type="button" :disabled="!task.fileDownloadAllowed" @click="downloadTaskFile(file)">
+                  <Download class="button-icon" aria-hidden="true" />
+                  <span>{{ task.fileDownloadAllowed ? '下载' : '仅服务方可下载' }}</span>
+                </button>
+              </article>
+            </div>
+          </section>
+
+          <div class="grid two">
           <div class="panel">
-            <strong>报酬类型</strong>
-            <p>{{ task.rewardType }}</p>
+            <strong>{{ task.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</strong>
+            <p>
+              {{ rewardText[task.rewardType] }}
+              <template v-if="task.rewardType === 'CASH' && task.rewardAmount && task.paymentMethod">
+                · ¥{{ Number(task.rewardAmount).toFixed(2) }} · {{ paymentMethodText[task.paymentMethod] }}
+              </template>
+            </p>
           </div>
           <div class="panel">
             <strong>截止时间</strong>
             <p>{{ new Date(task.deadline).toLocaleString() }}</p>
           </div>
-        </div>
-
-        <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="panel">
-          <h2>分类字段</h2>
-          <div class="meta-line">
-            <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">{{ key }}: {{ value }}</span>
           </div>
-        </div>
-      </article>
 
-      <aside class="grid">
-        <section v-if="isPublisher" class="panel grid">
-          <h2>需求管理</h2>
-          <p v-if="!canEditTask" class="hint">只有未接单、且没有接单申请的开放需求可以编辑或删除。</p>
-          <form v-if="editMode" class="grid" @submit.prevent="saveTask">
-            <div class="field">
-              <label for="edit-title">标题</label>
-              <input id="edit-title" v-model.trim="editForm.title" required maxlength="100" />
+          <div class="order-information-section">
+            <div class="order-action-buttons">
+              <button
+                v-if="task.category !== 'TEAM_UP'"
+                class="button primary order-application-button"
+                type="button"
+                :disabled="isPublisher ? false : !canApply || applying"
+                @click="isPublisher ? openApplicationDialog() : applyTask()"
+              >
+                {{ isPublisher ? '查看接单申请' : applying ? '申请中...' : '申请接单' }}
+                <span v-if="isPublisher && task.hasUnreadApplications" class="application-unread-dot" aria-label="有新的接单申请" />
+              </button>
+              <RouterLink
+                v-if="auth.isAuthenticated && !isPublisher && !task.anonymous"
+                class="button secondary order-contact-button"
+                :to="{ name: 'user-chat', params: { userId: task.publisherId } }"
+              >
+                <MessageSquareText class="button-icon" aria-hidden="true" />
+                <span>联系发布者</span>
+              </RouterLink>
             </div>
-            <div class="field">
-              <label for="edit-description">描述</label>
-              <textarea id="edit-description" v-model.trim="editForm.description" required maxlength="2000" />
-            </div>
-            <div class="grid two">
-              <div class="field">
-                <label for="edit-campus">校区</label>
-                <input id="edit-campus" v-model.trim="editForm.campus" required />
+            <p v-if="!isPublisher && !auth.isAuthenticated" class="hint">登录后可直接申请接单。</p>
+            <p v-else-if="!isPublisher && !auth.user?.verified" class="hint">完成邮箱验证后可直接申请接单。</p>
+
+            <div
+              v-if="(task.categoryFields && Object.keys(task.categoryFields).length) || task.privateFieldsHidden"
+              class="panel"
+            >
+              <h2>{{ task.category === 'TEAM_UP' ? '组队帖子信息' : '订单相关信息' }}</h2>
+              <div v-if="task.categoryFields && Object.keys(task.categoryFields).length" class="meta-line">
+                <span v-for="(value, key) in task.categoryFields" :key="key" class="tag">
+                  {{ formatCategoryFieldKey(String(key)) }}: {{ formatCategoryFieldValue(value) }}
+                </span>
               </div>
-              <div class="field">
-                <label for="edit-reward">报酬类型</label>
-                <select id="edit-reward" v-model="editForm.rewardType" required>
-                  <option value="CASH">现金</option>
-                  <option value="NEGOTIABLE">面议</option>
-                  <option value="CREDIT_INTENT">积分意向</option>
-                </select>
+              <p v-if="task.privateFieldsHidden" class="hint">取件码、精确送达地点或联系方式等私密信息，将在发布者确认接单后对服务方显示。</p>
+            </div>
+          </div>
+        </template>
+      </article>
+    </div>
+
+    <Teleport to="body">
+      <div v-if="previewImageUrl" class="image-preview-overlay" role="dialog" aria-modal="true" aria-label="任务配图预览" @click.self="closeImagePreview">
+        <button class="image-preview-close" type="button" aria-label="关闭图片预览" @click="closeImagePreview">×</button>
+        <img :src="previewImageUrl" alt="任务配图大图预览" @click="closeImagePreview" />
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div v-if="applicationDialogOpen && task && isPublisher" class="application-modal-backdrop" role="presentation" @click.self="closeApplicationDialog">
+        <section class="application-modal" role="dialog" aria-modal="true" aria-labelledby="task-application-modal-title">
+          <header class="application-modal-header">
+            <h2 id="task-application-modal-title">接单申请</h2>
+            <button class="application-modal-close" type="button" aria-label="关闭弹窗" :disabled="applying || actionLoadingApplicationId !== null" @click="closeApplicationDialog">
+              <X aria-hidden="true" />
+            </button>
+          </header>
+
+          <div class="application-modal-content grid">
+            <p v-if="success" class="success-message">{{ success }}</p>
+            <div v-if="applicationsLoading && !applications.length" class="empty-state">正在加载申请</div>
+            <div v-else-if="!applications.length" class="empty-state">暂无申请</div>
+            <div v-for="application in applications" :key="application.id" class="item-card">
+              <div class="item-title">
+                <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
+                <span class="tag">{{ applicationStatusText[application.status] }}</span>
               </div>
+              <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
+              <div v-if="task.status === 'OPEN' && application.status === 'PENDING'" class="application-actions">
+                <RouterLink class="button ghost" :to="{ name: 'user-chat', params: { userId: application.applicantId } }">
+                  <MessageSquareText class="button-icon" aria-hidden="true" />
+                  <span>联系申请人</span>
+                </RouterLink>
+                <button class="button secondary" type="button" :disabled="actionLoadingApplicationId === application.id" @click="confirmApplication(application.id)">确认接单</button>
+                <button class="button danger" type="button" :disabled="actionLoadingApplicationId === application.id" @click="rejectApplication(application.id)">拒绝申请</button>
+              </div>
+              <RouterLink
+                v-else
+                class="button ghost"
+                :to="{ name: 'user-chat', params: { userId: application.applicantId } }"
+              >
+                <MessageSquareText class="button-icon" aria-hidden="true" />
+                <span>联系申请人</span>
+              </RouterLink>
             </div>
+          </div>
+
+        </section>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div v-if="reportDialogOpen && task" class="report-modal-backdrop" role="presentation" @click.self="closeReportDialog">
+        <section class="report-modal" role="dialog" aria-modal="true" aria-labelledby="task-report-modal-title">
+          <header class="report-modal-header">
+            <div>
+              <p class="report-modal-eyebrow">任务举报</p>
+              <h2 id="task-report-modal-title">举报“{{ task.title }}”</h2>
+            </div>
+            <button class="report-modal-close" type="button" aria-label="关闭举报弹窗" :disabled="reportSubmitting" @click="closeReportDialog">
+              <X aria-hidden="true" />
+            </button>
+          </header>
+          <form class="report-modal-form grid" @submit.prevent="submitReport">
             <div class="field">
-              <label for="edit-deadline">截止时间</label>
-              <input id="edit-deadline" v-model="editForm.deadline" type="datetime-local" required />
+              <label for="task-report-reason">举报原因</label>
+              <textarea id="task-report-reason" v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" required />
             </div>
-            <label class="checkbox-label">
-              <input v-model="editForm.anonymous" type="checkbox" />
-              <span>匿名发布</span>
+            <label class="button ghost upload-trigger">
+              <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleReportEvidenceChange" />
+              <span>{{ reportEvidenceUploading ? '上传中...' : '上传举报证据' }}</span>
             </label>
-            <div class="actions">
-              <button class="button primary" type="submit" :disabled="savingTask">{{ savingTask ? '保存中...' : '保存修改' }}</button>
-              <button class="button ghost" type="button" @click="editMode = false">取消</button>
+            <p class="hint">支持截图或照片证据，每张不超过 5MB。</p>
+            <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
+            <p v-if="error" class="error-message">{{ error }}</p>
+            <div v-if="reportEvidenceFiles.length" class="upload-grid">
+              <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
+                <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
+                <div class="upload-card-meta">
+                  <strong>{{ item.fileName }}</strong>
+                  <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
+                </div>
+              </article>
+            </div>
+            <div class="report-modal-actions">
+              <button class="button ghost" type="button" :disabled="reportSubmitting" @click="closeReportDialog">取消</button>
+              <button class="button danger" type="submit" :disabled="reportSubmitting || !reportReason">
+                {{ reportSubmitting ? '提交中...' : '提交举报' }}
+              </button>
             </div>
           </form>
-          <div v-else class="actions">
-            <button
-              class="button secondary"
-              :class="{ 'is-soft-disabled': !canEditTask }"
-              type="button"
-              :aria-disabled="!canEditTask"
-              @click="startEdit"
-            >
-              编辑
-            </button>
-            <button
-              class="button danger"
-              :class="{ 'is-soft-disabled': !canEditTask }"
-              type="button"
-              :disabled="deletingTask"
-              :aria-disabled="!canEditTask"
-              @click="deleteTask"
-            >
-              {{ deletingTask ? '删除中...' : deleteConfirming ? '再次点击确认删除' : '删除' }}
-            </button>
-          </div>
         </section>
-        <section v-if="!isPublisher" class="panel grid">
-          <h2>申请接单</h2>
-          <div class="field">
-            <textarea v-model.trim="applyMessage" placeholder="说明你的时间、位置或服务能力" />
-          </div>
-          <button class="button primary" type="button" :disabled="!canApply" @click="applyTask">提交申请</button>
-          <p v-if="!auth.isAuthenticated" class="hint">登录后可申请接单。</p>
-          <p v-else-if="!auth.user?.verified" class="hint">完成邮箱验证后才能申请接单。</p>
-          <p v-if="success" class="success-message">{{ success }}</p>
-        </section>
-
-        <section v-if="canReportTask" class="panel grid">
-          <h2>举报任务</h2>
-          <div class="field">
-            <textarea v-model.trim="reportReason" placeholder="填写举报原因或补充说明" maxlength="300" />
-          </div>
-          <label class="button ghost upload-trigger">
-            <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleReportEvidenceChange" />
-            <span>{{ reportEvidenceUploading ? '上传中...' : '上传举报证据' }}</span>
-          </label>
-          <p class="hint">支持截图或照片证据，每张不超过 5MB。</p>
-          <p v-if="reportUploadError" class="error-message">{{ reportUploadError }}</p>
-          <div v-if="reportEvidenceFiles.length" class="upload-grid">
-            <article v-for="item in reportEvidenceFiles" :key="item.id" class="upload-card">
-              <img :src="resolveAssetUrl(item.url)" :alt="item.fileName" />
-              <div class="upload-card-meta">
-                <strong>{{ item.fileName }}</strong>
-                <button class="button ghost" type="button" @click="removeReportEvidence(item.id)">移除</button>
-              </div>
-            </article>
-          </div>
-          <button class="button danger" type="button" :disabled="reportSubmitting || !reportReason" @click="submitReport">
-            {{ reportSubmitting ? '提交中...' : '提交举报' }}
-          </button>
-        </section>
-
-        <section v-if="isPublisher" class="panel grid">
-          <h2>接单申请</h2>
-          <div v-if="!applications.length" class="empty-state">暂无申请</div>
-          <div v-for="application in applications" :key="application.id" class="item-card">
-            <div class="item-title">
-              <h3><RouterLink :to="{ name: 'user-public-profile', params: { id: application.applicantId } }">{{ application.applicantNickname }}</RouterLink></h3>
-              <span class="tag">{{ applicationStatusText[application.status] }}</span>
-            </div>
-            <p>{{ application.message }}</p>
-            <p class="hint">信用分 {{ application.applicantCreditScore }} · {{ new Date(application.createdAt).toLocaleString() }}</p>
-            <button
-              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
-              class="button secondary"
-              type="button"
-              :disabled="actionLoadingApplicationId === application.id"
-              @click="confirmApplication(application.id)"
-            >
-              确认接单
-            </button>
-            <button
-              v-if="task.status === 'OPEN' && application.status === 'PENDING'"
-              class="button danger"
-              type="button"
-              :disabled="actionLoadingApplicationId === application.id"
-              @click="rejectApplication(application.id)"
-            >
-              拒绝申请
-            </button>
-          </div>
-        </section>
-      </aside>
-    </div>
+      </div>
+    </Teleport>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 
 <style scoped>
 .task-detail-view {
-  --task-green: #b9ff66;
+  --task-green: #ffb454;
   --task-dark: #191a23;
   --task-grey: #f3f3f3;
 }
@@ -467,6 +776,44 @@ onMounted(load)
 .detail-layout {
   align-items: start;
   gap: 26px;
+}
+
+.detail-layout.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.order-information-section {
+  display: grid;
+  gap: 14px;
+}
+
+.order-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.order-application-button,
+.order-contact-button {
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+  justify-self: start;
+  min-width: 150px;
+}
+
+.application-unread-dot {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #dc2626;
+  box-shadow: 0 0 0 2px #000000;
 }
 
 .button.is-soft-disabled {
@@ -483,8 +830,62 @@ onMounted(load)
 .task-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+.task-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.task-title-row h1 {
+  min-width: 0;
+}
+
+.report-icon-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #c1121f;
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.report-icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.report-icon-button:hover {
+  background: #ffe8e8;
+  transform: translateY(-2px);
+}
+
+.report-icon-button:focus-visible {
+  outline: 3px solid rgba(255, 180, 84, 0.65);
+  outline-offset: 2px;
+}
+
+.main-edit-form {
+  margin-top: 4px;
+  padding-top: 24px;
+  border-top: 2px solid #000000;
+}
+
+.main-edit-form textarea {
+  min-height: 140px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .favorite-button {
@@ -492,28 +893,28 @@ onMounted(load)
   border: 2px solid #000000;
   background: #ffffff;
   color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .favorite-button:hover:not(:disabled) {
   border-color: #000000;
   background: var(--task-green);
   color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .favorite-button.active {
   border-color: #000000;
   background: var(--task-green);
   color: #000000;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .panel {
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -535,28 +936,286 @@ onMounted(load)
     #ffffff;
 }
 
+.task-image-button {
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: zoom-in;
+}
+
+.task-image-button img {
+  transition: transform var(--transition-fast);
+}
+
+.task-image-button:hover img {
+  transform: scale(1.03);
+}
+
+.image-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.image-preview-overlay img {
+  display: block;
+  max-width: min(94vw, 1440px);
+  max-height: 90vh;
+  object-fit: contain;
+  border: 2px solid #ffffff;
+  border-radius: 18px;
+  cursor: zoom-out;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.image-preview-close {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #191a23;
+  color: #ffffff;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(25, 26, 35, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.report-modal {
+  isolation: isolate;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 3px solid #000000;
+  border-radius: 28px;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at 100% 0%, #ffb454 0 70px, transparent 71px);
+  color: #000000;
+  box-shadow: none;
+}
+
+.report-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.report-modal-eyebrow {
+  margin-bottom: 5px;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.report-modal-header h2 {
+  max-width: 430px;
+  font-size: 26px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.report-modal-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+}
+
+.report-modal-close:hover:not(:disabled) {
+  background: #ffe8e8;
+  color: #c1121f;
+}
+
+.report-modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.report-modal-form textarea {
+  min-height: 150px;
+  padding: 13px 15px;
+  background: #ffffff;
+  color: #000000;
+  line-height: 1.6;
+}
+
+.report-modal-form .field label {
+  color: #343743;
+  font-weight: 900;
+}
+
+.report-modal-form .hint {
+  color: #6f7485;
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 2px solid #000000;
+}
+
+.application-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(25, 26, 35, 0.62);
+  backdrop-filter: blur(5px);
+}
+
+.application-modal {
+  --task-green: #ffb454;
+  --task-dark: #191a23;
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 3px solid #000000;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 100% 0%, #ffb454 0 70px, transparent 71px),
+    #ffffff;
+  color: #000000;
+}
+
+.application-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.application-modal-header h2 {
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.application-modal-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+}
+
+.application-modal-close:hover:not(:disabled) {
+  background: #ffe8e8;
+  color: #c1121f;
+}
+
+.application-modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.application-modal-content textarea {
+  min-height: 140px;
+  padding: 13px 15px;
+  line-height: 1.6;
+}
+
+.application-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.application-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 2px solid #000000;
+}
+
+@media (max-width: 620px) {
+  .report-modal-backdrop,
+  .application-modal-backdrop {
+    padding: 14px;
+  }
+
+  .report-modal,
+  .application-modal {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .report-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .application-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .panel h1 {
   width: max-content;
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
-  background: var(--task-green);
+  border: 2px solid #000000;
+  background: transparent;
   color: #000000;
   font-size: 32px;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1.18;
   -webkit-text-fill-color: #000000;
+  box-shadow: none;
 }
 
 .panel h2 {
   width: max-content;
   max-width: 100%;
   margin-bottom: var(--space-2);
-  padding: 5px 12px;
-  border-radius: 18px;
-  background: var(--task-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
@@ -591,7 +1250,7 @@ onMounted(load)
 }
 
 .panel .page-title p a:hover {
-  color: #365600;
+  color: #b45309;
 }
 
 .panel > p {
@@ -607,16 +1266,12 @@ onMounted(load)
   background: var(--task-grey);
   border: 2px solid #000000;
   border-radius: 22px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .panel .grid.two .panel strong {
   display: inline-block;
   margin-bottom: 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--task-green);
-  color: #000000;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: 0;
@@ -633,17 +1288,49 @@ onMounted(load)
   gap: var(--space-3);
 }
 
+.task-files-section,
+.task-files-list {
+  display: grid;
+  gap: 12px;
+}
+
+.task-file-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 2px solid #000000;
+  border-radius: 18px;
+  background: var(--task-grey);
+}
+
+.task-file-row > svg {
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  background: var(--task-green);
+}
+
+.task-file-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .upload-card {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
   transition: all var(--transition-base);
 }
 
 .upload-card:hover {
   border-color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -659,7 +1346,7 @@ aside .panel {
   padding: 24px;
   border: 2px solid #000000;
   border-radius: 24px;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
 }
 
 aside .panel h2 {
@@ -670,7 +1357,7 @@ aside .panel h2 {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .button.primary,
@@ -683,7 +1370,7 @@ aside .panel h2 {
 .button.secondary:hover:not(:disabled) {
   color: #000000;
   background: var(--task-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -732,7 +1419,7 @@ aside .panel textarea {
 .field select:focus,
 aside .panel textarea:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
   background: #ffffff;
 }
 
@@ -746,13 +1433,13 @@ aside .panel textarea::placeholder {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--task-grey);
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .item-card:hover {
   border-color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .item-card h3 a {
@@ -761,7 +1448,7 @@ aside .panel textarea::placeholder {
 }
 
 .item-card h3 a:hover {
-  color: #365600;
+  color: #b45309;
 }
 
 .empty-state {
@@ -771,7 +1458,7 @@ aside .panel textarea::placeholder {
   background: #ffffff;
   border: 2px dashed #000000;
   border-radius: 22px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .error-message,
@@ -780,7 +1467,7 @@ aside .panel textarea::placeholder {
   padding: 10px 14px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 
@@ -796,3 +1483,7 @@ aside .panel textarea::placeholder {
   }
 }
 </style>
+
+
+
+

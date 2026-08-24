@@ -1,8 +1,9 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { CalendarClock, ClipboardList, UserRound } from '@lucide/vue'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { orderApi, taskApi } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 import { orderStatusText } from '@/types'
@@ -23,6 +24,8 @@ type OrderListCard = {
   serviceProviderHint: string
   numberLabel: string
   createdAt: string
+  imageUrl?: string
+  statusLabel?: string
 }
 
 const auth = useAuthStore()
@@ -52,9 +55,11 @@ const statusClass: Record<string, string> = {
   IN_PROGRESS: 'info',
   PENDING_COMPLETION: 'warning',
   COMPLETED: 'warning',
+  TIMEOUT: 'danger',
   DISPUTE: 'warning',
   REVIEWED: 'warning',
-  PENDING_CONFIRM: 'success'
+  PENDING_CONFIRM: 'success',
+  CANCELLED: 'danger'
 }
 
 const statusRank: Record<OrderStatus, number> = {
@@ -64,6 +69,7 @@ const statusRank: Record<OrderStatus, number> = {
   DISPUTE: 1,
   COMPLETED: 2,
   REVIEWED: 2,
+  TIMEOUT: 3,
   CANCELLED: 3
 }
 
@@ -81,7 +87,8 @@ const orderCards = computed<OrderListCard[]>(() => {
     serviceProviderNickname: order.serviceProviderNickname,
     serviceProviderHint: '暂无服务方',
     numberLabel: `订单号 ${order.id}`,
-    createdAt: order.createdAt
+    createdAt: order.createdAt,
+    imageUrl: order.taskImageUrl
   }))
 
   const taskItems = missingPublishedTasks.value.map<OrderListCard>((task) => ({
@@ -90,20 +97,25 @@ const orderCards = computed<OrderListCard[]>(() => {
     relationLabel: '我发布',
     relationClass: 'publisher',
     title: task.title,
-    status: 'PENDING_CONFIRM',
+    status: task.status === 'CANCELLED' ? 'CANCELLED' : 'PENDING_CONFIRM',
+    statusLabel: task.status === 'CANCELLED' ? '已删除' : undefined,
     publisherId: task.publisherId,
     publisherNickname: task.publisherNickname,
-    serviceProviderHint: '尚未接单',
+    serviceProviderHint: task.status === 'CANCELLED' ? '帖子已删除' : '尚未接单',
     numberLabel: `任务号 ${task.id}`,
-    createdAt: task.createdAt
+    createdAt: task.createdAt,
+    imageUrl: task.imageUrls?.[0]
   }))
 
   return [...orderItems, ...taskItems].sort(compareOrderCards)
 })
 
-async function loadOrders() {
-  error.value = ''
-  loading.value = true
+async function loadOrders(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     const result = await orderApi.list({
       page: 1,
@@ -116,10 +128,12 @@ async function loadOrders() {
     page.value = { ...result, total: records.length, records }
     missingPublishedTasks.value = await loadMissingPublishedTasks(page.value.records)
   } catch (err) {
-    missingPublishedTasks.value = []
-    error.value = err instanceof Error ? err.message : '订单加载失败'
+    if (!isSilent) {
+      missingPublishedTasks.value = []
+      error.value = err instanceof Error ? err.message : '订单加载失败'
+    }
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -144,17 +158,22 @@ function compareByStatusAndTime(aStatus: OrderStatus, aCreatedAt: string, bStatu
 }
 
 async function loadMissingPublishedTasks(orders: OrderItem[]) {
-  if (!auth.user || filters.role === 'PROVIDER' || filters.status) return []
+  if (!auth.user || filters.role === 'PROVIDER') return []
+  if (filters.status && !['PENDING_CONFIRM', 'CANCELLED'].includes(filters.status)) return []
 
   const linkedTaskIds = new Set(orders.map((order) => order.taskId))
-  const result = await taskApi.list({
+  const result = await taskApi.mine({
     page: 1,
     size: 100,
-    keyword: filters.keyword || undefined,
-    sort: 'newest'
+    keyword: filters.keyword || undefined
   })
 
-  return result.records.filter((task) => task.publisherId === auth.user?.id && !linkedTaskIds.has(task.id))
+  return result.records.filter((task) => {
+    const cardStatus = task.status === 'CANCELLED' ? 'CANCELLED' : 'PENDING_CONFIRM'
+    return task.publisherId === auth.user?.id
+      && !linkedTaskIds.has(task.id)
+      && (!filters.status || filters.status === cardStatus)
+  })
 }
 
 function setRoleFilter(role: OrderRoleFilter) {
@@ -175,6 +194,7 @@ function relationClass(order: OrderItem) {
   return ''
 }
 
+useRealtimeRefresh(['ORDERS_CHANGED', 'TASKS_CHANGED'], () => loadOrders(true))
 onMounted(loadOrders)
 </script>
 
@@ -207,8 +227,10 @@ onMounted(loadOrders)
           <option value="PENDING_COMPLETION">待确认完成</option>
           <option value="COMPLETED">已完成</option>
           <option value="REVIEWED">已评价</option>
+          <option value="TIMEOUT">已超时</option>
           <option value="DISPUTE">争议处理中</option>
           <option value="PENDING_CONFIRM">待接单</option>
+          <option value="CANCELLED">已删除</option>
         </select>
       </div>
       <div class="field">
@@ -222,10 +244,9 @@ onMounted(loadOrders)
     </form>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载订单</div>
-    <div v-else-if="!orderCards.length" class="empty-state">暂无符合条件的订单</div>
+    <div v-if="!loading && !orderCards.length" class="empty-state">暂无符合条件的订单</div>
 
-    <div v-else class="cards-grid">
+    <div v-if="orderCards.length" class="cards-grid">
       <RouterLink
         v-for="(card, index) in orderCards"
         :key="card.key"
@@ -238,7 +259,7 @@ onMounted(loadOrders)
             <span :class="['relation-pill', card.relationClass]">{{ card.relationLabel }}</span>
             <h2>{{ card.title }}</h2>
           </div>
-          <span :class="['tag', statusClass[card.status]]">{{ orderStatusText[card.status] }}</span>
+          <span :class="['tag', 'status-tag', statusClass[card.status]]">{{ card.statusLabel || orderStatusText[card.status] }}</span>
         </div>
         <div class="meta-line">
           <span>
@@ -261,7 +282,8 @@ onMounted(loadOrders)
           <CalendarClock class="meta-icon" aria-hidden="true" />
           {{ card.numberLabel }} · {{ new Date(card.createdAt).toLocaleString() }}
         </p>
-        <span class="order-card-visual" aria-hidden="true">
+        <img v-if="card.imageUrl" :src="card.imageUrl" alt="" class="card-image" />
+        <span v-else class="order-card-visual" aria-hidden="true">
           <span class="visual-dot" />
         </span>
       </RouterLink>
@@ -271,7 +293,7 @@ onMounted(loadOrders)
 
 <style scoped>
 .orders-view {
-  --order-green: #b9ff66;
+  --order-green: #ffb454;
   --order-dark: #191a23;
   --order-grey: #f3f3f3;
 }
@@ -284,13 +306,22 @@ onMounted(loadOrders)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
-  background: var(--order-green);
+  border: 2px solid #000000;
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: none;
+}
+
+.orders-view .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-auto-rows: auto;
+  gap: 22px;
 }
 
 .role-tabs {
@@ -310,7 +341,7 @@ onMounted(loadOrders)
   background: #ffffff;
   color: #000000;
   text-align: left;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transition: all var(--transition-fast);
 }
 
@@ -321,14 +352,14 @@ onMounted(loadOrders)
 }
 
 .role-tab:hover {
-  background: #f8ffe8;
+  background: #fff1df;
   transform: translateY(-2px);
 }
 
 .role-tab.active {
   border-color: #000000;
   background: var(--order-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .role-tab.active strong {
@@ -344,7 +375,7 @@ onMounted(loadOrders)
   border: 2px solid #000000;
   border-radius: 26px;
   background: #ffffff;
-  box-shadow: 0 6px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: visible;
@@ -369,13 +400,13 @@ onMounted(loadOrders)
 
 .toolbar .field select:hover,
 .toolbar .field input:hover {
-  background: #f8ffe8;
+  background: #fff1df;
 }
 
 .toolbar .field select:focus,
 .toolbar .field input:focus {
   border-color: #000000;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .toolbar .field label {
@@ -398,23 +429,22 @@ onMounted(loadOrders)
   background: var(--order-dark);
   border: 2px solid #000000;
   border-radius: 14px;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .toolbar .button.secondary:hover {
   color: #000000;
   background: var(--order-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
 .item-card {
-  min-height: 190px;
-  padding: 26px 170px 26px 30px;
+  padding: 22px 130px 22px 26px;
   border: 2px solid #000000;
-  border-radius: 28px;
-  background: var(--order-grey);
-  box-shadow: 0 6px 0 #000000;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: none;
   position: relative;
   overflow: hidden;
 }
@@ -448,34 +478,26 @@ onMounted(loadOrders)
   background: var(--order-green);
 }
 
+.card-image {
+  position: absolute;
+  right: 24px;
+  top: 54px;
+  z-index: 0;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 22px;
+  transform: rotate(-4deg);
+  transition: transform var(--transition-fast);
+}
+
+.item-card:hover .card-image {
+  transform: rotate(-2deg);
+}
+
 .item-card:hover .order-card-visual {
   transform: rotate(-3deg);
-}
-
-.item-card:nth-child(2n) {
-  background: var(--order-green);
-}
-
-.item-card:nth-child(3n) {
-  background: var(--order-dark);
-  color: #ffffff;
-}
-
-.item-card:nth-child(3n) h2,
-.item-card:nth-child(3n) .meta-line span,
-.item-card:nth-child(3n) .meta-line a,
-.item-card:nth-child(3n) .hint {
-  color: #ffffff;
-}
-
-.item-card:nth-child(3n) .order-card-visual {
-  border-color: #ffffff;
-}
-
-.item-card:nth-child(3n) .relation-pill {
-  border-color: #000000;
-  background: var(--order-green);
-  color: #000000;
 }
 
 .item-title {
@@ -496,13 +518,8 @@ onMounted(loadOrders)
 }
 
 .item-card h2 {
-  width: max-content;
   max-width: 100%;
   margin-top: 8px;
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: var(--order-green);
-  color: #000000;
   font-size: 21px;
   font-weight: 900;
   line-height: 1.18;
@@ -553,11 +570,35 @@ onMounted(loadOrders)
   border-radius: 999px;
   background: #ffffff;
   color: #000000;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 900;
   letter-spacing: 0;
-  padding: 5px 12px;
+  padding: 4px 12px;
   box-shadow: none;
+}
+
+.item-card .status-tag.success {
+  background: linear-gradient(135deg, var(--success-bg), rgba(245, 158, 11, 0.08));
+  color: #9a3412;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.info {
+  background: linear-gradient(135deg, var(--info-bg), rgba(59, 130, 246, 0.08));
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.item-card .status-tag.warning {
+  background: linear-gradient(135deg, var(--warning-bg), rgba(245, 158, 11, 0.08));
+  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.item-card .status-tag.danger {
+  background: linear-gradient(135deg, var(--danger-bg), rgba(239, 68, 68, 0.08));
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 .item-card .meta-line {
@@ -572,7 +613,7 @@ onMounted(loadOrders)
 }
 
 .item-card .meta-line a:hover {
-  color: #365600;
+  color: #b45309;
 }
 
 .item-card .hint {
@@ -588,7 +629,7 @@ onMounted(loadOrders)
   border: 2px dashed #000000;
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .error-message {
@@ -597,16 +638,16 @@ onMounted(loadOrders)
   font-weight: 800;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
-  .role-tabs,
-  .toolbar {
+  .orders-view .cards-grid {
     grid-template-columns: 1fr;
   }
 
-  .cards-grid {
+  .role-tabs,
+  .toolbar {
     grid-template-columns: 1fr;
   }
 
@@ -622,5 +663,18 @@ onMounted(loadOrders)
   .order-card-visual {
     display: none;
   }
+
+  .card-image {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+  }
 }
 </style>
+
+
+
+

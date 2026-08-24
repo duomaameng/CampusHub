@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ArrowRight, LockKeyhole, LogIn, Mail, Sparkles, UserPlus } from '@lucide/vue'
 import { ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -10,8 +10,8 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
-const email = ref('student.demo1@smail.nju.edu.cn')
-const password = ref('CampusHub123!')
+const email = ref('')
+const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
@@ -69,7 +69,6 @@ async function submit() {
             <PasswordInput id="password" v-model="password" autocomplete="current-password" required />
           </div>
 
-          <p class="hint">演示账号：student.demo1@smail.nju.edu.cn / CampusHub123!</p>
           <p v-if="error" class="error-message">{{ error }}</p>
 
           <div class="actions">
@@ -96,7 +95,7 @@ async function submit() {
 
 <style scoped>
 .login-page {
-  --positivus-green: #b9ff66;
+  --positivus-green: #ffb454;
   --positivus-dark: #191a23;
   --positivus-grey: #f3f3f3;
   --positivus-line: #000000;
@@ -120,7 +119,7 @@ async function submit() {
 .login-card {
   border: 2px solid var(--positivus-line);
   border-radius: 28px;
-  box-shadow: 0 8px 0 var(--positivus-line);
+  box-shadow: none;
 }
 
 .login-story {
@@ -129,7 +128,7 @@ async function submit() {
   min-height: 560px;
   padding: clamp(30px, 4vw, 52px);
   background:
-    radial-gradient(circle at 88% 16%, rgba(185, 255, 102, 0.78) 0 74px, transparent 76px),
+    radial-gradient(circle at 88% 16%, rgba(255, 180, 84, 0.78) 0 74px, transparent 76px),
     linear-gradient(145deg, #ffffff 0%, var(--positivus-grey) 100%);
   display: flex;
   flex-direction: column;
@@ -202,7 +201,7 @@ async function submit() {
   display: inline;
   padding: 0 7px 4px;
   border-radius: 7px;
-  background: var(--positivus-green);
+  background: transparent;
   color: #000000;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -274,7 +273,7 @@ async function submit() {
 :deep(.password-input-wrapper input:focus) {
   border-color: var(--positivus-line);
   background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.55);
 }
 
 :deep(.password-visibility-button) {
@@ -328,7 +327,7 @@ async function submit() {
 
 .button.primary:hover:not(:disabled) {
   background: #000000;
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.65);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.65);
   transform: translateY(-2px);
 }
 
@@ -378,7 +377,7 @@ async function submit() {
 }
 
 .signup-strip a:hover {
-  color: #365600;
+  color: #b45309;
 }
 
 @media (max-width: 980px) {
@@ -399,7 +398,7 @@ async function submit() {
   .login-story,
   .login-card {
     border-radius: 20px;
-    box-shadow: 0 5px 0 var(--positivus-line);
+    box-shadow: none;
   }
 
   .login-story {
@@ -434,3 +433,7 @@ async function submit() {
   }
 }
 </style>
+
+
+
+

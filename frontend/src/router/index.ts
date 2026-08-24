@@ -27,6 +27,18 @@ const router = createRouter({
       component: () => import('@/views/OrderDetailView.vue'),
       meta: { requiresAuth: true }
     },
+    {
+      path: '/chats',
+      name: 'chats',
+      component: () => import('@/views/ChatView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/messages/:userId',
+      name: 'user-chat',
+      component: () => import('@/views/ChatView.vue'),
+      meta: { requiresAuth: true }
+    },
     { path: '/profile', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { requiresAuth: true } },
     { path: '/users/:id', name: 'user-public-profile', component: () => import('@/views/UserPublicProfileView.vue') },
     {

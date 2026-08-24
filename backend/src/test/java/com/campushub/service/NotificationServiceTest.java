@@ -2,6 +2,7 @@ package com.campushub.service;
 
 import com.campushub.entity.Notification;
 import com.campushub.mapper.NotificationMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.verify;
 class NotificationServiceTest {
 
     @Mock private NotificationMapper notificationMapper;
+    @Mock private RealtimeEventPublisher realtimeEventPublisher;
     private final NotificationFactory notificationFactory = new NotificationFactory();
 
     @InjectMocks
@@ -23,7 +25,7 @@ class NotificationServiceTest {
 
     @Test
     void shouldPersistOrderActionNotificationForCancelDecision() {
-        notificationService = new NotificationService(notificationMapper, notificationFactory);
+        notificationService = new NotificationService(notificationMapper, notificationFactory, realtimeEventPublisher);
 
         notificationService.createOrderActionNotification(10002L, 7002L, "发布方已同意取消申请", "订单已退回待接单状态");
 

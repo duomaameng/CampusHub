@@ -80,12 +80,14 @@
 **TaskCategory：** `EXPRESS`（快递代取）、`ERRAND`（跑腿代办）、`TUTORING`（学习辅导）、`SECOND_HAND`（二手交易）、`LOST_FOUND`（失物招领）、`CONSULTATION`（咨询问答）、`TEAM_UP`（组队搭子）、`OTHER`（其他）  
 **TaskStatus：** `OPEN`（待接单）、`IN_PROGRESS`（进行中）、`COMPLETED`（已完成）、`CANCELLED`（已取消）、`EXPIRED`（已过期）  
 **ApplicationStatus：** `PENDING`（待确认）、`APPROVED`（已确认）、`REJECTED`（已拒绝）、`CANCELLED`（已取消）  
-**OrderStatus：** `PENDING_CONFIRM`（待确认）、`IN_PROGRESS`（进行中）、`PENDING_COMPLETION`（待确认完成）、`COMPLETED`（已完成）、`CANCELLED`（已取消）、`DISPUTE`（争议处理中）、`REVIEWED`（已评价）  
-**RewardType：** `CASH`（现金）、`NEGOTIABLE`（面议）、`CREDIT_INTENT`（积分意向）  
+**OrderStatus：** `PENDING_CONFIRM`（待确认）、`IN_PROGRESS`（进行中）、`PENDING_COMPLETION`（待确认完成）、`COMPLETED`（已完成）、`CANCELLED`（已取消）、`TIMEOUT`（已超时）、`DISPUTE`（争议处理中）、`REVIEWED`（已评价）  
+**RewardType：** `CASH`（界面显示“定价”）、`NEGOTIABLE`（面议）、`CREDIT_INTENT`（积分）
+
+**RewardPaymentMethod：** `WECHAT`（微信）、`ALIPAY`（支付宝）、`CASH`（现金）
 **ReportTargetType：** `TASK`、`ORDER_MESSAGE`、`REVIEW`、`USER`  
-**ReportReasonType：** `FRAUD`（诈骗）、`ABUSE`（辱骂）、`SPAM`（垃圾信息）、`ILLEGAL`（违法内容）、`OTHER`（其他）  
+**ReportReasonType：** `FRAUD`（诈骗）、`ABUSE`（辱骂）、`SPAM`（垃圾信息）、`ILLEGAL`（违法内容）、`TIMEOUT`（订单超时）、`OTHER`（其他）  
 **ReportStatus：** `PENDING`（待处理）、`PROCESSING`（处理中）、`RESOLVED`（已处理）、`REJECTED`（已驳回）  
-**MessageType：** `TEXT`（文字）、`IMAGE`（图片）  
+**MessageType：** `TEXT`（文字）、`IMAGE`（图片）、`FILE`（文件）
 **NotificationType：** `APPLICATION`（接单申请）、`ORDER_STATUS`（订单状态变更）、`ORDER_MESSAGE`（订单消息）、`REVIEW_REQUEST`（评价邀请）、`REPORT_RESULT`（举报结果）
 
 ---
@@ -491,11 +493,14 @@
         "description": "韵达快递，取件码 A-3-2105，在仙林校区快递点",
         "campus": "仙林校区",
         "rewardType": "CASH",
+        "rewardAmount": 10.00,
+        "paymentMethod": "WECHAT",
         "deadline": "2026-05-18T18:00:00",
         "status": "OPEN",
         "anonymous": false,
         "imageUrls": ["/uploads/tasks/3001_1.jpg"],
         "applicationCount": 2,
+        "hasUnreadApplications": false,
         "favoriteCount": 3,
         "isFavorited": false,
         "createdAt": "2026-05-17T10:00:00"
@@ -524,26 +529,24 @@
     "publisherAvatarUrl": "/uploads/avatars/10001.jpg",
     "category": "EXPRESS",
     "title": "帮忙取一下韵达快递",
-    "description": "韵达快递，取件码 A-3-2105，在仙林校区快递点",
+    "description": "韵达快递，在仙林校区快递点取件并送到宿舍",
     "campus": "仙林校区",
     "rewardType": "CASH",
+    "rewardAmount": 10.00,
+    "paymentMethod": "WECHAT",
     "deadline": "2026-05-18T18:00:00",
     "status": "OPEN",
     "anonymous": false,
     "categoryFields": {
       "expressCompany": "韵达快递",
-      "pickupLocation": "仙林校区快递点",
-      "pickupCode": "A-3-2105",
-      "deliveryLocation": "仙林校区12栋"
+      "pickupLocation": "仙林校区快递点"
     },
-    "images": [
-      {
-        "id": 4001,
-        "url": "/uploads/tasks/3001_1.jpg",
-        "sortOrder": 1
-      }
-    ],
+    "privateFieldsHidden": true,
+    "imageUrls": ["/uploads/tasks/3001_1.jpg"],
+    "files": [],
+    "fileDownloadAllowed": false,
     "applicationCount": 2,
+    "hasUnreadApplications": false,
     "favoriteCount": 3,
     "isFavorited": false,
     "createdAt": "2026-05-17T10:00:00",
@@ -552,7 +555,7 @@
 }
 ```
 
-注：`categoryFields` 按需求类别返回差异化字段。`pickupCode` 仅在订单确认后对接单者展示完整内容，否则脱敏或隐藏。
+注：`categoryFields` 按需求类别返回差异化字段。快递代取的 `pickupCode`、`deliveryLocation`（以及兼容字段 `deliveryAddress`）和失物招领的 `contactInfo` 属于私密字段：发布者始终可见；发布者确认接单后，仅对应服务方可见；其余访问者的响应会移除这些字段，并返回 `privateFieldsHidden: true`。若私密字段的完整值被重复写入标题或描述，公开响应也会将该值替换为 `[私密信息已隐藏]`。组队搭子不进入接单流程，其 `contactInfo` 仍作为公开联系信息展示。标题和描述属于公开内容，不应填写上述私密信息。
 
 ---
 
@@ -569,9 +572,12 @@
   "description": "韵达快递，取件码 A-3-2105，在仙林校区快递点，送到12栋楼下",
   "campus": "仙林校区",
   "rewardType": "CASH",
+  "rewardAmount": 10.00,
+  "paymentMethod": "WECHAT",
   "deadline": "2026-05-18T18:00:00",
   "anonymous": false,
   "imageIds": [4001],
+  "fileIds": [],
   "categoryFields": {
     "expressCompany": "韵达快递",
     "pickupLocation": "仙林校区快递点",
@@ -587,10 +593,13 @@
 | title | string | 是 | 标题，2-100字符 |
 | description | string | 是 | 描述，10-2000字符 |
 | campus | string | 是 | 校区/地点 |
-| rewardType | string | 是 | 报酬类型 |
+| rewardType | string | 是 | 结算类型：CASH（定价）、NEGOTIABLE（面议）、CREDIT_INTENT（积分） |
+| rewardAmount | decimal | 条件必填 | rewardType=CASH 时必填，且必须大于 0；二手交易中表示售价，其他需求中表示酬金 |
+| paymentMethod | string | 条件必填 | rewardType=CASH 时必填：WECHAT、ALIPAY 或 CASH |
 | deadline | datetime | 是 | 截止时间，必须在当前时间之后 |
 | anonymous | boolean | 否 | 是否匿名发布，默认 false |
 | imageIds | long[] | 否 | 已上传的图片ID列表，最多9张 |
+| fileIds | long[] | 否 | 已上传的任务附件ID列表 |
 
 **分类差异化字段（categoryFields）：**
 
@@ -602,7 +611,6 @@
 | | deliveryLocation | string | 是 |
 | SECOND_HAND | goodsCategory | string | 是 |
 | | condition | string | 是（NEW/LIKE_NEW/USED） |
-| | price | decimal | 是 |
 | LOST_FOUND | itemName | string | 是 |
 | | location | string | 是 |
 | | foundTime | datetime | 是 |
@@ -627,9 +635,8 @@
 ```
 
 **错误示例：**
-- `40100` — 未完成校园身份认证
-- `40101` — 标题或描述包含违规内容
-- `40102` — 分类专属字段不完整
+- `40005` — 请求字段、定价金额或支付方式不合法
+- `40019` — 未完成校园身份认证
 
 ---
 
@@ -639,13 +646,15 @@
 
 仅发布者可操作，且需求必须处于 `OPEN` 状态。
 
-**请求体：** 同发布需求，全部字段可选。
+**请求体：** 同发布需求，全部字段可选。若将 `rewardType` 改为 `CASH`，必须同时提供大于 0 的 `rewardAmount` 和合法的 `paymentMethod`；改为其他类型时，后端会清空金额与支付方式。
 
 **成功响应：** 返回更新后的需求详情（同 GET /api/tasks/{taskId}）
 
 **错误示例：**
-- `40110` — 需求已被接单，不可编辑
-- `40111` — 无权操作（非发布者）
+- `40005` — 定价金额或支付方式不合法
+- `40101` — 需求当前状态不可编辑
+- `40102` — 无权操作（非发布者）
+- `40103` — 已有接单申请，不可编辑
 
 ---
 
@@ -711,17 +720,7 @@
 
 **POST** `/api/tasks/{taskId}/applications` | 认证：认证
 
-**请求体：**
-
-```json
-{
-  "message": "我住在12栋，可以帮你取快递，下午3点有空"
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| message | string | 是 | 申请留言，1-500字符 |
+无需请求体，用户点击“申请接单”后直接提交申请。
 
 **成功响应：**
 
@@ -765,7 +764,6 @@
       "applicantNickname": "小红",
       "applicantAvatarUrl": "/uploads/avatars/10002.jpg",
       "applicantCreditScore": 95,
-      "message": "我住在12栋，可以帮你取快递",
       "status": "PENDING",
       "createdAt": "2026-05-17T11:00:00"
     }
@@ -1929,11 +1927,12 @@
 
 | code | 说明 |
 |------|------|
-| 40100 | 未完成校园身份认证，不可发布需求 |
-| 40101 | 标题或描述包含违规内容 |
-| 40102 | 分类专属字段不完整或不合法 |
-| 40110 | 需求已被接单，不可编辑或删除 |
-| 40111 | 无权操作该需求 |
+| 40100 | 需求不存在 |
+| 40101 | 需求当前状态不可操作 |
+| 40102 | 只能操作自己发布的需求 |
+| 40103 | 需求已有接单申请，不可编辑或删除 |
+| 40104 | 已收藏该需求 |
+| 40105 | 尚未收藏该需求 |
 
 ### 订单模块（40200-40219）
 

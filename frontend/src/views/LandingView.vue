@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { LogIn, UserPlus, ArrowRight, Compass, GraduationCap } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -84,7 +84,7 @@ function goExplore() {
 
 <style scoped>
 .landing-root {
-  --positivus-green: #b9ff66;
+  --positivus-green: #ffb454;
   --positivus-dark: #191a23;
   --positivus-grey: #f3f3f3;
   --positivus-line: #000000;
@@ -192,7 +192,7 @@ function goExplore() {
   border: 2px solid var(--positivus-line);
   border-radius: 34px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 9px 0 var(--positivus-line);
+  box-shadow: none;
 }
 
 .landing-main::before {
@@ -275,7 +275,7 @@ function goExplore() {
   display: inline;
   padding: 0 10px 6px;
   border-radius: 7px;
-  background: var(--positivus-green);
+  background: transparent;
   color: #000000;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -340,7 +340,7 @@ function goExplore() {
 
 .landing-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.65);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.65);
 }
 
 .landing-btn-secondary {
@@ -437,3 +437,5 @@ function goExplore() {
   }
 }
 </style>
+
+

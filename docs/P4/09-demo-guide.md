@@ -127,7 +127,7 @@ CampusHub123!
 | 管理员 | `admin.demo@smail.nju.edu.cn` | 登录后台，查看用户、任务、订单、举报和公告 |
 | 学生用户 1 | `student.demo1@smail.nju.edu.cn` | 作为需求发布方 |
 | 学生用户 2 | `student.demo2@smail.nju.edu.cn` | 作为服务方申请接单 |
-| 待验证学生 | `student.pending@smail.nju.edu.cn` | 演示未验证账号或特殊状态 |
+| 学生用户 3 | `student.demo3@smail.nju.edu.cn` | 作为已认证学生发布和浏览需求 |
 
 ---
 

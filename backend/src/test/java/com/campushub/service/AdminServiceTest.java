@@ -17,6 +17,7 @@ import com.campushub.mapper.ReportMapper;
 import com.campushub.mapper.TaskMapper;
 import com.campushub.mapper.UserMapper;
 import com.campushub.mapper.UserProfileMapper;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.admin.AdminUserItemVO;
 import com.campushub.vo.admin.AdminUserStatusVO;
@@ -50,6 +51,7 @@ class AdminServiceTest {
     @Mock private TaskMapper taskMapper;
     @Mock private OrderMapper orderMapper;
     @Mock private ReportMapper reportMapper;
+    @Mock private RealtimeEventPublisher realtimeEventPublisher;
 
     private AdminService adminService;
     private MockedStatic<SecurityUtils> securityUtilsMock;
@@ -64,7 +66,8 @@ class AdminServiceTest {
                 announcementMapper,
                 taskMapper,
                 orderMapper,
-                reportMapper
+                reportMapper,
+                realtimeEventPublisher
         );
         securityUtilsMock = mockStatic(SecurityUtils.class);
         securityUtilsMock.when(SecurityUtils::requireCurrentUserId).thenReturn(1L);
@@ -140,7 +143,7 @@ class AdminServiceTest {
     void shouldRejectAnonymizedStatusForAdminStatusUpdate() {
         assertThatThrownBy(() -> adminService.updateUserStatus(2L, UserStatus.ANONYMIZED, null))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("ACTIVE or DISABLED");
+                .hasMessageContaining("正常或禁用");
     }
 
     private User createUser(Long id, String email, UserRole role, UserStatus status) {

@@ -1,8 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { Edit3, Megaphone, RefreshCcw, Search, ShieldAlert, Trash2, UserRoundCog, UsersRound } from '@lucide/vue'
 import { onMounted, reactive, ref } from 'vue'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { adminApi } from '@/services/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { announcementPriorityText, reportStatusText, reportTargetTypeText, userStatusText } from '@/types'
 import type {
   AdminReportItem,
@@ -18,6 +21,7 @@ import type {
 type AdminTab = 'users' | 'reports' | 'announcements'
 
 const activeTab = ref<AdminTab>('users')
+const dangerDialog = useConfirmDialog()
 
 const userFilters = reactive({
   keyword: '',
@@ -40,6 +44,7 @@ const reportsError = ref('')
 const reportsSuccess = ref('')
 const reportProcessingId = ref<number | null>(null)
 const reportResults = ref<Record<number, string>>({})
+const reportPenalties = ref<Record<number, number>>({})
 
 const announcementPageNumber = ref(1)
 const announcementPage = ref<PageData<AnnouncementItem>>()
@@ -59,9 +64,12 @@ function formatDate(value: string) {
   return new Date(value).toLocaleString()
 }
 
-async function loadUsers() {
-  usersLoading.value = true
-  usersError.value = ''
+async function loadUsers(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    usersLoading.value = true
+    usersError.value = ''
+  }
   try {
     userPage.value = await adminApi.users({
       page: 1,
@@ -70,9 +78,9 @@ async function loadUsers() {
       status: userFilters.status || undefined
     })
   } catch (err) {
-    usersError.value = err instanceof Error ? err.message : '用户列表加载失败'
+    if (!isSilent) usersError.value = err instanceof Error ? err.message : '用户列表加载失败'
   } finally {
-    usersLoading.value = false
+    if (!isSilent) usersLoading.value = false
   }
 }
 
@@ -88,9 +96,12 @@ async function updateStatus(userId: number, status: UserStatus) {
   }
 }
 
-async function loadReports() {
-  reportsLoading.value = true
-  reportsError.value = ''
+async function loadReports(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    reportsLoading.value = true
+    reportsError.value = ''
+  }
   try {
     reportPage.value = await adminApi.reports({
       page: reportPageNumber.value,
@@ -100,9 +111,9 @@ async function loadReports() {
       targetType: reportFilters.targetType || undefined
     })
   } catch (err) {
-    reportsError.value = err instanceof Error ? err.message : '举报列表加载失败'
+    if (!isSilent) reportsError.value = err instanceof Error ? err.message : '举报列表加载失败'
   } finally {
-    reportsLoading.value = false
+    if (!isSilent) reportsLoading.value = false
   }
 }
 
@@ -122,9 +133,13 @@ async function processReport(item: AdminReportItem, status: Extract<ReportStatus
 
   reportProcessingId.value = item.id
   try {
-    await adminApi.processReport(item.id, status, result)
+    const creditPenalty = item.reasonType === 'TIMEOUT' && status === 'RESOLVED'
+      ? reportPenalties.value[item.id] || 10
+      : undefined
+    await adminApi.processReport(item.id, status, result, creditPenalty)
     reportsSuccess.value = '举报已处理'
     reportResults.value[item.id] = ''
+    delete reportPenalties.value[item.id]
     await loadReports()
   } catch (err) {
     reportsError.value = err instanceof Error ? err.message : '举报处理失败'
@@ -139,18 +154,21 @@ async function goReportPage(nextPage: number) {
   await loadReports()
 }
 
-async function loadAnnouncements() {
-  announcementsLoading.value = true
-  announcementsError.value = ''
+async function loadAnnouncements(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    announcementsLoading.value = true
+    announcementsError.value = ''
+  }
   try {
     announcementPage.value = await adminApi.announcements({
       page: announcementPageNumber.value,
       size: 10
     })
   } catch (err) {
-    announcementsError.value = err instanceof Error ? err.message : '公告列表加载失败'
+    if (!isSilent) announcementsError.value = err instanceof Error ? err.message : '公告列表加载失败'
   } finally {
-    announcementsLoading.value = false
+    if (!isSilent) announcementsLoading.value = false
   }
 }
 
@@ -214,19 +232,24 @@ async function toggleAnnouncement(item: AnnouncementItem) {
   }
 }
 
-async function deleteAnnouncement(item: AnnouncementItem) {
-  if (!window.confirm(`确定删除公告"${item.title}"？`)) return
-
-  announcementsError.value = ''
-  announcementsSuccess.value = ''
-  try {
-    await adminApi.deleteAnnouncement(item.id)
-    announcementsSuccess.value = '公告已删除'
-    if (editingAnnouncementId.value === item.id) resetAnnouncementForm()
-    await loadAnnouncements()
-  } catch (err) {
-    announcementsError.value = err instanceof Error ? err.message : '公告删除失败'
-  }
+function deleteAnnouncement(item: AnnouncementItem) {
+  dangerDialog.request({
+    title: '删除这条公告？',
+    description: `“${item.title}”删除后将不再对用户展示，且无法恢复。`,
+    confirmText: '确认删除'
+  }, async () => {
+    announcementsError.value = ''
+    announcementsSuccess.value = ''
+    try {
+      await adminApi.deleteAnnouncement(item.id)
+      announcementsSuccess.value = '公告已删除'
+      if (editingAnnouncementId.value === item.id) resetAnnouncementForm()
+      await loadAnnouncements()
+    } catch (err) {
+      announcementsError.value = err instanceof Error ? err.message : '公告删除失败'
+      throw err
+    }
+  })
 }
 
 async function goAnnouncementPage(nextPage: number) {
@@ -235,9 +258,12 @@ async function goAnnouncementPage(nextPage: number) {
   await loadAnnouncements()
 }
 
-onMounted(async () => {
-  await Promise.all([loadUsers(), loadReports(), loadAnnouncements()])
-})
+async function loadAdminData(silent = false) {
+  await Promise.all([loadUsers(silent), loadReports(silent), loadAnnouncements(silent)])
+}
+
+useRealtimeRefresh(['ADMIN_CHANGED', 'ANNOUNCEMENTS_CHANGED'], () => loadAdminData(true))
+onMounted(loadAdminData)
 </script>
 
 <template>
@@ -294,9 +320,7 @@ onMounted(async () => {
 
       <p v-if="usersError" class="error-message">{{ usersError }}</p>
       <p v-if="usersSuccess" class="success-message">{{ usersSuccess }}</p>
-      <div v-if="usersLoading" class="empty-state">正在加载用户</div>
-
-      <div v-else class="table-wrapper">
+      <div class="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -377,10 +401,9 @@ onMounted(async () => {
 
       <p v-if="reportsError" class="error-message">{{ reportsError }}</p>
       <p v-if="reportsSuccess" class="success-message">{{ reportsSuccess }}</p>
-      <div v-if="reportsLoading" class="empty-state">正在加载举报</div>
-      <div v-else-if="!reportPage?.records.length" class="empty-state">暂无举报记录</div>
+      <div v-if="!reportsLoading && !reportPage?.records.length" class="empty-state">暂无举报记录</div>
 
-      <div v-else class="table-wrapper">
+      <div v-if="reportPage?.records.length" class="table-wrapper">
         <table>
           <thead>
             <tr>
@@ -397,7 +420,10 @@ onMounted(async () => {
             <tr v-for="report in reportPage.records" :key="report.id">
               <td>{{ report.id }}</td>
               <td>{{ report.reporterId }}</td>
-              <td>{{ reportTargetTypeText[report.targetType] }} #{{ report.targetId }}</td>
+              <td>
+                {{ reportTargetTypeText[report.targetType] }} #{{ report.targetId }}
+                <span v-if="report.relatedOrderId" class="hint">订单 #{{ report.relatedOrderId }}</span>
+              </td>
               <td class="report-reason">{{ report.reason }}</td>
               <td>
                 <span :class="['tag', report.status === 'PENDING' || report.status === 'PROCESSING' ? 'warning' : report.status === 'RESOLVED' ? 'success' : 'danger']">
@@ -408,6 +434,17 @@ onMounted(async () => {
               <td>
                 <div v-if="report.status === 'PENDING' || report.status === 'PROCESSING'" class="report-actions">
                   <textarea v-model.trim="reportResults[report.id]" maxlength="500" placeholder="填写处理结果" />
+                  <div v-if="report.reasonType === 'TIMEOUT'" class="field">
+                    <label :for="`report-penalty-${report.id}`">信用扣分</label>
+                    <input
+                      :id="`report-penalty-${report.id}`"
+                      v-model.number="reportPenalties[report.id]"
+                      type="number"
+                      min="1"
+                      max="30"
+                      placeholder="默认 10"
+                    />
+                  </div>
                   <div class="actions">
                     <button
                       class="button secondary"
@@ -505,10 +542,8 @@ onMounted(async () => {
 
           <p v-if="announcementsError" class="error-message">{{ announcementsError }}</p>
           <p v-if="announcementsSuccess" class="success-message">{{ announcementsSuccess }}</p>
-          <div v-if="announcementsLoading" class="empty-state">正在加载公告</div>
-
-          <div v-else-if="!announcementPage?.records.length" class="empty-state">暂无公告</div>
-          <div v-else class="table-wrapper">
+          <div v-if="!announcementsLoading && !announcementPage?.records.length" class="empty-state">暂无公告</div>
+          <div v-if="announcementPage?.records.length" class="table-wrapper">
             <table>
               <thead>
                 <tr>
@@ -573,12 +608,13 @@ onMounted(async () => {
         </section>
       </div>
     </section>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 
 <style scoped>
 .admin-view {
-  --admin-green: #b9ff66;
+  --admin-green: #ffb454;
   --admin-dark: #191a23;
   --admin-grey: #f3f3f3;
   --admin-line: #000000;
@@ -590,9 +626,9 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 94% 18%, rgba(185, 255, 102, 0.76) 0 58px, transparent 60px),
+    radial-gradient(circle at 94% 18%, rgba(255, 180, 84, 0.76) 0 58px, transparent 60px),
     #ffffff;
-  box-shadow: 0 6px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .admin-view :deep(.page-title h1) {
@@ -600,11 +636,13 @@ onMounted(async () => {
   margin-bottom: 10px;
   padding: 5px 10px;
   border-radius: 7px;
-  background: var(--admin-green);
+  border: 2px solid #000000;
+  background: transparent;
   color: #000000;
   font-size: 34px;
   line-height: 1.12;
   letter-spacing: 0;
+  box-shadow: none;
 }
 
 .admin-view :deep(.page-title p) {
@@ -621,7 +659,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 18px;
   margin-bottom: var(--space-6);
-  box-shadow: 0 5px 0 var(--admin-line);
+  box-shadow: none;
   animation: fadeSlideUp 0.4s var(--transition-slow) both;
 }
 
@@ -650,7 +688,7 @@ onMounted(async () => {
   color: #000000;
   background: var(--admin-green);
   border-color: var(--admin-line);
-  box-shadow: 0 3px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .admin-view :deep(.toolbar),
@@ -659,7 +697,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .admin-view :deep(.toolbar) {
@@ -690,7 +728,7 @@ onMounted(async () => {
 .admin-view :deep(.field textarea:focus),
 .report-actions textarea:focus {
   border-color: var(--admin-line);
-  box-shadow: 0 0 0 4px rgba(185, 255, 102, 0.55);
+  box-shadow: 0 0 0 4px rgba(255, 180, 84, 0.55);
 }
 
 .admin-view :deep(.button) {
@@ -745,7 +783,7 @@ onMounted(async () => {
   width: max-content;
   padding: 4px 8px;
   border-radius: 24px;
-  background: var(--admin-green);
+  background: transparent;
   color: #000000;
   font-size: 24px;
   font-weight: 900;
@@ -763,7 +801,7 @@ onMounted(async () => {
   border: 2px solid var(--admin-line);
   border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 5px 0 var(--admin-line);
+  box-shadow: none;
 }
 
 .table-wrapper table {
@@ -790,7 +828,7 @@ onMounted(async () => {
 }
 
 .table-wrapper :deep(tbody tr:hover td) {
-  background: #f7ffe8;
+  background: #fff1df;
 }
 
 .announcement-summary {
@@ -865,3 +903,8 @@ onMounted(async () => {
   }
 }
 </style>
+
+
+
+
+

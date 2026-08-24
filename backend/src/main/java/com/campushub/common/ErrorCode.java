@@ -67,7 +67,7 @@ public enum ErrorCode {
 
     // 消息模块 40800-40809
     MESSAGE_EMPTY(40800, "消息内容不能为空"),
-    MESSAGE_NOT_PARTICIPANT(40801, "非订单参与方无法发送消息"),
+    MESSAGE_NOT_PARTICIPANT(40801, "无权访问该会话"),
 
     // 后台管理 40900-40909
     ADMIN_REQUIRED(40900, "需要管理员权限"),

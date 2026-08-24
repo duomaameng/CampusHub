@@ -1,21 +1,27 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { userApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import type { CreditInfo, PublicProfile, UserReviewItem } from '@/types'
 import { resolveAssetUrl } from '@/utils/assets'
 
 const route = useRoute()
+const auth = useAuthStore()
 const profile = ref<PublicProfile>()
 const credit = ref<CreditInfo>()
 const reviews = ref<UserReviewItem[]>([])
 const loading = ref(false)
 const error = ref('')
 
-async function load() {
-  error.value = ''
-  loading.value = true
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    error.value = ''
+    loading.value = true
+  }
   try {
     const userId = Number(route.params.id)
     if (Number.isNaN(userId)) {
@@ -30,13 +36,18 @@ async function load() {
     credit.value = creditData
     reviews.value = reviewData
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '资料加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '资料加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
-watch(() => route.params.id, load)
+watch(() => route.params.id, () => load())
+useRealtimeRefresh(
+  ['PROFILE_CHANGED'],
+  () => load(true),
+  (event) => event.entityId === null || event.entityId === Number(route.params.id)
+)
 onMounted(load)
 </script>
 
@@ -50,9 +61,7 @@ onMounted(load)
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载资料</div>
-
-    <div v-else-if="profile" class="detail-layout">
+    <div v-if="profile" class="detail-layout">
       <div class="panel grid">
         <div class="profile-header">
           <div class="avatar-preview large">
@@ -68,6 +77,13 @@ onMounted(load)
               <span v-else-if="profile.gender === 'FEMALE'" class="tag">女</span>
             </div>
           </div>
+          <RouterLink
+            v-if="auth.isAuthenticated && profile.userId !== auth.user?.id"
+            class="button secondary"
+            :to="{ name: 'user-chat', params: { userId: profile.userId } }"
+          >
+            联系该用户
+          </RouterLink>
         </div>
 
         <div class="grid two">
@@ -124,7 +140,7 @@ onMounted(load)
 
 <style scoped>
 .user-public-profile-view {
-  --public-green: #b9ff66;
+  --public-green: #ffb454;
   --public-dark: #191a23;
   --public-grey: #f3f3f3;
 }
@@ -137,13 +153,15 @@ onMounted(load)
   width: max-content;
   padding: 5px 14px;
   border-radius: 18px;
-  background: var(--public-green);
+  border: 2px solid #000000;
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: none;
 }
 
 .page-title p {
@@ -162,7 +180,7 @@ onMounted(load)
   border: 2px solid #000000;
   border-radius: 28px;
   background: #ffffff;
-  box-shadow: 0 7px 0 #000000;
+  box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   overflow: hidden;
@@ -196,7 +214,7 @@ aside.panel h3 {
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
-  background: var(--public-green);
+  background: transparent;
   color: #000000;
   font-weight: 900;
   letter-spacing: 0;
@@ -223,8 +241,8 @@ aside.panel h3 {
   height: 92px;
   border: 2px solid #000000;
   border-radius: 22px;
-  background: var(--public-green);
-  box-shadow: 0 5px 0 #000000;
+  background: transparent;
+  box-shadow: none;
   color: #000000;
   font-size: 32px;
   font-weight: 900;
@@ -240,7 +258,7 @@ aside.panel h3 {
   max-width: 100%;
   padding: 5px 12px;
   border-radius: 18px;
-  background: var(--public-green);
+  background: transparent;
   color: #000000;
   font-size: 28px;
   font-weight: 900;
@@ -278,7 +296,7 @@ aside.panel h3 {
   border: 2px solid #000000;
   border-radius: 22px;
   background: var(--public-grey);
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .grid.two p:not(.hint),
@@ -324,7 +342,7 @@ aside.panel > .hint {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .review-item:last-child {
@@ -367,7 +385,7 @@ aside.panel > .hint {
   border: 2px solid #000000;
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 
@@ -383,3 +401,7 @@ aside.panel > .hint {
   }
 }
 </style>
+
+
+
+

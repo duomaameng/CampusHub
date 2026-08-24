@@ -371,18 +371,6 @@ paths:
       summary: 发起接单申请
       parameters:
         - $ref: "#/components/parameters/TaskIdPath"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [message]
-              properties:
-                message:
-                  type: string
-                  minLength: 1
-                  maxLength: 500
 
   /applications/{applicationId}/confirm:
     post:
@@ -1114,7 +1102,7 @@ components:
       enum: [PENDING, APPROVED, REJECTED, CANCELLED]
     OrderStatus:
       type: string
-      enum: [PENDING_CONFIRM, IN_PROGRESS, PENDING_COMPLETION, COMPLETED, CANCELLED, DISPUTE, REVIEWED]
+      enum: [PENDING_CONFIRM, IN_PROGRESS, PENDING_COMPLETION, COMPLETED, CANCELLED, TIMEOUT, DISPUTE, REVIEWED]
     RewardType:
       type: string
       enum: [CASH, NEGOTIABLE, CREDIT_INTENT]
@@ -1123,7 +1111,7 @@ components:
       enum: [TASK, ORDER_MESSAGE, REVIEW, USER]
     ReportReasonType:
       type: string
-      enum: [FRAUD, ABUSE, SPAM, ILLEGAL, OTHER]
+      enum: [FRAUD, ABUSE, SPAM, ILLEGAL, TIMEOUT, OTHER]
     ReportStatus:
       type: string
       enum: [PENDING, PROCESSING, RESOLVED, REJECTED]
@@ -1506,6 +1494,11 @@ components:
           type: integer
         isFavorited:
           type: boolean
+        categoryFields:
+          $ref: "#/components/schemas/CategoryFields"
+        privateFieldsHidden:
+          type: boolean
+          description: 未确认接单时，响应是否已隐藏取件码、精确送达地点或联系方式等私密字段
         createdAt:
           type: string
           format: date-time

@@ -62,6 +62,7 @@ class Task {
   - locationDetail: String
   - rewardType: RewardType
   - rewardAmount: BigDecimal
+  - paymentMethod: RewardPaymentMethod
   - deadline: LocalDateTime
   - status: TaskStatus
   - anonymous: Boolean

@@ -158,7 +158,7 @@ const initialDb: MockDatabase = {
       description: '韵达快递，送到仙林校区 12 栋楼下。',
       campus: '仙林校区',
       rewardType: 'CASH',
-      deadline: '2026-06-08T18:00:00.000Z',
+      deadline: '2026-08-08T18:00:00.000Z',
       status: 'OPEN',
       anonymous: false,
       imageUrls: [],
@@ -183,7 +183,7 @@ const initialDb: MockDatabase = {
       description: '希望找同学一起梳理 P4 编码阶段的任务和联调流程。',
       campus: '仙林校区',
       rewardType: 'NEGOTIABLE',
-      deadline: '2026-06-02T20:00:00.000Z',
+      deadline: '2026-08-12T20:00:00.000Z',
       status: 'OPEN',
       anonymous: false,
       imageUrls: [],
@@ -203,7 +203,7 @@ const initialDb: MockDatabase = {
       description: '24 寸显示器，支持当面验货。',
       campus: '鼓楼校区',
       rewardType: 'CASH',
-      deadline: '2026-06-10T20:00:00.000Z',
+      deadline: '2026-08-05T18:00:00.000Z',
       status: 'IN_PROGRESS',
       anonymous: false,
       imageUrls: [],
@@ -226,7 +226,6 @@ const initialDb: MockDatabase = {
       applicantId: 10002,
       applicantNickname: '小红',
       applicantCreditScore: 95,
-      message: '我可以帮你一起梳理联调流程。',
       status: 'PENDING',
       createdAt: '2026-05-18T15:00:00.000Z'
     }
@@ -763,7 +762,7 @@ export const mockApi = {
     return paginate(clone(db.tasks.filter((item) => item.isFavorited)), params.page, params.size)
   },
 
-  async applyTask(taskId: number, message: string) {
+  async applyTask(taskId: number) {
     await wait()
     const db = loadDb()
     const user = getCurrentUser(db)
@@ -782,7 +781,6 @@ export const mockApi = {
       applicantId: user.id,
       applicantNickname: user.profile.nickname,
       applicantCreditScore: user.credit.score,
-      message,
       status: 'PENDING',
       createdAt: new Date().toISOString()
     })

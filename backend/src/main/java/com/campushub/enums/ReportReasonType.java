@@ -9,6 +9,7 @@ public enum ReportReasonType {
     ABUSE("ABUSE"),
     SPAM("SPAM"),
     ILLEGAL("ILLEGAL"),
+    TIMEOUT("TIMEOUT"),
     OTHER("OTHER");
 
     @EnumValue

@@ -1,0 +1,71 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: ${DB_NAME:-campus_hub}
+      MYSQL_USER: ${DB_USERNAME:-campushub}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=50
+      - --performance-schema=OFF
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h localhost -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-campus_hub}
+      DB_USERNAME: ${DB_USERNAME:-campushub}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      MAIL_DELIVERY_MODE: ${MAIL_DELIVERY_MODE:-log}
+      MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      FILE_UPLOAD_PATH: /app/uploads
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx384m
+    volumes:
+      - uploads:/app/uploads
+      - uploads-private:/app/uploads-private
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      args:
+        VITE_USE_MOCK: "false"
+        VITE_API_BASE_URL: /api
+        VITE_ASSET_BASE_URL: ""
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
+  uploads:
+  uploads-private:

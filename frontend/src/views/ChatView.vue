@@ -1,0 +1,1076 @@
+﻿<script setup lang="ts">
+import { Download, FileText, MessageSquareText, Paperclip, Search, Send, X } from '@lucide/vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
+import { fileApi, messageApi, userApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+import type { ChatDetail, ChatMessage, ChatUser, ConversationItem, UploadedFileItem } from '@/types'
+import { resolveAssetUrl } from '@/utils/assets'
+
+const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+
+const chat = ref<ChatDetail>()
+const conversations = ref<ConversationItem[]>([])
+const searchKeyword = ref('')
+const searchResults = ref<ChatUser[]>([])
+const searching = ref(false)
+const loading = ref(false)
+const sending = ref(false)
+const attachmentUploading = ref(false)
+const error = ref('')
+const uploadError = ref('')
+const message = ref('')
+const uploadedAttachment = ref<UploadedFileItem | null>(null)
+const messagesPanel = ref<HTMLElement | null>(null)
+let loadRequestId = 0
+
+const participantId = computed(() => Number(route.params.userId))
+const hasParticipantId = computed(() => Number.isFinite(participantId.value))
+const chatTarget = computed(() => chat.value?.participant)
+const sortedMessages = computed(() => [...(chat.value?.messages || [])].sort((a, b) =>
+  new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+))
+
+async function load() {
+  const requestId = ++loadRequestId
+  const requestedParticipantId = participantId.value
+  error.value = ''
+  loading.value = true
+  try {
+    await loadConversations()
+    if (!hasParticipantId.value) {
+      chat.value = undefined
+      if (conversations.value.length) {
+        await router.replace({ name: 'user-chat', params: { userId: conversations.value[0].participant.id } })
+      }
+      return
+    }
+    const nextChat = await messageApi.chat(requestedParticipantId)
+    if (requestId !== loadRequestId) return
+
+    chat.value = nextChat
+    await messageApi.markRead(requestedParticipantId)
+    await auth.refreshUnreadMessages()
+    await scrollToBottom()
+  } catch (err) {
+    if (requestId !== loadRequestId) return
+    error.value = err instanceof Error ? err.message : '聊天加载失败'
+  } finally {
+    if (requestId === loadRequestId) loading.value = false
+  }
+}
+
+async function loadConversations() {
+  conversations.value = await messageApi.conversations()
+}
+
+async function searchUsers() {
+  if (!searchKeyword.value.trim()) {
+    searchResults.value = []
+    return
+  }
+  searching.value = true
+  error.value = ''
+  try {
+    searchResults.value = await userApi.search(searchKeyword.value.trim())
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '账号搜索失败'
+  } finally {
+    searching.value = false
+  }
+}
+
+async function scrollToBottom() {
+  await nextTick()
+  if (messagesPanel.value) {
+    messagesPanel.value.scrollTop = messagesPanel.value.scrollHeight
+  }
+}
+
+function appendMessage(newMessage: ChatMessage) {
+  if (!chat.value) return
+
+  chat.value = {
+    ...chat.value,
+    messages: [
+      ...chat.value.messages.filter((item) => item.id !== newMessage.id),
+      newMessage
+    ]
+  }
+  void scrollToBottom()
+  void loadConversations()
+}
+
+function isChatMessage(value: unknown): value is ChatMessage {
+  return Boolean(value && typeof value === 'object' && 'id' in value && 'senderId' in value && 'createdAt' in value)
+}
+
+async function refreshCurrentChatSilently() {
+  try {
+    chat.value = await messageApi.chat(participantId.value)
+    await messageApi.markRead(participantId.value)
+    await auth.refreshUnreadMessages()
+    await scrollToBottom()
+    void loadConversations()
+  } catch {
+    // Keep the current conversation visible if a silent refresh fails.
+  }
+}
+
+async function sendTextMessage() {
+  if (!message.value.trim() || sending.value || loading.value || !hasParticipantId.value) return
+
+  const content = message.value.trim()
+  sending.value = true
+  error.value = ''
+  try {
+    const sentMessage = await messageApi.sendText(participantId.value, content)
+    message.value = ''
+    if (isChatMessage(sentMessage)) {
+      appendMessage(sentMessage)
+    } else {
+      await refreshCurrentChatSilently()
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '消息发送失败'
+  } finally {
+    sending.value = false
+  }
+}
+
+async function handleAttachmentChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  uploadError.value = ''
+  attachmentUploading.value = true
+  try {
+    const businessType = file.type.startsWith('image/') ? 'CHAT_IMAGE' : 'CHAT_FILE'
+    uploadedAttachment.value = await fileApi.upload(file, businessType)
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '聊天附件上传失败'
+  } finally {
+    attachmentUploading.value = false
+    input.value = ''
+  }
+}
+
+async function refreshChatSilently() {
+  if (hasParticipantId.value) {
+    await refreshCurrentChatSilently()
+  } else {
+    try {
+      await loadConversations()
+    } catch {
+      // Keep the current conversation list visible if a silent refresh fails.
+    }
+  }
+}
+
+async function sendAttachmentMessage() {
+  if (!uploadedAttachment.value || sending.value || loading.value || !hasParticipantId.value) return
+
+  sending.value = true
+  error.value = ''
+  try {
+    const attachment = uploadedAttachment.value
+    const sentMessage = attachment.businessType === 'CHAT_IMAGE'
+      ? await messageApi.sendImage(participantId.value, attachment.id)
+      : await messageApi.sendFile(participantId.value, attachment.id)
+    uploadedAttachment.value = null
+    if (isChatMessage(sentMessage)) {
+      appendMessage(sentMessage)
+    } else {
+      await refreshCurrentChatSilently()
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '附件消息发送失败'
+  } finally {
+    sending.value = false
+  }
+}
+
+async function downloadAttachment(item: ChatMessage) {
+  if (!item.fileId) return
+  error.value = ''
+  try {
+    const blob = await messageApi.downloadAttachment(item.id)
+    const objectUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = item.fileName || (item.messageType === 'IMAGE' ? '聊天图片' : '聊天附件')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(objectUrl)
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '附件下载失败'
+  }
+}
+
+function formatFileSize(size?: number) {
+  if (!size) return '未知大小'
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
+  return `${(size / 1024 / 1024).toFixed(1)} MB`
+}
+
+function handleComposerKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' || event.shiftKey) return
+  event.preventDefault()
+  void sendTextMessage()
+}
+
+function initials(name?: string) {
+  return (name || '用户').slice(0, 1)
+}
+
+watch(participantId, (nextParticipantId, previousParticipantId) => {
+  if (nextParticipantId !== previousParticipantId) {
+    message.value = ''
+    uploadedAttachment.value = null
+    uploadError.value = ''
+  }
+  void load()
+})
+watch(sortedMessages, scrollToBottom)
+useRealtimeRefresh(
+  ['MESSAGES_CHANGED'],
+  refreshChatSilently,
+  (event) => !hasParticipantId.value || event.entityId === null || event.entityId === participantId.value
+)
+onMounted(load)
+</script>
+
+<template>
+  <section class="chat-view">
+    <p v-if="error" class="error-message">{{ error }}</p>
+
+    <div class="chat-layout">
+      <aside class="chat-sidebar">
+        <div class="page-title">
+          <h1>消息</h1>
+        </div>
+
+        <form class="composer" @submit.prevent="searchUsers">
+          <textarea v-model.trim="searchKeyword" rows="1" placeholder="搜索账号或昵称" />
+          <button class="button secondary send-button" type="submit" :disabled="searching || !searchKeyword.trim()">
+            <Search class="button-icon" aria-hidden="true" />
+            <span>{{ searching ? '搜索中...' : '搜索' }}</span>
+          </button>
+        </form>
+
+        <section v-if="searchResults.length" class="conversation-list">
+          <RouterLink
+            v-for="user in searchResults"
+            :key="user.id"
+            :to="{ name: 'user-chat', params: { userId: user.id } }"
+            class="contact-item"
+            @click="searchResults = []"
+          >
+            <span class="contact-avatar">
+              <img v-if="user.avatarUrl" :src="resolveAssetUrl(user.avatarUrl)" alt="" />
+              <span v-else>{{ initials(user.nickname) }}</span>
+            </span>
+            <span class="contact-copy">
+              <strong>{{ user.nickname }}</strong>
+              <span>{{ user.email }}</span>
+            </span>
+          </RouterLink>
+        </section>
+
+        <section class="conversation-list">
+          <div v-if="!conversations.length" class="contact-empty">暂无最近聊天</div>
+          <RouterLink
+            v-for="item in conversations"
+            :key="item.id"
+            :to="{ name: 'user-chat', params: { userId: item.participant.id } }"
+            :class="['contact-item', { active: item.participant.id === participantId }]"
+          >
+            <span class="contact-avatar">
+              <img v-if="item.participant.avatarUrl" :src="resolveAssetUrl(item.participant.avatarUrl)" alt="" />
+              <span v-else>{{ initials(item.participant.nickname) }}</span>
+            </span>
+            <span class="contact-copy">
+              <strong>{{ item.participant.nickname }}</strong>
+              <span>{{ item.participant.email }}</span>
+              <small>{{ item.lastMessageText }}</small>
+            </span>
+            <span class="contact-meta">
+              <span v-if="item.unreadCount">{{ item.unreadCount }}</span>
+            </span>
+          </RouterLink>
+        </section>
+      </aside>
+
+      <article v-if="chat" :class="['chat-panel', { 'is-switching': loading }]">
+        <div v-if="loading" class="chat-switch-indicator">正在切换会话...</div>
+        <header class="chat-header">
+          <div class="chat-avatar">
+            <img v-if="chatTarget?.avatarUrl" :src="resolveAssetUrl(chatTarget.avatarUrl)" alt="" />
+            <span v-else>{{ initials(chatTarget?.nickname) }}</span>
+          </div>
+          <div>
+            <h2>{{ chatTarget?.nickname || '对方' }}</h2>
+            <p class="hint">{{ chatTarget?.email }}</p>
+          </div>
+        </header>
+
+        <div ref="messagesPanel" class="chat-messages">
+          <div v-if="!sortedMessages.length" class="chat-empty">
+            <MessageSquareText class="empty-icon" aria-hidden="true" />
+            <strong>还没有消息</strong>
+            <p>可以先向 {{ chatTarget?.nickname || '对方' }} 打个招呼。</p>
+          </div>
+
+          <div
+            v-for="item in sortedMessages"
+            :key="item.id"
+            :class="['chat-row', { mine: item.senderId === auth.user?.id }]"
+          >
+            <div class="sender-avatar">
+              <img v-if="item.senderAvatarUrl" :src="resolveAssetUrl(item.senderAvatarUrl)" alt="" />
+              <span v-else>{{ initials(item.senderNickname) }}</span>
+            </div>
+            <div class="bubble-wrap">
+              <div class="bubble-meta">
+                <strong>{{ item.senderNickname }}</strong>
+                <span>{{ new Date(item.createdAt).toLocaleString() }}</span>
+              </div>
+              <div class="chat-bubble">
+                <p v-if="item.content">{{ item.content }}</p>
+                <img v-if="item.imageUrl" :src="resolveAssetUrl(item.imageUrl)" alt="聊天图片" />
+                <button v-if="item.imageUrl && item.fileId" class="attachment-download image-download" type="button" @click="downloadAttachment(item)">
+                  <Download class="button-icon" aria-hidden="true" />
+                  <span>下载原图</span>
+                </button>
+                <button v-if="item.messageType === 'FILE'" class="file-message-card" type="button" @click="downloadAttachment(item)">
+                  <FileText class="file-message-icon" aria-hidden="true" />
+                  <span class="file-message-copy">
+                    <strong>{{ item.fileName || '聊天附件' }}</strong>
+                    <small>{{ formatFileSize(item.fileSize) }}</small>
+                  </span>
+                  <Download class="button-icon" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="uploadedAttachment" class="image-preview attachment-preview">
+          <img v-if="uploadedAttachment.businessType === 'CHAT_IMAGE'" :src="resolveAssetUrl(uploadedAttachment.url)" :alt="uploadedAttachment.fileName" />
+          <span v-else class="attachment-preview-icon"><FileText aria-hidden="true" /></span>
+          <div>
+            <strong>{{ uploadedAttachment.fileName }}</strong>
+            <p class="hint">{{ formatFileSize(uploadedAttachment.size) }} · 确认后发送到聊天中</p>
+          </div>
+          <button class="button ghost icon-button" type="button" aria-label="取消附件" @click="uploadedAttachment = null">
+            <X class="button-icon" aria-hidden="true" />
+          </button>
+          <button class="button secondary" type="button" :disabled="sending || loading" @click="sendAttachmentMessage">发送附件</button>
+        </div>
+        <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
+
+        <form class="composer" @submit.prevent="sendTextMessage">
+          <label class="button ghost upload-trigger" :class="{ disabled: attachmentUploading || loading }">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+              :disabled="attachmentUploading || loading"
+              @change="handleAttachmentChange"
+            />
+            <Paperclip class="button-icon" aria-hidden="true" />
+            <span>{{ attachmentUploading ? '上传中...' : '附件' }}</span>
+          </label>
+          <textarea
+            v-model.trim="message"
+            :disabled="loading"
+            rows="1"
+            placeholder="输入消息，Enter 发送"
+            @keydown="handleComposerKeydown"
+          />
+          <button class="button secondary send-button" type="submit" :disabled="sending || loading || !message.trim()">
+            <Send class="button-icon" aria-hidden="true" />
+            <span>{{ sending ? '发送中...' : '发送' }}</span>
+          </button>
+        </form>
+      </article>
+      <div v-else class="empty-state">{{ loading ? '正在加载聊天' : '搜索账号，开始一段新对话' }}</div>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.chat-view {
+  --chat-green: #ffb454;
+  --chat-dark: #191a23;
+  --chat-grey: #f3f3f3;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 9px 14px;
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 900;
+}
+
+.back-link:hover {
+  background: var(--chat-green);
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.34fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  min-height: calc(100vh - 160px);
+}
+
+.chat-sidebar,
+.chat-panel,
+.empty-state,
+.error-message {
+  border: 2px solid #000000;
+  background: #ffffff;
+}
+
+.chat-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+  max-height: calc(100vh - 160px);
+  padding: 0 0 24px;
+  border-radius: 26px;
+  overflow: hidden;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 18px;
+}
+
+.page-title h1 {
+  width: max-content;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background: transparent;
+  color: #000000;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: 0;
+  -webkit-text-fill-color: #000000;
+}
+
+.page-title .tag,
+.chat-panel .tag {
+  width: fit-content;
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 900;
+}
+
+.page-title .tag {
+  padding: 2px 8px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.side-label {
+  color: #4a4e5b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.conversation-list {
+  display: grid;
+  gap: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  margin-top: -8px;
+}
+
+.contact-empty {
+  padding: 16px 18px;
+  color: #6f7485;
+  font-weight: 800;
+  text-align: center;
+}
+
+.contact-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 18px;
+  border-bottom: 1.5px solid #000000;
+  background: #ffffff;
+  color: #000000;
+}
+
+.contact-item:first-of-type {
+  border-top: 2px solid #000000;
+}
+
+.contact-item:hover,
+.contact-item.active {
+  background: var(--chat-green);
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.contact-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  background: var(--chat-green);
+  color: #000000;
+  font-weight: 900;
+  overflow: hidden;
+}
+
+.contact-item.active .contact-avatar,
+.contact-item:hover .contact-avatar {
+  background: #ffffff;
+}
+
+.contact-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contact-copy strong,
+.contact-copy span,
+.contact-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-copy strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.contact-copy span {
+  color: #343743;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.contact-copy small {
+  color: #6f7485;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.contact-meta {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.contact-meta > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.contact-meta small {
+  color: #6f7485;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.avatar-mark,
+.chat-avatar,
+.sender-avatar {
+  display: grid;
+  place-items: center;
+  border: 2px solid #000000;
+  background: var(--chat-green);
+  color: #000000;
+  font-weight: 900;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.contact-avatar img,
+.chat-avatar img,
+.sender-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+}
+
+.chat-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(360px, 1fr) auto auto auto;
+  border-radius: 26px;
+  overflow: hidden;
+}
+
+.chat-panel > * {
+  transition: opacity 160ms ease;
+}
+
+.chat-panel.is-switching > :not(.chat-switch-indicator) {
+  opacity: 0.68;
+  pointer-events: none;
+}
+
+.chat-switch-indicator {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 5;
+  width: max-content;
+  padding: 7px 14px;
+  border: 2px solid #000000;
+  border-radius: 999px;
+  background: var(--chat-green);
+  color: #000000;
+  font-size: 12px;
+  font-weight: 900;
+  transform: translateX(-50%);
+  box-shadow: 0 6px 18px rgba(25, 26, 35, 0.16);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px;
+  border-bottom: 2px solid #000000;
+  background:
+    radial-gradient(circle at 96% 18%, var(--chat-green) 0 68px, transparent 69px),
+    #ffffff;
+}
+
+.chat-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.chat-header h2 {
+  color: #000000;
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 360px;
+  max-height: calc(100vh - 360px);
+  padding: 24px;
+  overflow-y: auto;
+  background:
+    linear-gradient(90deg, rgba(25, 26, 35, 0.045) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(25, 26, 35, 0.045) 1px, transparent 1px),
+    var(--chat-grey);
+  background-size: 28px 28px;
+}
+
+.chat-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 300px;
+  color: #4a4e5b;
+  text-align: center;
+  font-weight: 800;
+}
+
+.chat-empty strong {
+  color: #000000;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.empty-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.chat-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  max-width: 76%;
+}
+
+.chat-row.mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.sender-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.chat-row.mine .sender-avatar {
+  background: var(--chat-green);
+}
+
+.bubble-wrap {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.bubble-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #6f7485;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.chat-row.mine .bubble-meta {
+  justify-content: flex-end;
+}
+
+.bubble-meta strong {
+  color: #000000;
+  font-weight: 900;
+}
+
+.chat-bubble {
+  max-width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #000000;
+  border-radius: 18px 18px 18px 6px;
+  background: #ffffff;
+  color: #22252f;
+  font-weight: 700;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.chat-row.mine .chat-bubble {
+  border-radius: 18px 18px 6px 18px;
+  background: var(--chat-green);
+  color: #000000;
+}
+
+.chat-bubble img {
+  display: block;
+  width: min(280px, 100%);
+  max-height: 260px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.attachment-download,
+.file-message-card {
+  border: 2px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  cursor: pointer;
+}
+
+.attachment-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.attachment-download:hover,
+.file-message-card:hover {
+  background: #fff1df;
+  transform: translateY(-1px);
+}
+
+.file-message-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  width: min(320px, 100%);
+  padding: 12px;
+  border-radius: 15px;
+  text-align: left;
+}
+
+.file-message-icon,
+.attachment-preview-icon {
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  background: var(--chat-green);
+  color: #000000;
+}
+
+.file-message-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.file-message-copy strong,
+.file-message-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-message-copy strong {
+  color: #000000;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.file-message-copy small {
+  color: #6f7485;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.image-preview {
+  display: grid;
+  grid-template-columns: 72px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+  border-top: 2px solid #000000;
+  background: #ffffff;
+}
+
+.image-preview img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border: 2px solid #000000;
+  border-radius: 16px;
+}
+
+.image-preview strong {
+  color: #000000;
+  font-weight: 900;
+  word-break: break-all;
+}
+
+.attachment-preview-icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.attachment-preview-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px;
+  border-top: 2px solid #000000;
+  background: #ffffff;
+}
+
+.composer textarea {
+  min-height: 48px;
+  max-height: 126px;
+  resize: vertical;
+  padding: 12px 14px;
+  border: 2px solid #000000;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.composer textarea:focus {
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
+}
+
+.chat-sidebar > .composer {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0 18px 16px;
+  border-top: 0;
+}
+
+.chat-sidebar > .composer textarea {
+  min-height: 42px;
+  padding: 9px 12px;
+  resize: none;
+}
+
+.button {
+  border: 2px solid #000000;
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+.button.secondary {
+  background: var(--chat-dark);
+  color: #ffffff;
+}
+
+.button.secondary:hover {
+  background: var(--chat-green);
+  color: #000000;
+}
+
+.button.secondary:disabled,
+.button.ghost.disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.button.ghost {
+  background: #ffffff;
+  color: #000000;
+}
+
+.button.ghost:hover {
+  background: var(--chat-green);
+  color: #000000;
+}
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.upload-trigger input {
+  display: none;
+}
+
+.hint {
+  color: #6f7485;
+  font-weight: 700;
+}
+
+.error-message {
+  margin-bottom: 16px;
+  border-radius: 18px;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .chat-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-sidebar {
+    order: 2;
+  }
+
+  .chat-panel {
+    min-height: 70vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat-sidebar,
+  .chat-panel {
+    border-radius: 22px;
+  }
+
+  .chat-header,
+  .chat-messages,
+  .composer {
+    padding: 14px;
+  }
+
+  .chat-row {
+    max-width: 92%;
+  }
+
+  .composer {
+    grid-template-columns: 1fr auto;
+  }
+
+  .composer textarea {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+
+  .image-preview {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .image-preview .button {
+    width: 100%;
+  }
+}
+</style>
+
+
+
+
+

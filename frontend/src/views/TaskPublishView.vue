@@ -1,6 +1,6 @@
-<script setup lang="ts">
-import { CalendarClock, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
-import { computed, reactive, ref, watch } from 'vue'
+﻿<script setup lang="ts">
+import { CalendarClock, FileText, MapPin, Send, Tags, Text, Type } from '@lucide/vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { fileApi, taskApi } from '@/services/api'
@@ -15,9 +15,12 @@ const form = reactive<TaskForm>({
   description: '',
   campus: '仙林校区',
   rewardType: 'NEGOTIABLE',
+  rewardAmount: undefined,
+  paymentMethod: undefined,
   deadline: '',
   anonymous: false,
   imageIds: [],
+  fileIds: [],
   categoryFields: {
     expressCompany: '',
     pickupLocation: '',
@@ -27,16 +30,27 @@ const form = reactive<TaskForm>({
 })
 
 const loading = ref(false)
+const submitted = ref(false)
 const error = ref('')
 const uploadError = ref('')
 const imageUploading = ref(false)
 const removingImageIds = ref<number[]>([])
 const uploadedImages = ref<UploadedFileItem[]>([])
-const minDeadline = computed(() => {
+const fileUploading = ref(false)
+const uploadedFiles = ref<UploadedFileItem[]>([])
+const removingFileIds = ref<number[]>([])
+const minDeadline = ref(createMinDeadline())
+let minDeadlineTimer: number | undefined
+
+function createMinDeadline() {
   const date = new Date(Date.now() + 60 * 1000)
   date.setSeconds(0, 0)
   return new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000).toISOString().slice(0, 16)
-})
+}
+
+function refreshMinDeadline() {
+  minDeadline.value = createMinDeadline()
+}
 
 const categoryLabel: Record<TaskCategory, string> = {
   EXPRESS: '快递代取',
@@ -61,15 +75,14 @@ const categoryFields = computed(() => {
   if (form.category === 'SECOND_HAND') {
     return [
       ['goodsCategory', '商品分类'],
-      ['condition', '新旧程度'],
-      ['price', '售价']
+      ['condition', '新旧程度']
     ]
   }
   if (form.category === 'LOST_FOUND') {
     return [
       ['itemName', '物品名称'],
       ['location', '地点'],
-      ['foundTime', '时间'],
+      ['foundTime', '丢失/捡到时间'],
       ['itemDescription', '物品描述'],
       ['contactInfo', '联系方式']
     ]
@@ -78,55 +91,107 @@ const categoryFields = computed(() => {
     return [
       ['activityType', '活动类型'],
       ['requiredCount', '人数需求'],
-      ['activityTime', '活动时间']
+      ['activityTime', '活动时间'],
+      ['contactInfo', '联系方式']
     ]
   }
   return []
 })
 
+function isPrivateCategoryField(key: string) {
+  return (form.category === 'EXPRESS' && ['pickupCode', 'deliveryLocation'].includes(key))
+    || (form.category === 'LOST_FOUND' && key === 'contactInfo')
+}
+
 watch(
   () => form.category,
-  () => {
-    form.categoryFields = {}
+  (category) => {
+    form.categoryFields = category === 'TEAM_UP' ? { requiredCount: 1 } : {}
   }
 )
 
+watch(
+  () => form.rewardType,
+  (rewardType) => {
+    if (rewardType !== 'CASH') {
+      form.rewardAmount = undefined
+      form.paymentMethod = undefined
+    }
+  }
+)
+
+onMounted(() => {
+  refreshMinDeadline()
+  minDeadlineTimer = window.setInterval(refreshMinDeadline, 30000)
+})
+
+onUnmounted(() => {
+  if (minDeadlineTimer) window.clearInterval(minDeadlineTimer)
+})
+
 async function submit() {
+  if (submitted.value) return
   error.value = ''
-  if (!form.deadline || new Date(form.deadline).getTime() <= Date.now()) {
-    error.value = '截止时间必须晚于当前时间'
+  if (!validateDeadline()) {
     return
   }
+  for (const [key] of categoryFields.value) {
+    if (!validateCategoryDateTimeField(key)) return
+  }
   loading.value = true
+  submitted.value = true
   try {
     const result = await taskApi.create(form)
     router.push(`/tasks/${result.id}`)
   } catch (err) {
     error.value = err instanceof Error ? err.message : '发布失败'
+    submitted.value = false
   } finally {
     loading.value = false
   }
 }
 
-async function handleTaskImageChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const files = Array.from(input.files || [])
-  if (!files.length) return
-
-  uploadError.value = ''
-  imageUploading.value = true
-  try {
-    for (const file of files) {
-      const uploaded = await fileApi.upload(file, 'TASK_IMAGE')
-      uploadedImages.value.push(uploaded)
-      form.imageIds.push(uploaded.id)
-    }
-  } catch (err) {
-    uploadError.value = err instanceof Error ? err.message : '任务配图上传失败'
-  } finally {
-    imageUploading.value = false
-    input.value = ''
+function validateDeadline() {
+  refreshMinDeadline()
+  if (!form.deadline || new Date(form.deadline).getTime() <= Date.now()) {
+    form.deadline = minDeadline.value
+    return false
   }
+  return true
+}
+
+function isDateTimeField(key: string) {
+  return key.includes('Time')
+}
+
+function requiresFutureDateTime(key: string) {
+  return key === 'activityTime'
+}
+
+function validateCategoryDateTimeField(key: string) {
+  if (!requiresFutureDateTime(key)) return true
+  refreshMinDeadline()
+  const value = form.categoryFields[key]
+  if (typeof value !== 'string' || !value || new Date(value).getTime() <= Date.now()) {
+    form.categoryFields[key] = minDeadline.value
+    return false
+  }
+  return true
+}
+
+function validateRequiredCount(key: string) {
+  if (key !== 'requiredCount') return true
+  const value = Number(form.categoryFields[key])
+  if (!Number.isInteger(value) || value < 1) {
+    form.categoryFields[key] = 1
+    return false
+  }
+  return true
+}
+
+function adjustRequiredCount(delta: number) {
+  const current = Number(form.categoryFields.requiredCount)
+  form.categoryFields.requiredCount = Math.max(1, (Number.isInteger(current) ? current : 1) + delta)
 }
 
 async function removeUploadedImage(imageId: number) {
@@ -147,6 +212,48 @@ async function removeUploadedImage(imageId: number) {
     removingImageIds.value = removingImageIds.value.filter((item) => item !== imageId)
   }
 }
+
+async function handleTaskAttachmentChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  if (!files.length) return
+  uploadError.value = ''
+  imageUploading.value = files.some(file => file.type.startsWith('image/'))
+  fileUploading.value = files.some(file => !file.type.startsWith('image/'))
+  try {
+    for (const file of files) {
+      const isImage = file.type.startsWith('image/')
+      const uploaded = await fileApi.upload(file, isImage ? 'TASK_IMAGE' : 'TASK_FILE')
+      if (isImage) {
+        uploadedImages.value.push(uploaded)
+        form.imageIds.push(uploaded.id)
+      } else {
+        uploadedFiles.value.push(uploaded)
+        form.fileIds.push(uploaded.id)
+      }
+    }
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '图片或文件上传失败'
+  } finally {
+    imageUploading.value = false
+    fileUploading.value = false
+    input.value = ''
+  }
+}
+
+async function removeUploadedFile(fileId: number) {
+  if (removingFileIds.value.includes(fileId)) return
+  removingFileIds.value.push(fileId)
+  try {
+    await fileApi.remove(fileId)
+    uploadedFiles.value = uploadedFiles.value.filter(item => item.id !== fileId)
+    form.fileIds = form.fileIds.filter(id => id !== fileId)
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '任务文件移除失败'
+  } finally {
+    removingFileIds.value = removingFileIds.value.filter(id => id !== fileId)
+  }
+}
 </script>
 
 <template>
@@ -154,18 +261,22 @@ async function removeUploadedImage(imageId: number) {
     <div class="page-title">
       <div>
         <h1>发布需求</h1>
-        <p>填写任务信息后会进入任务大厅，等待其他同学申请接单。</p>
+        <p v-if="form.category === 'TEAM_UP'">填写组队信息和联系方式后会作为帖子发布，感兴趣的同学可直接联系你。</p>
+        <p v-else>填写任务信息后会进入任务大厅，等待其他同学申请接单。</p>
       </div>
     </div>
 
     <form class="grid" @submit.prevent="submit">
       <section class="panel grid">
-        <h2>任务配图</h2>
-        <label class="button secondary upload-trigger">
-          <input multiple type="file" accept="image/png,image/jpeg,image/webp" @change="handleTaskImageChange" />
-          <span>{{ imageUploading ? '上传中...' : '上传任务配图' }}</span>
+        <h2>上传图片或文件</h2>
+        <label class="button secondary upload-trigger unified-upload-trigger">
+          <input multiple type="file" accept="image/png,image/jpeg,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip" @change="handleTaskAttachmentChange" />
+          <span>{{ imageUploading || fileUploading ? '上传中...' : '上传' }}</span>
         </label>
-        <p class="hint">支持多张图片，每张不超过 5MB。</p>
+        <div class="upload-hints">
+          <p class="hint">配图支持 PNG、JPEG 和 WebP，每张不超过 5MB。</p>
+          <p class="hint">文件支持 PDF、Office、TXT 和 ZIP，仅接单后的服务方可以下载。</p>
+        </div>
         <p v-if="uploadError" class="error-message">{{ uploadError }}</p>
         <div v-if="uploadedImages.length" class="upload-grid">
           <article v-for="item in uploadedImages" :key="item.id" class="upload-card">
@@ -181,6 +292,15 @@ async function removeUploadedImage(imageId: number) {
                 {{ removingImageIds.includes(item.id) ? '移除中...' : '移除' }}
               </button>
             </div>
+          </article>
+        </div>
+        <div v-if="uploadedFiles.length" class="task-file-list">
+          <article v-for="item in uploadedFiles" :key="item.id" class="task-file-card">
+            <FileText aria-hidden="true" />
+            <strong>{{ item.fileName }}</strong>
+            <button class="button ghost" type="button" :disabled="removingFileIds.includes(item.id)" @click="removeUploadedFile(item.id)">
+              {{ removingFileIds.includes(item.id) ? '移除中...' : '移除' }}
+            </button>
           </article>
         </div>
       </section>
@@ -224,15 +344,16 @@ async function removeUploadedImage(imageId: number) {
           描述
         </label>
         <textarea id="description" v-model.trim="form.description" minlength="10" maxlength="2000" required />
+        <p class="hint">请勿在描述中填写取件码、精确送达地址或联系方式；请填写在下方专用字段中，系统会在确认接单前保护这些信息。</p>
       </div>
 
       <div class="grid two">
         <div class="field">
-          <label for="reward">报酬类型</label>
+          <label for="reward">{{ form.category === 'SECOND_HAND' ? '交易方式' : '报酬类型' }}</label>
           <select id="reward" v-model="form.rewardType" required>
-            <option value="CASH">现金</option>
+            <option value="CASH">定价</option>
             <option value="NEGOTIABLE">面议</option>
-            <option value="CREDIT_INTENT">积分意向</option>
+            <option value="CREDIT_INTENT">积分</option>
           </select>
         </div>
         <div class="field">
@@ -240,7 +361,42 @@ async function removeUploadedImage(imageId: number) {
             <CalendarClock class="label-icon" aria-hidden="true" />
             截止时间
           </label>
-          <input id="deadline" v-model="form.deadline" type="datetime-local" :min="minDeadline" required />
+          <input
+            id="deadline"
+            v-model="form.deadline"
+            type="datetime-local"
+            :min="minDeadline"
+            required
+            @input="validateDeadline"
+            @change="validateDeadline"
+            @blur="validateDeadline"
+          />
+        </div>
+      </div>
+
+      <div v-if="form.rewardType === 'CASH'" class="grid two">
+        <div class="field">
+          <label for="reward-amount">{{ form.category === 'SECOND_HAND' ? '售价（元）' : '酬金金额（元）' }}</label>
+          <input
+            id="reward-amount"
+            v-model.number="form.rewardAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            :placeholder="form.category === 'SECOND_HAND' ? '请输入售价' : '请输入酬金金额'"
+            required
+          />
+        </div>
+        <div class="field">
+          <label for="payment-method">{{ form.category === 'SECOND_HAND' ? '收款方式' : '支付方式' }}</label>
+          <select id="payment-method" v-model="form.paymentMethod" required>
+            <option disabled :value="undefined">
+              {{ form.category === 'SECOND_HAND' ? '请选择收款方式' : '请选择支付方式' }}
+            </option>
+            <option value="WECHAT">微信</option>
+            <option value="ALIPAY">支付宝</option>
+            <option value="CASH">现金</option>
+          </select>
         </div>
       </div>
 
@@ -252,13 +408,40 @@ async function removeUploadedImage(imageId: number) {
             <option value="LIKE_NEW">几乎全新</option>
             <option value="USED">有使用痕迹</option>
           </select>
+          <div v-else-if="key === 'requiredCount'" class="number-stepper">
+            <input
+              :id="key"
+              v-model="form.categoryFields[key]"
+              type="number"
+              min="1"
+              step="1"
+              required
+              @input="validateRequiredCount(key)"
+              @change="validateRequiredCount(key)"
+              @blur="validateRequiredCount(key)"
+            />
+            <span class="number-stepper-controls">
+              <button type="button" aria-label="增加人数" @click="adjustRequiredCount(1)">▲</button>
+              <button
+                type="button"
+                aria-label="减少人数"
+                :disabled="Number(form.categoryFields.requiredCount) <= 1"
+                @click="adjustRequiredCount(-1)"
+              >▼</button>
+            </span>
+          </div>
           <input
             v-else
             :id="key"
             v-model="form.categoryFields[key]"
-            :type="key.includes('Time') ? 'datetime-local' : key === 'price' || key === 'requiredCount' ? 'number' : 'text'"
+            :type="key.includes('Time') ? 'datetime-local' : key === 'price' ? 'number' : 'text'"
+            :min="requiresFutureDateTime(key) ? minDeadline : undefined"
             required
+            @input="validateCategoryDateTimeField(key)"
+            @change="validateCategoryDateTimeField(key)"
+            @blur="validateCategoryDateTimeField(key)"
           />
+          <p v-if="isPrivateCategoryField(key)" class="hint">该信息在发布者确认接单前仅发布者可见。</p>
         </div>
       </div>
 
@@ -271,9 +454,9 @@ async function removeUploadedImage(imageId: number) {
 
       <p v-if="error" class="error-message">{{ error }}</p>
       <div class="actions">
-        <button class="button primary" type="submit" :disabled="loading">
+        <button class="button primary" type="submit" :disabled="loading || submitted">
           <Send class="button-icon" aria-hidden="true" />
-          <span>{{ loading ? '发布中' : '发布需求' }}</span>
+          <span>{{ loading || submitted ? '发布中' : '发布需求' }}</span>
         </button>
       </div>
     </form>
@@ -282,7 +465,7 @@ async function removeUploadedImage(imageId: number) {
 
 <style scoped>
 .task-publish-view {
-  --publish-green: #b9ff66;
+  --publish-green: #ffb454;
   --publish-dark: #191a23;
   --publish-grey: #f3f3f3;
   position: relative;
@@ -292,7 +475,7 @@ async function removeUploadedImage(imageId: number) {
   background:
     radial-gradient(circle at 96% 4%, var(--publish-green) 0 78px, transparent 79px),
     #ffffff;
-  box-shadow: 0 8px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -314,13 +497,15 @@ async function removeUploadedImage(imageId: number) {
   max-width: 100%;
   padding: 5px 14px;
   border-radius: 18px;
-  background: var(--publish-green);
+  border: 2px solid #000000;
+  background: transparent;
   color: #000000;
   font-size: 34px;
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: 0;
   -webkit-text-fill-color: #000000;
+  box-shadow: none;
 }
 
 .page-title p {
@@ -340,7 +525,7 @@ async function removeUploadedImage(imageId: number) {
   background:
     radial-gradient(circle at 96% 0%, var(--publish-green) 0 58px, transparent 59px),
     var(--publish-grey);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   overflow: hidden;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -349,10 +534,6 @@ async function removeUploadedImage(imageId: number) {
 .panel h2 {
   width: max-content;
   max-width: 100%;
-  padding: 5px 12px;
-  border-radius: 18px;
-  background: var(--publish-green);
-  color: #000000;
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0;
@@ -390,7 +571,56 @@ async function removeUploadedImage(imageId: number) {
 .field input:hover,
 .field select:hover,
 .field textarea:hover {
-  background-color: #f8ffe8;
+  background-color: #fff1df;
+}
+
+.number-stepper {
+  position: relative;
+}
+
+.field .number-stepper input {
+  width: 100%;
+  padding-right: 48px;
+  appearance: textfield;
+}
+
+.number-stepper input::-webkit-inner-spin-button,
+.number-stepper input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.number-stepper-controls {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  bottom: 8px;
+  display: grid;
+  width: 26px;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.number-stepper-controls button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: #ffffff;
+  color: #6f7485;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.number-stepper-controls button:hover:not(:disabled) {
+  color: #000000;
+  background: #f3f3f3;
+}
+
+.number-stepper-controls button:disabled {
+  color: #c7c9cf;
+  cursor: not-allowed;
 }
 
 .field input:focus,
@@ -398,14 +628,14 @@ async function removeUploadedImage(imageId: number) {
 .field textarea:focus {
   border-color: #000000;
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .button {
   border: 2px solid #000000;
   border-radius: 14px;
   font-weight: 900;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
 }
 
 .button.primary,
@@ -418,7 +648,7 @@ async function removeUploadedImage(imageId: number) {
 .button.secondary:hover:not(:disabled) {
   color: #000000;
   background: var(--publish-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -429,7 +659,7 @@ async function removeUploadedImage(imageId: number) {
 
 .button.ghost:hover:not(:disabled) {
   background: var(--publish-green);
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
 }
 
 .button:disabled {
@@ -451,13 +681,13 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 0 #000000;
+  box-shadow: none;
   transition: all var(--transition-fast);
 }
 
 .upload-card:hover {
   border-color: #000000;
-  box-shadow: 0 5px 0 #000000;
+  box-shadow: none;
   transform: translateY(-2px);
 }
 
@@ -486,7 +716,7 @@ async function removeUploadedImage(imageId: number) {
   border: 2px solid #000000;
   border-radius: 6px;
   background: #ffffff;
-  box-shadow: 0 2px 0 #000000;
+  box-shadow: none;
   appearance: none;
   cursor: pointer;
 }
@@ -508,19 +738,65 @@ async function removeUploadedImage(imageId: number) {
 }
 
 .checkbox-label input[type='checkbox']:focus-visible {
-  box-shadow: 0 0 0 3px rgba(185, 255, 102, 0.48), 0 2px 0 #000000;
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.48);
 }
 
 .error-message {
   padding: 12px 16px;
   border: 2px solid #000000;
   border-radius: 18px;
-  box-shadow: 0 3px 0 #000000;
+  box-shadow: none;
   font-weight: 800;
 }
 
 .actions .button.primary {
   min-width: 160px;
+}
+
+.task-file-list {
+  display: grid;
+  gap: 10px;
+}
+
+.upload-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.upload-hints {
+  display: grid;
+  gap: 4px;
+}
+
+.upload-hints .hint {
+  margin: 0;
+}
+
+.task-file-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid #000000;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.task-file-card > svg {
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border: 2px solid #000000;
+  border-radius: 11px;
+  background: var(--publish-green);
+}
+
+.task-file-card strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -529,3 +805,7 @@ async function removeUploadedImage(imageId: number) {
   }
 }
 </style>
+
+
+
+

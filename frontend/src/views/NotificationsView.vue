@@ -1,8 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { useRealtimeRefresh } from '@/composables/useRealtimeRefresh'
 import { notificationApi } from '@/services/api'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { useConfirmDialog } from '@/composables/useConfirmDialog'
 import { useAuthStore } from '@/stores/auth'
 import type { NotificationItem, PageData } from '@/types'
 
@@ -10,17 +13,21 @@ const auth = useAuthStore()
 const page = ref<PageData<NotificationItem>>()
 const error = ref('')
 const loading = ref(false)
+const dangerDialog = useConfirmDialog()
 
-async function load() {
-  loading.value = true
-  error.value = ''
+async function load(silent: boolean | Event = false) {
+  const isSilent = silent === true
+  if (!isSilent) {
+    loading.value = true
+    error.value = ''
+  }
   try {
     page.value = await notificationApi.list({ page: 1, size: 20 })
     await auth.refreshUnread()
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '通知加载失败'
+    if (!isSilent) error.value = err instanceof Error ? err.message : '通知加载失败'
   } finally {
-    loading.value = false
+    if (!isSilent) loading.value = false
   }
 }
 
@@ -34,20 +41,34 @@ async function readAll() {
   await load()
 }
 
-async function deleteOne(notificationId: number) {
-  await notificationApi.delete(notificationId)
-  await load()
+function deleteOne(item: NotificationItem) {
+  dangerDialog.request({
+    title: '删除这条通知？',
+    description: `“${item.title}”删除后无法恢复。`,
+    confirmText: '确认删除'
+  }, async () => {
+    await notificationApi.delete(item.id)
+    await load()
+  })
 }
 
-async function deleteAllRead() {
-  await notificationApi.deleteRead()
-  await load()
+function deleteAllRead() {
+  dangerDialog.request({
+    title: '清空所有已读通知？',
+    description: '所有已读通知都会被永久删除，未读通知不受影响。',
+    confirmText: '确认清空'
+  }, async () => {
+    await notificationApi.deleteRead()
+    await load()
+  })
 }
 
 function targetLink(item: NotificationItem) {
+  if (item.targetType === 'USER') return `/messages/${item.targetId}`
   return item.targetType === 'ORDER' ? `/orders/${item.targetId}` : `/tasks/${item.targetId}`
 }
 
+useRealtimeRefresh(['NOTIFICATIONS_CHANGED'], () => load(true))
 onMounted(load)
 </script>
 
@@ -65,10 +86,9 @@ onMounted(load)
     </div>
 
     <p v-if="error" class="error-message">{{ error }}</p>
-    <div v-if="loading" class="empty-state">正在加载通知</div>
-    <div v-else-if="!page?.records.length" class="empty-state">暂无通知</div>
+    <div v-if="!loading && !page?.records.length" class="empty-state">暂无通知</div>
 
-    <div v-else class="grid">
+    <div v-if="page?.records.length" class="grid">
       <article
         v-for="(item, index) in page.records"
         :key="item.id"
@@ -84,16 +104,17 @@ onMounted(load)
         <div class="actions">
           <RouterLink class="button ghost" :to="targetLink(item)">查看</RouterLink>
           <button class="button secondary" type="button" :disabled="item.read" @click="markRead(item.id)">标记已读</button>
-          <button class="button danger-outline" type="button" @click="deleteOne(item.id)">删除</button>
+          <button class="button danger-outline" type="button" @click="deleteOne(item)">删除</button>
         </div>
       </article>
     </div>
+    <ConfirmDialog v-bind="dangerDialog.state" @confirm="dangerDialog.confirm" @cancel="dangerDialog.cancel" />
   </section>
 </template>
 
 <style scoped>
 .notifications-view {
-  --notice-green: #b9ff66;
+  --notice-green: #ffb454;
   --notice-dark: #191a23;
   --notice-grey: #f3f3f3;
   --notice-line: #000000;
@@ -104,9 +125,9 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 28px;
   background:
-    radial-gradient(circle at 94% 10%, rgba(185, 255, 102, 0.82) 0 56px, transparent 58px),
+    radial-gradient(circle at 94% 10%, rgba(255, 180, 84, 0.82) 0 56px, transparent 58px),
     #ffffff;
-  box-shadow: 0 6px 0 var(--notice-line);
+  box-shadow: none;
 }
 
 .notifications-view :deep(.page-title h1) {
@@ -114,7 +135,8 @@ onMounted(load)
   margin-bottom: 10px;
   padding: 5px 10px;
   border-radius: 24px;
-  background: var(--notice-green);
+  border: 2px solid #000000;
+  background: transparent;
   background-clip: border-box;
   -webkit-background-clip: border-box;
   color: #000000;
@@ -122,6 +144,7 @@ onMounted(load)
   font-size: 34px;
   line-height: 1.12;
   letter-spacing: 0;
+  box-shadow: none;
 }
 
 .notifications-view :deep(.page-title p) {
@@ -160,7 +183,7 @@ onMounted(load)
   border: 2px solid var(--notice-line);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 3px 0 var(--notice-line);
+  box-shadow: none;
   position: relative;
   transition: transform var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
 }
@@ -171,23 +194,18 @@ onMounted(load)
 }
 
 .notification-item.unread {
-  background: linear-gradient(135deg, #ffffff 0%, #f7ffe8 100%);
-  box-shadow: 0 3px 0 var(--notice-line);
+  background: linear-gradient(135deg, #ffffff 0%, #fff3df 100%);
+  box-shadow: none;
 }
 
 .notification-item:hover {
   border-color: var(--notice-line);
-  box-shadow: 0 4px 0 var(--notice-line);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 
 .notification-item h2 {
-  width: max-content;
   max-width: 100%;
-  padding: 4px 10px;
-  border-radius: 24px;
-  background: var(--notice-green);
-  color: #000000;
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 0;
@@ -289,3 +307,7 @@ onMounted(load)
   }
 }
 </style>
+
+
+
+

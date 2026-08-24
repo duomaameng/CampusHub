@@ -7,15 +7,14 @@ import com.campushub.common.ErrorCode;
 import com.campushub.common.PageResult;
 import com.campushub.dto.order.OrderCancelRequest;
 import com.campushub.dto.order.OrderCompleteRequest;
-import com.campushub.dto.order.OrderMessageRequest;
 import com.campushub.dto.order.ReviewCreateRequest;
 import com.campushub.entity.*;
 import com.campushub.enums.ApplicationStatus;
-import com.campushub.enums.MessageType;
 import com.campushub.enums.OrderStatus;
 import com.campushub.enums.TaskStatus;
 import com.campushub.enums.UploadBusinessType;
 import com.campushub.mapper.*;
+import com.campushub.realtime.RealtimeEventPublisher;
 import com.campushub.security.SecurityUtils;
 import com.campushub.vo.order.*;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +35,18 @@ public class OrderService {
     private final TaskMapper taskMapper;
     private final UserProfileMapper userProfileMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
-    private final OrderMessageMapper orderMessageMapper;
     private final ApplicationMapper applicationMapper;
     private final ReviewMapper reviewMapper;
     private final CreditLogMapper creditLogMapper;
+    private final TaskImageMapper taskImageMapper;
+    private final TaskFileMapper taskFileMapper;
     private final NotificationService notificationService;
     private final FileService fileService;
+    private final RealtimeEventPublisher realtimeEventPublisher;
 
     public PageResult<OrderItemVO> listOrders(int page, int size, String role, OrderStatus status, String keyword) {
+        refreshTimedOutOrders();
+
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         Page<Order> pageQuery = new Page<>(page, size);
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
@@ -85,6 +88,7 @@ public class OrderService {
     }
 
     public OrderDetailVO getOrder(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         ensureParticipant(order);
         return toOrderDetailVO(order);
@@ -92,6 +96,7 @@ public class OrderService {
 
     @Transactional
     public void completeOrder(Long orderId, OrderCompleteRequest request) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getServiceProviderId(), currentUserId)) {
@@ -103,11 +108,12 @@ public class OrderService {
         if (order.getCancelReason() != null && !order.getCancelReason().isBlank()) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单有未处理的取消申请，不能提交完成");
         }
-
-        if (request.getProofImageId() != null) {
-            FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
-            order.setCompletionProofUrl(proof.getFileUrl());
+        if (request.getProofImageId() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "必须上传完成凭证后才能提交完成");
         }
+
+        FileRecord proof = fileService.requireOwnedFile(request.getProofImageId(), UploadBusinessType.ORDER_PROOF);
+        order.setCompletionProofUrl(proof.getFileUrl());
         order.setStatus(OrderStatus.PENDING_COMPLETION);
         orderMapper.updateById(order);
         saveStatusLog(
@@ -118,10 +124,12 @@ public class OrderService {
                 request.getNote() != null && !request.getNote().isBlank() ? request.getNote() : "服务方提交完成"
         );
         notificationService.createOrderStatusNotification(order.getPublisherId(), order.getId(), OrderStatus.PENDING_COMPLETION);
+        publishOrderChange(order);
     }
 
     @Transactional
     public void confirmCompletion(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getPublisherId(), currentUserId)) {
@@ -142,15 +150,21 @@ public class OrderService {
         String taskTitle = task.getTitle();
         notificationService.createReviewRequestNotification(order.getPublisherId(), order.getId(), taskTitle);
         notificationService.createReviewRequestNotification(order.getServiceProviderId(), order.getId(), taskTitle);
+        publishOrderChange(order);
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
     }
 
     @Transactional
     public void cancelOrder(Long orderId, OrderCancelRequest request) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         ensureParticipant(order);
         if (OrderStatus.CANCELLED.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_ALREADY_CANCELLED);
+        }
+        if (OrderStatus.TIMEOUT.equals(order.getStatus())) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID, "订单已超时，不能继续操作");
         }
         if (OrderStatus.COMPLETED.equals(order.getStatus()) || OrderStatus.REVIEWED.equals(order.getStatus())) {
             throw new BusinessException(ErrorCode.ORDER_ALREADY_COMPLETED);
@@ -183,6 +197,9 @@ public class OrderService {
             saveStatusLog(order.getId(), fromStatus, OrderStatus.PENDING_CONFIRM, currentUserId, reason);
 
             notificationService.createOrderStatusNotification(previousServiceProviderId, order.getId(), OrderStatus.PENDING_CONFIRM);
+            realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+            realtimeEventPublisher.user(previousServiceProviderId, RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+            realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
             return;
         }
 
@@ -202,10 +219,12 @@ public class OrderService {
         orderMapper.updateById(order);
         saveStatusLog(order.getId(), fromStatus, OrderStatus.IN_PROGRESS, currentUserId, "服务方申请取消：" + request.getReason().trim());
         notificationService.createOrderActionNotification(order.getPublisherId(), order.getId(), "服务方申请取消服务", "服务方申请取消订单，原因：" + request.getReason().trim());
+        publishOrderChange(order);
     }
 
     @Transactional
     public void approveCancelRequest(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getPublisherId(), currentUserId)) {
@@ -232,14 +251,16 @@ public class OrderService {
                 .eq("status", ApplicationStatus.APPROVED.name())
                 .set("status", ApplicationStatus.CANCELLED.name()));
 
-        orderMessageMapper.delete(new LambdaQueryWrapper<OrderMessage>().eq(OrderMessage::getOrderId, orderId));
-
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.PENDING_CONFIRM, currentUserId, "发布方同意取消申请：" + reason);
         notificationService.createOrderActionNotification(previousServiceProviderId, order.getId(), "发布方已同意取消申请", "订单已退回待接单状态");
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.user(previousServiceProviderId, RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.broadcast(RealtimeEventPublisher.TASKS_CHANGED, task.getId());
     }
 
     @Transactional
     public void rejectCancelRequest(Long orderId) {
+        refreshTimedOutOrders();
         Order order = requireOrder(orderId);
         Long currentUserId = SecurityUtils.requireCurrentUserId();
         if (!Objects.equals(order.getPublisherId(), currentUserId)) {
@@ -256,46 +277,7 @@ public class OrderService {
                 .set("cancel_reason", null));
         saveStatusLog(order.getId(), OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS, currentUserId, "发布方拒绝取消申请：" + reason);
         notificationService.createOrderActionNotification(order.getServiceProviderId(), order.getId(), "发布方已拒绝取消申请", "发布方已拒绝取消申请，订单继续进行");
-    }
-
-    @Transactional
-    public void sendMessage(Long orderId, OrderMessageRequest request) {
-        Order order = requireOrder(orderId);
-        Long currentUserId = SecurityUtils.requireCurrentUserId();
-        ensureParticipant(order);
-        if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
-            throw new BusinessException(ErrorCode.ORDER_STATUS_INVALID);
-        }
-
-        OrderMessage message = new OrderMessage();
-        message.setOrderId(orderId);
-        message.setSenderId(currentUserId);
-        message.setMessageType(request.getMessageType());
-        message.setIsRead(false);
-
-        if (MessageType.TEXT.equals(request.getMessageType())) {
-            if (request.getContent() == null || request.getContent().isBlank()) {
-                throw new BusinessException(ErrorCode.MESSAGE_EMPTY);
-            }
-            message.setContent(request.getContent().trim());
-        } else if (MessageType.IMAGE.equals(request.getMessageType())) {
-            FileRecord image = request.getImageId() == null ? null : fileService.requireOwnedFile(request.getImageId(), UploadBusinessType.CHAT_IMAGE);
-            if (image == null) {
-                throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "图片文件不存在");
-            }
-            message.setImageUrl(image.getFileUrl());
-        }
-
-        orderMessageMapper.insert(message);
-
-        Long receiverId = Objects.equals(currentUserId, order.getPublisherId())
-                ? order.getServiceProviderId()
-                : order.getPublisherId();
-        String senderNickname = findNickname(currentUserId);
-        String preview = MessageType.IMAGE.equals(request.getMessageType())
-                ? "发送了一张图片"
-                : message.getContent();
-        notificationService.createOrderMessageNotification(receiverId, order.getId(), senderNickname, preview);
+        publishOrderChange(order);
     }
 
     @Transactional
@@ -344,6 +326,13 @@ public class OrderService {
             orderMapper.updateById(order);
             saveStatusLog(order.getId(), OrderStatus.COMPLETED, OrderStatus.REVIEWED, currentUserId, "双方已完成评价");
         }
+        publishOrderChange(order);
+        realtimeEventPublisher.user(review.getRevieweeId(), RealtimeEventPublisher.PROFILE_CHANGED, review.getRevieweeId());
+    }
+
+    private void publishOrderChange(Order order) {
+        realtimeEventPublisher.user(order.getPublisherId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
+        realtimeEventPublisher.user(order.getServiceProviderId(), RealtimeEventPublisher.ORDERS_CHANGED, order.getId());
     }
 
     public List<ReviewItemVO> listReviews(Long orderId) {
@@ -354,17 +343,6 @@ public class OrderService {
                         .orderByDesc(Review::getCreatedAt))
                 .stream()
                 .map(this::toReviewItemVO)
-                .toList();
-    }
-
-    public List<OrderMessageVO> listMessages(Long orderId) {
-        Order order = requireOrder(orderId);
-        ensureParticipant(order);
-        return orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
-                        .eq(OrderMessage::getOrderId, orderId)
-                        .orderByAsc(OrderMessage::getCreatedAt))
-                .stream()
-                .map(this::toOrderMessageVO)
                 .toList();
     }
 
@@ -389,17 +367,27 @@ public class OrderService {
         vo.setTaskDescription(task.getDescription());
         vo.setCampus(task.getCampus());
         vo.setRewardType(task.getRewardType());
+        vo.setRewardAmount(task.getRewardAmount());
+        vo.setPaymentMethod(task.getPaymentMethod());
         vo.setProofImageUrl(order.getCompletionProofUrl());
         vo.setCompletionNote(findCompletionNote(statusLogs));
+        vo.setTaskImageUrls(taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()
+                        .eq(TaskImage::getTaskId, order.getTaskId())
+                        .orderByAsc(TaskImage::getSortOrder))
+                .stream().map(TaskImage::getImageUrl).toList());
         vo.setStatusLogs(statusLogs.stream()
                 .map(this::toStatusLogVO)
                 .toList());
-        vo.setMessages(orderMessageMapper.selectList(new LambdaQueryWrapper<OrderMessage>()
-                        .eq(OrderMessage::getOrderId, order.getId())
-                        .orderByAsc(OrderMessage::getCreatedAt))
+        vo.setTaskFiles(taskFileMapper.selectList(new LambdaQueryWrapper<TaskFile>()
+                        .eq(TaskFile::getTaskId, order.getTaskId())
+                        .orderByAsc(TaskFile::getSortOrder))
                 .stream()
-                .map(this::toOrderMessageVO)
+                .map(item -> {
+                    FileRecord file = fileService.requireFile(item.getFileRecordId());
+                    return new com.campushub.vo.task.TaskFileVO(item.getId(), file.getFileName(), file.getFileSize());
+                })
                 .toList());
+        vo.setTaskFileDownloadAllowed(Objects.equals(SecurityUtils.getCurrentUserId().orElse(null), order.getServiceProviderId()));
         return vo;
     }
 
@@ -416,35 +404,33 @@ public class OrderService {
         vo.setTaskTitle(task.getTitle());
         vo.setPublisherId(order.getPublisherId());
         vo.setPublisherNickname(findNickname(order.getPublisherId()));
+        vo.setPublisherAvatarUrl(findAvatarUrl(order.getPublisherId()));
         if (OrderStatus.PENDING_CONFIRM.equals(order.getStatus())) {
             vo.setServiceProviderId(null);
             vo.setServiceProviderNickname("暂无服务方");
         } else {
             vo.setServiceProviderId(order.getServiceProviderId());
             vo.setServiceProviderNickname(findNickname(order.getServiceProviderId()));
+            vo.setServiceProviderAvatarUrl(findAvatarUrl(order.getServiceProviderId()));
         }
         vo.setStatus(order.getStatus());
         vo.setCancelReason(order.getCancelReason());
         vo.setCreatedAt(order.getCreatedAt());
+        List<String> imageUrls = taskImageMapper.selectList(new LambdaQueryWrapper<TaskImage>()
+                        .eq(TaskImage::getTaskId, task.getId())
+                        .orderByAsc(TaskImage::getSortOrder))
+                .stream()
+                .map(TaskImage::getImageUrl)
+                .toList();
+        if (!imageUrls.isEmpty()) {
+            vo.setTaskImageUrl(imageUrls.get(0));
+        }
     }
 
     private OrderStatusLogVO toStatusLogVO(OrderStatusLog log) {
         OrderStatus fromStatus = log.getFromStatus() == null ? null : OrderStatus.valueOf(log.getFromStatus());
         OrderStatus toStatus = log.getToStatus() == null ? null : OrderStatus.valueOf(log.getToStatus());
         return new OrderStatusLogVO(log.getId(), fromStatus, toStatus, log.getOperatorId(), findNickname(log.getOperatorId()), log.getReason(), log.getCreatedAt());
-    }
-
-    private OrderMessageVO toOrderMessageVO(OrderMessage message) {
-        return new OrderMessageVO(
-                message.getId(),
-                message.getOrderId(),
-                message.getSenderId(),
-                findNickname(message.getSenderId()),
-                message.getMessageType(),
-                message.getContent(),
-                message.getImageUrl(),
-                message.getCreatedAt()
-        );
     }
 
     private ReviewItemVO toReviewItemVO(Review review) {
@@ -482,6 +468,13 @@ public class OrderService {
                 .filter(reason -> reason != null && !reason.isBlank())
                 .reduce((first, second) -> second)
                 .orElse(null);
+    }
+
+    private void refreshTimedOutOrders() {
+        taskMapper.expireOpenTasksPastDeadline();
+        orderMapper.timeoutPendingConfirmOrdersForExpiredTasks();
+        orderMapper.timeoutInProgressOrdersPastTaskDeadline();
+        taskMapper.expireInProgressTasksWithTimedOutOrders();
     }
 
     private void ensureParticipant(Order order) {
@@ -524,5 +517,13 @@ public class OrderService {
                 .eq(UserProfile::getUserId, userId)
                 .last("LIMIT 1"));
         return profile != null ? profile.getNickname() : "CampusHub 用户";
+    }
+
+    private String findAvatarUrl(Long userId) {
+        if (userId == null) return null;
+        UserProfile profile = userProfileMapper.selectOne(new LambdaQueryWrapper<UserProfile>()
+                .eq(UserProfile::getUserId, userId)
+                .last("LIMIT 1"));
+        return profile != null ? profile.getAvatarUrl() : null;
     }
 }

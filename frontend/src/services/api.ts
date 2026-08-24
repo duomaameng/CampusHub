@@ -1,5 +1,5 @@
 import { mockApi } from './mock'
-import { request } from './http'
+import { http, request } from './http'
 
 import type {
   AdminReportItem,
@@ -8,6 +8,10 @@ import type {
   AnnouncementItem,
   AnnouncementPublishResult,
   ApplicationItem,
+  ChatDetail,
+  ChatMessage,
+  ChatUser,
+  ConversationItem,
   CreditInfo,
   FavoriteToggleResult,
   LoginResult,
@@ -97,6 +101,10 @@ export const userApi = {
   getUserReviews(userId: number): Promise<UserReviewItem[]> {
     if (useMock) return mockApi.getUserReviews(userId)
     return request<UserReviewItem[]>({ method: 'GET', url: `/users/${userId}/reviews` })
+  },
+  search(keyword: string): Promise<ChatUser[]> {
+    if (useMock) return Promise.resolve([])
+    return request<ChatUser[]>({ method: 'GET', url: '/users/search', params: { keyword } })
   }
 }
 
@@ -111,6 +119,10 @@ export const taskApi = {
   }): Promise<PageData<TaskItem>> {
     if (useMock) return mockApi.listTasks(params)
     return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks', params })
+  },
+  mine(params: { page?: number; size?: number; keyword?: string }): Promise<PageData<TaskItem>> {
+    if (useMock) return mockApi.listTasks(params)
+    return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/mine', params })
   },
   get(taskId: number): Promise<TaskItem> {
     if (useMock) return mockApi.getTask(taskId)
@@ -136,12 +148,11 @@ export const taskApi = {
     if (useMock) return mockApi.listFavoriteTasks(params)
     return request<PageData<TaskItem>>({ method: 'GET', url: '/tasks/favorites', params })
   },
-  apply(taskId: number, message: string) {
-    if (useMock) return mockApi.applyTask(taskId, message)
+  apply(taskId: number) {
+    if (useMock) return mockApi.applyTask(taskId)
     return request<{ applicationId: number; taskId: number; status: string; createdAt: string }>({
       method: 'POST',
-      url: `/tasks/${taskId}/applications`,
-      data: { message }
+      url: `/tasks/${taskId}/applications`
     })
   },
   applications(taskId: number): Promise<ApplicationItem[]> {
@@ -158,6 +169,15 @@ export const taskApi = {
   rejectApplication(applicationId: number): Promise<null> {
     if (useMock) return mockApi.rejectApplication(applicationId)
     return request<null>({ method: 'POST', url: `/applications/${applicationId}/reject` })
+  },
+  markApplicationsViewed(taskId: number): Promise<null> {
+    if (useMock) return Promise.resolve(null)
+    return request<null>({ method: 'POST', url: `/tasks/${taskId}/applications/viewed` })
+  },
+  async downloadFile(taskId: number, taskFileId: number): Promise<Blob> {
+    if (useMock) throw new Error('请关闭 mock 模式后下载任务文件')
+    const response = await http.get<Blob>(`/tasks/${taskId}/files/${taskFileId}/download`, { responseType: 'blob' })
+    return response.data
   }
 }
 
@@ -194,18 +214,6 @@ export const orderApi = {
     if (useMock) return mockApi.rejectCancelRequest(orderId)
     return request({ method: 'POST', url: `/orders/${orderId}/cancel-request/reject` })
   },
-  sendMessage(orderId: number, content: string) {
-    if (useMock) return mockApi.sendMessage(orderId, content)
-    return request({ method: 'POST', url: `/orders/${orderId}/messages`, data: { messageType: 'TEXT', content } })
-  },
-  sendImage(orderId: number, imageId: number) {
-    if (useMock) return mockApi.sendImage(orderId, imageId)
-    return request({
-      method: 'POST',
-      url: `/orders/${orderId}/messages`,
-      data: { messageType: 'IMAGE', imageId }
-    })
-  },
   submitReview(orderId: number, rating: number, content: string) {
     if (useMock) return mockApi.submitReview(orderId, rating, content)
     return request({ method: 'POST', url: `/orders/${orderId}/reviews`, data: { rating, content } })
@@ -217,6 +225,39 @@ export const orderApi = {
   statusLogs(orderId: number): Promise<OrderStatusLog[]> {
     if (useMock) return mockApi.getOrderStatusLogs(orderId)
     return request<OrderStatusLog[]>({ method: 'GET', url: `/orders/${orderId}/status-logs` })
+  }
+}
+
+export const messageApi = {
+  conversations(): Promise<ConversationItem[]> {
+    if (useMock) return Promise.resolve([])
+    return request<ConversationItem[]>({ method: 'GET', url: '/messages/conversations' })
+  },
+  chat(userId: number): Promise<ChatDetail> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用用户聊天'))
+    return request<ChatDetail>({ method: 'GET', url: `/messages/users/${userId}` })
+  },
+  sendText(userId: number, content: string): Promise<ChatMessage> {
+    return request<ChatMessage>({ method: 'POST', url: `/messages/users/${userId}`, data: { messageType: 'TEXT', content } })
+  },
+  sendImage(userId: number, imageId: number): Promise<ChatMessage> {
+    return request<ChatMessage>({ method: 'POST', url: `/messages/users/${userId}`, data: { messageType: 'IMAGE', imageId } })
+  },
+  sendFile(userId: number, fileId: number): Promise<ChatMessage> {
+    return request<ChatMessage>({ method: 'POST', url: `/messages/users/${userId}`, data: { messageType: 'FILE', fileId } })
+  },
+  unreadCount(): Promise<{ count: number }> {
+    if (useMock) return Promise.resolve({ count: 0 })
+    return request<{ count: number }>({ method: 'GET', url: '/messages/unread-count' })
+  },
+  markRead(userId: number): Promise<null> {
+    if (useMock) return Promise.resolve(null)
+    return request<null>({ method: 'PATCH', url: `/messages/users/${userId}/read` })
+  },
+  async downloadAttachment(messageId: number): Promise<Blob> {
+    if (useMock) throw new Error('请关闭 mock 模式后下载聊天附件')
+    const response = await http.get<Blob>(`/messages/${messageId}/attachment`, { responseType: 'blob' })
+    return response.data
   }
 }
 
@@ -305,12 +346,12 @@ export const adminApi = {
     if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
     return request<PageData<AdminReportItem>>({ method: 'GET', url: '/admin/reports', params })
   },
-  processReport(reportId: number, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>, result: string) {
+  processReport(reportId: number, status: Extract<ReportStatus, 'RESOLVED' | 'REJECTED'>, result: string, creditPenalty?: number) {
     if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用举报处理'))
     return request<null>({
       method: 'PATCH',
       url: `/admin/reports/${reportId}`,
-      data: { status, result }
+      data: { status, result, creditPenalty }
     })
   }
 }
@@ -355,6 +396,14 @@ export const reportApi = {
     return request<ReportSubmission>({
       method: 'POST',
       url: `/users/${userId}/reports`,
+      data: { reason, evidenceImageIds }
+    })
+  },
+  submitTimeoutOrder(orderId: number, reason: string, evidenceImageIds: number[]): Promise<ReportSubmission> {
+    if (useMock) return Promise.reject(new Error('请关闭 mock 模式后使用超时订单举报'))
+    return request<ReportSubmission>({
+      method: 'POST',
+      url: `/orders/${orderId}/timeout-report`,
       data: { reason, evidenceImageIds }
     })
   }

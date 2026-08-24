@@ -32,11 +32,11 @@ public class NotificationFactory {
         return notification;
     }
 
-    public Notification orderMessage(Long receiverId, Long orderId, String senderNickname, String preview) {
-        Notification notification = base(receiverId, NotificationType.ORDER_MESSAGE);
-        notification.setTitle("订单收到新留言");
+    public Notification chatMessage(Long receiverId, Long senderId, String senderNickname, String preview) {
+        Notification notification = base(receiverId, NotificationType.CHAT_MESSAGE);
+        notification.setTitle("收到新消息");
         notification.setContent(senderNickname + "：" + preview);
-        notification.setRelatedOrderId(orderId);
+        notification.setRelatedUserId(senderId);
         return notification;
     }
 
@@ -56,6 +56,14 @@ public class NotificationFactory {
         return notification;
     }
 
+    public Notification reportResultForOrder(Long receiverId, Long orderId, String resultSummary) {
+        Notification notification = base(receiverId, NotificationType.REPORT_RESULT);
+        notification.setTitle("举报处理结果已更新");
+        notification.setContent(resultSummary);
+        notification.setRelatedOrderId(orderId);
+        return notification;
+    }
+
     private Notification base(Long receiverId, NotificationType type) {
         Notification notification = new Notification();
         notification.setReceiverId(receiverId);
@@ -72,6 +80,7 @@ public class NotificationFactory {
             case PENDING_COMPLETION -> "待确认完成";
             case COMPLETED -> "已完成";
             case CANCELLED -> "已取消";
+            case TIMEOUT -> "已超时";
             case DISPUTE -> "争议处理中";
             case REVIEWED -> "已评价";
         };

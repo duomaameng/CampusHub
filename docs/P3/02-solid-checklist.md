@@ -2,7 +2,7 @@
 **团队：** 暴风星云裂 | **项目：** CampusHub | **日期：** 2026年5月16日
 
 **阶段：** P3 详细设计  
-**检查对象：** [01-class-diagram.md](C:\Users\duoma\java\软工2项目\CampusHub\docs\P3\01-class-diagram.md) 中的第一版核心类图
+**检查对象：** [01-class-diagram.md](01-class-diagram.md) 中的第一版核心类图
 
 ## 1. 检查结论
 

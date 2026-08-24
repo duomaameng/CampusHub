@@ -53,12 +53,15 @@ coverage/
 
 docker-compose.override.yml
 *.env.docker
+campus_hub-backup.sql
+campus_hub-server-backup.sql
+tmp/*.tar.gz
+*.pem
 
 logs/
 *.log
 .codex-logs/
 
-uploads/
 
 # Local generated architecture graph
 docs/architecture-graph.md

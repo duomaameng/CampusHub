@@ -17,14 +17,17 @@ export type OrderStatus =
   | 'PENDING_COMPLETION'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'TIMEOUT'
   | 'DISPUTE'
   | 'REVIEWED'
 export type RewardType = 'CASH' | 'NEGOTIABLE' | 'CREDIT_INTENT'
-export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
-export type MessageType = 'TEXT' | 'IMAGE'
-export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'CHAT_IMAGE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
+export type RewardPaymentMethod = 'WECHAT' | 'ALIPAY' | 'CASH'
+export type NotificationType = 'APPLICATION' | 'ORDER_STATUS' | 'ORDER_MESSAGE' | 'CHAT_MESSAGE' | 'REVIEW_REQUEST' | 'REPORT_RESULT'
+export type MessageType = 'TEXT' | 'IMAGE' | 'FILE'
+export type UploadBusinessType = 'AVATAR' | 'TASK_IMAGE' | 'TASK_FILE' | 'CHAT_IMAGE' | 'CHAT_FILE' | 'REPORT_EVIDENCE' | 'ORDER_PROOF'
 export type AnnouncementPriority = 'NORMAL' | 'IMPORTANT'
 export type ReportTargetType = 'TASK' | 'ORDER_MESSAGE' | 'REVIEW' | 'USER'
+export type ReportReasonType = 'FRAUD' | 'ABUSE' | 'SPAM' | 'ILLEGAL' | 'TIMEOUT' | 'OTHER'
 export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED'
 
 export const taskStatusText: Record<TaskStatus, string> = {
@@ -48,6 +51,7 @@ export const orderStatusText: Record<OrderStatus, string> = {
   PENDING_COMPLETION: '待确认完成',
   COMPLETED: '已完成',
   CANCELLED: '已取消',
+  TIMEOUT: '已超时',
   DISPUTE: '争议处理中',
   REVIEWED: '已评价'
 }
@@ -139,16 +143,22 @@ export interface TaskItem {
   description: string
   campus: string
   rewardType: RewardType
+  rewardAmount?: number
+  paymentMethod?: RewardPaymentMethod
   deadline: string
   status: TaskStatus
   anonymous: boolean
   imageUrls: string[]
+  files?: TaskFileItem[]
+  fileDownloadAllowed?: boolean
   applicationCount: number
+  hasUnreadApplications?: boolean
   favoriteCount: number
   isFavorited: boolean
   createdAt: string
   updatedAt?: string
   categoryFields?: Record<string, string | number | boolean>
+  privateFieldsHidden?: boolean
 }
 
 export interface TaskForm {
@@ -157,9 +167,12 @@ export interface TaskForm {
   description: string
   campus: string
   rewardType: RewardType
+  rewardAmount?: number
+  paymentMethod?: RewardPaymentMethod
   deadline: string
   anonymous: boolean
   imageIds: number[]
+  fileIds: number[]
   categoryFields: Record<string, string | number | boolean>
 }
 
@@ -176,7 +189,6 @@ export interface ApplicationItem {
   applicantNickname: string
   applicantAvatarUrl?: string
   applicantCreditScore: number
-  message: string
   status: ApplicationStatus
   createdAt: string
 }
@@ -187,21 +199,36 @@ export interface OrderItem {
   taskTitle: string
   publisherId: number
   publisherNickname: string
+  publisherAvatarUrl?: string
   serviceProviderId?: number | null
   serviceProviderNickname?: string
+  serviceProviderAvatarUrl?: string
   status: OrderStatus
   cancelReason?: string
   createdAt: string
+  taskImageUrl?: string
 }
 
 export interface OrderDetail extends OrderItem {
   taskDescription: string
   campus: string
   rewardType: RewardType
+  rewardAmount?: number
+  paymentMethod?: RewardPaymentMethod
   proofImageUrl?: string
   completionNote?: string
   statusLogs: OrderStatusLog[]
+  /** Legacy mock-only field. Production chat data comes from ChatDetail. */
   messages: OrderMessage[]
+  taskFiles?: TaskFileItem[]
+  taskFileDownloadAllowed?: boolean
+  taskImageUrls?: string[]
+}
+
+export interface TaskFileItem {
+  id: number
+  fileName: string
+  fileSize: number
 }
 
 export interface OrderStatusLog {
@@ -214,15 +241,56 @@ export interface OrderStatusLog {
   createdAt: string
 }
 
+export interface ChatUser {
+  id: number
+  email: string
+  nickname: string
+  avatarUrl?: string
+}
+
+/** Legacy mock-only order message shape. */
 export interface OrderMessage {
   id: number
   orderId: number
   senderId: number
   senderNickname: string
+  senderAvatarUrl?: string
   messageType: MessageType
   content?: string
   imageUrl?: string
+  fileId?: number
+  fileName?: string
+  fileSize?: number
   createdAt: string
+}
+
+export interface ChatMessage {
+  id: number
+  conversationId: number
+  senderId: number
+  senderNickname: string
+  senderAvatarUrl?: string
+  messageType: MessageType
+  content?: string
+  imageUrl?: string
+  fileId?: number
+  fileName?: string
+  fileSize?: number
+  createdAt: string
+}
+
+export interface ConversationItem {
+  id: number
+  participant: ChatUser
+  lastMessageText: string
+  lastMessageAt: string
+  unreadCount: number
+}
+
+export interface ChatDetail {
+  conversationId?: number
+  participant: ChatUser
+  messages: ChatMessage[]
 }
 
 export interface NotificationItem {
@@ -317,6 +385,8 @@ export interface AdminReportItem {
   reporterId: number
   targetType: ReportTargetType
   targetId: number
+  relatedOrderId?: number | null
+  reasonType: ReportReasonType
   reason: string
   status: ReportStatus
   createdAt: string
@@ -357,6 +427,8 @@ export interface ReportItem {
   reportId: number
   targetType: ReportTargetType
   targetId: number
+  relatedOrderId?: number | null
+  reasonType: ReportReasonType
   reason: string
   status: ReportStatus
   result?: string | null

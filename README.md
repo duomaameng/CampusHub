@@ -22,7 +22,30 @@ CampusHub/
 
 ---
 
+## 环境要求
+
+- Node.js 18+
+- Java 17+
+- Maven 3.9+
+- MySQL 8.0
+
+---
+
 ## 前端本地运行
+
+首次运行时，在项目根目录复制前端配置示例：
+
+```powershell
+Copy-Item frontend/.env.example frontend/.env.local
+```
+
+示例配置默认关闭 Mock，并通过 Vite 代理访问本地后端：
+
+```env
+VITE_USE_MOCK=false
+VITE_API_BASE_URL=/api
+VITE_ASSET_BASE_URL=http://localhost:8080
+```
 
 ```bash
 cd frontend
@@ -43,12 +66,6 @@ npm run dev
 
 ## 后端本地运行
 
-### 环境要求
-
-- Java 17+
-- Maven 3.9+
-- MySQL 8.0
-
 ### 初始化数据库
 
 ```bash
@@ -66,9 +83,24 @@ mysql -u root -p < database/02-seed.sql
 | 管理员 | `admin.demo@smail.nju.edu.cn` | `CampusHub123!` |
 | 学生 | `student.demo1@smail.nju.edu.cn` | `CampusHub123!` |
 | 学生 | `student.demo2@smail.nju.edu.cn` | `CampusHub123!` |
-| 学生 | `student.pending@smail.nju.edu.cn` | `CampusHub123!` |
+| 学生 | `student.demo3@smail.nju.edu.cn` | `CampusHub123!` |
 
 ### 启动后端
+
+首次启动前，在项目根目录复制后端配置示例：
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+```
+
+然后打开 `backend/.env`，将 `DB_PASSWORD` 改为本机 MySQL 密码：
+
+```properties
+DB_PASSWORD=你的MySQL密码
+MAIL_DELIVERY_MODE=log
+```
+
+`MAIL_DELIVERY_MODE=log` 会把验证码打印到后端日志，助教无需配置 SMTP 邮箱即可检查注册等流程。`backend/.env` 仅用于本地配置且不会提交到 Git；也可以不创建该文件，改为在启动后端前设置同名环境变量。
 
 ```bash
 cd backend
@@ -77,15 +109,21 @@ mvn spring-boot:run
 
 默认运行在 [http://localhost:8080](http://localhost:8080)。
 
-可通过环境变量覆盖配置：
+启动成功后，可通过 [Swagger UI](http://localhost:8080/swagger-ui.html) 检查后端接口。
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `DB_PASSWORD` | `root` | MySQL 密码 |
+后端支持以下环境变量：
+
+| 变量 | 默认值/要求 | 说明 |
+|------|-------------|------|
+| `DB_HOST` | `localhost` | MySQL 主机名；Docker 部署时为 `db` |
+| `DB_PORT` | `3306` | MySQL 端口 |
+| `DB_NAME` | `campus_hub` | MySQL 数据库名 |
+| `DB_USERNAME` | `root` | MySQL 用户名 |
+| `DB_PASSWORD` | 必填 | `DB_USERNAME` 对应的 MySQL 密码；本地默认是 `root` 用户，可写入 `backend/.env` |
 | `JWT_SECRET` | 内置默认值 | JWT 签名密钥 |
 | `MAIL_DELIVERY_MODE` | `smtp` | 验证码发送方式，`smtp` 真发邮件，`log` 仅打印验证码 |
 | `MAIL_HOST` | `smtp.qq.com` | 邮件服务地址 |
-| `MAIL_PORT` | `587` | 邮件服务端口 |
+| `MAIL_PORT` | `465` | 邮件服务端口，默认使用 SSL |
 | `MAIL_USERNAME` | - | 邮箱账号 |
 | `MAIL_PASSWORD` | - | 邮箱授权码 |
 | `MAIL_FROM` | `MAIL_USERNAME` | 邮件发件人地址 |
@@ -107,7 +145,13 @@ mvn spring-boot:run
 
 ## 前后端联调
 
-在 `frontend` 目录创建 `.env.local`：
+如果没有在“前端本地运行”步骤中创建配置，可在项目根目录复制：
+
+```powershell
+Copy-Item frontend/.env.example frontend/.env.local
+```
+
+确认 `frontend/.env.local` 内容如下：
 
 ```env
 VITE_USE_MOCK=false
@@ -143,6 +187,18 @@ VITE_ASSET_BASE_URL=https://api.example.com
 
 ---
 
+## 云服务器部署
+
+仓库提供 Docker Compose 生产部署配置，包含 Vue/Nginx、Spring Boot、MySQL，以及数据库和上传文件持久卷。
+
+项目访问地址：[http://campushub-nju.eastasia.cloudapp.azure.com](http://campushub-nju.eastasia.cloudapp.azure.com)。
+
+> 注意：服务器每天凌晨 2 点自动关闭，关闭后上述地址将暂时无法访问。
+
+完整步骤见 [`deploy/README.md`](deploy/README.md)，其中包含现有数据库导出、迁移、恢复、备份和答辩证据清单。
+
+---
+
 ## 验证
 
 ```bash
@@ -152,6 +208,6 @@ npm run typecheck
 npm run build
 
 # 后端编译
-cd backend
+cd ../backend
 mvn compile
 ```

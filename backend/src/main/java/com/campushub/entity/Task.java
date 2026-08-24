@@ -2,6 +2,7 @@ package com.campushub.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.campushub.enums.RewardType;
+import com.campushub.enums.RewardPaymentMethod;
 import com.campushub.enums.TaskCategory;
 import com.campushub.enums.TaskStatus;
 import lombok.Data;
@@ -31,6 +32,8 @@ public class Task {
     private RewardType rewardType;
 
     private BigDecimal rewardAmount;
+
+    private RewardPaymentMethod paymentMethod;
 
     private LocalDateTime deadline;
 

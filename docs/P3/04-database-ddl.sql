@@ -73,13 +73,16 @@ CREATE TABLE verification_code (
 CREATE TABLE task (
     id              BIGINT          NOT NULL AUTO_INCREMENT  COMMENT '任务ID',
     publisher_id    BIGINT          NOT NULL                 COMMENT '发布者ID',
-    category        VARCHAR(16)     NOT NULL                 COMMENT '分类: EXPRESS/ERRAND/TUTORING/SECOND_HAND/LOST_FOUND/CONSULTATION/TEAM_UP/OTHER',
+    category        VARCHAR(32)     NOT NULL                 COMMENT '分类: EXPRESS/ERRAND/TUTORING/SECOND_HAND/LOST_FOUND/CONSULTATION/TEAM_UP/OTHER',
     title           VARCHAR(100)    NOT NULL                 COMMENT '标题',
     description     VARCHAR(2000)   NOT NULL                 COMMENT '描述',
     campus          VARCHAR(32)     NOT NULL                 COMMENT '校区/地点',
-    reward_type     VARCHAR(16)     NOT NULL                 COMMENT '报酬类型: CASH/NEGOTIABLE/CREDIT_INTENT',
+    location_detail VARCHAR(128)    DEFAULT NULL             COMMENT '详细地点',
+    reward_type     VARCHAR(16)     NOT NULL                 COMMENT '结算类型: CASH(定价)/NEGOTIABLE(面议)/CREDIT_INTENT(积分)',
+    reward_amount   DECIMAL(10,2)   DEFAULT NULL             COMMENT '定价金额，必须大于0',
+    payment_method  VARCHAR(16)     DEFAULT NULL             COMMENT '结算方式: WECHAT/ALIPAY/CASH',
     deadline        DATETIME        NOT NULL                 COMMENT '截止时间',
-    status          VARCHAR(16)     NOT NULL DEFAULT 'OPEN'  COMMENT '状态: OPEN/IN_PROGRESS/COMPLETED/CANCELLED/EXPIRED',
+    status          VARCHAR(20)     NOT NULL DEFAULT 'OPEN'  COMMENT '状态: OPEN/IN_PROGRESS/COMPLETED/CANCELLED/EXPIRED',
     anonymous       TINYINT(1)      NOT NULL DEFAULT 0       COMMENT '是否匿名发布',
     category_fields JSON            DEFAULT NULL             COMMENT '分类差异化字段 (JSON)',
     version         INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
@@ -88,8 +91,8 @@ CREATE TABLE task (
     PRIMARY KEY (id),
     KEY idx_task_publisher (publisher_id),
     KEY idx_task_hall (status, category, campus),
-    KEY idx_task_sort_latest (status, created_at),
-    KEY idx_task_sort_deadline (status, deadline),
+    KEY idx_task_created_at (status, created_at),
+    KEY idx_task_deadline (status, deadline),
     CONSTRAINT fk_task_publisher FOREIGN KEY (publisher_id) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='需求/任务表';
 
@@ -149,7 +152,7 @@ CREATE TABLE orders (
     task_id             BIGINT          NOT NULL                 COMMENT '关联任务ID',
     publisher_id        BIGINT          NOT NULL                 COMMENT '发布者（需求方）ID',
     service_provider_id BIGINT          DEFAULT NULL             COMMENT '服务方ID，订单退回待确认时可为空',
-    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT '状态: PENDING_CONFIRM/IN_PROGRESS/PENDING_COMPLETION/COMPLETED/CANCELLED/DISPUTE/REVIEWED',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING_CONFIRM' COMMENT '状态: PENDING_CONFIRM/IN_PROGRESS/PENDING_COMPLETION/COMPLETED/CANCELLED/TIMEOUT/DISPUTE/REVIEWED',
     completion_proof_url VARCHAR(512)   DEFAULT NULL             COMMENT '完成凭证图片URL',
     cancel_reason       VARCHAR(500)    DEFAULT NULL             COMMENT '取消原因',
     version             INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
@@ -263,7 +266,8 @@ CREATE TABLE report (
     reporter_id     BIGINT          NOT NULL                 COMMENT '举报人ID',
     target_type     VARCHAR(16)     NOT NULL                 COMMENT '举报对象类型: TASK/ORDER_MESSAGE/REVIEW/USER',
     target_id       BIGINT          NOT NULL                 COMMENT '被举报对象ID',
-    reason_type     VARCHAR(16)     NOT NULL                 COMMENT '举报类型: FRAUD/ABUSE/SPAM/ILLEGAL/OTHER',
+    related_order_id BIGINT         DEFAULT NULL             COMMENT '关联订单ID',
+    reason_type     VARCHAR(16)     NOT NULL                 COMMENT '举报类型: FRAUD/ABUSE/SPAM/ILLEGAL/TIMEOUT/OTHER',
     description     VARCHAR(1000)   NOT NULL                 COMMENT '举报描述',
     status          VARCHAR(16)     NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING/PROCESSING/RESOLVED/REJECTED',
     result          VARCHAR(500)    DEFAULT NULL             COMMENT '处理结果说明',
@@ -273,7 +277,9 @@ CREATE TABLE report (
     PRIMARY KEY (id),
     KEY idx_report_reporter (reporter_id, status),
     KEY idx_report_admin (status, created_at),
+    KEY idx_report_related_order (related_order_id, reason_type, status),
     CONSTRAINT fk_report_reporter FOREIGN KEY (reporter_id) REFERENCES user(id),
+    CONSTRAINT fk_report_related_order FOREIGN KEY (related_order_id) REFERENCES orders(id),
     CONSTRAINT fk_report_processor FOREIGN KEY (processed_by) REFERENCES user(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='举报表';
 
